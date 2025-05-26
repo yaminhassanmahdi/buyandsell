@@ -54,6 +54,11 @@ export type ShippingAddress = {
 export type OrderStatus = 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'accepted' | 'handed_over' | 'in_shipping';
 export type PaymentStatus = 'paid' | 'unpaid';
 
+export type ShippingMethod = {
+  id: string;
+  name: string;
+};
+
 export type Order = {
   id: string;
   userId: string;
@@ -64,6 +69,8 @@ export type Order = {
   status: OrderStatus;
   paymentStatus: PaymentStatus;
   platformCommission?: number;
+  selectedShippingMethodId?: string;
+  shippingMethodName?: string;
   createdAt: Date;
   updatedAt: Date;
 };

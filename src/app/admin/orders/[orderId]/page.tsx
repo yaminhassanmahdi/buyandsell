@@ -11,11 +11,13 @@ import { Separator } from '@/components/ui/separator';
 import { OrderStatusBadge } from '@/components/order-status-badge';
 import Image from 'next/image';
 import { format } from 'date-fns';
-import { ArrowLeft, UserCircle, MapPin, CalendarDays, ShoppingBag, Briefcase, Home, Loader2, CreditCard, Smartphone, Banknote, Save, Truck, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, UserCircle, MapPin, CalendarDays, ShoppingBag, Briefcase, Home, Loader2, CreditCard, Smartphone, Banknote, Save, Truck, AlertTriangle, Percent, Ship } from 'lucide-react';
 import { ORDER_STATUSES, PAYMENT_STATUSES, COMMISSION_SETTINGS_STORAGE_KEY, DEFAULT_COMMISSION_SETTINGS } from '@/lib/constants';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import useLocalStorage from '@/hooks/use-local-storage';
+import { Label } from '@/components/ui/label'; // Ensure Label is imported
+import { Alert, AlertTitle } from '@/components/ui/alert'; // Ensure Alert, AlertTitle are imported
 
 interface EnrichedOrderItem extends CartItem {
   productDetails?: ProductType;
@@ -80,7 +82,7 @@ export default function AdminOrderDetailPage() {
 
   const calculateAndStorePlatformCommission = (currentOrder: Order): number => {
     if (!currentOrder || currentOrder.status !== 'delivered' || currentOrder.paymentStatus !== 'paid') {
-      return 0;
+      return currentOrder.platformCommission || 0; // Return existing or 0 if not applicable
     }
     let totalCommission = 0;
     currentOrder.items.forEach(item => {
@@ -106,12 +108,8 @@ export default function AdminOrderDetailPage() {
       MOCK_ORDERS[orderIndex].paymentStatus = selectedPaymentStatus!;
       MOCK_ORDERS[orderIndex].updatedAt = new Date();
       
-      // Recalculate and store commission if status is delivered and paid
-      if (selectedOrderStatus === 'delivered' && selectedPaymentStatus === 'paid') {
-        MOCK_ORDERS[orderIndex].platformCommission = calculateAndStorePlatformCommission(MOCK_ORDERS[orderIndex]);
-      } else {
-        MOCK_ORDERS[orderIndex].platformCommission = 0; // Reset commission if not delivered and paid
-      }
+      MOCK_ORDERS[orderIndex].platformCommission = calculateAndStorePlatformCommission(MOCK_ORDERS[orderIndex]);
+      
        setOrder(prevOrder => prevOrder ? { 
         ...prevOrder, 
         status: selectedOrderStatus!, 
@@ -244,27 +242,33 @@ export default function AdminOrderDetailPage() {
                 <span className="text-muted-foreground">Last Updated:</span>
                 <span className="font-medium">{format(new Date(order.updatedAt), 'PPpp')}</span>
               </div>
+              {order.shippingMethodName && (
+                <div className="flex justify-between">
+                    <span className="text-muted-foreground flex items-center gap-1"><Ship className="h-4 w-4"/>Shipping Method:</span>
+                    <span className="font-medium">{order.shippingMethodName}</span>
+                </div>
+              )}
               <Separator className="my-3"/>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Items Subtotal:</span>
                 <span className="font-medium">${itemsSubtotal.toFixed(2)}</span>
               </div>
-              {order.deliveryChargeAmount !== undefined && order.deliveryChargeAmount > 0 && (
+              {order.deliveryChargeAmount !== undefined && order.deliveryChargeAmount >= 0 && (
                 <div className="flex justify-between">
                   <span className="text-muted-foreground flex items-center gap-1"><Truck className="h-4 w-4"/>Delivery Charge:</span>
                   <span className="font-medium">${order.deliveryChargeAmount.toFixed(2)}</span>
                 </div>
               )}
-              {order.platformCommission !== undefined && order.platformCommission > 0 && (
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground flex items-center gap-1"><Percent className="h-4 w-4 text-blue-500"/>Platform Commission:</span>
-                  <span className="font-medium text-blue-600">-${order.platformCommission.toFixed(2)}</span>
-                </div>
-              )}
-              <div className="flex justify-between font-bold text-lg pt-2 border-t">
+               <div className="flex justify-between font-bold text-lg pt-2 border-t">
                 <span>Order Total (Paid by Buyer):</span>
                 <span>${order.totalAmount.toFixed(2)}</span>
               </div>
+              {order.platformCommission !== undefined && order.platformCommission > 0 && (
+                <div className="flex justify-between mt-2 pt-2 border-t text-blue-600">
+                  <span className="font-medium flex items-center gap-1"><Percent className="h-4 w-4"/>Platform Commission:</span>
+                  <span className="font-semibold">${order.platformCommission.toFixed(2)}</span>
+                </div>
+              )}
             </CardContent>
           </Card>
 

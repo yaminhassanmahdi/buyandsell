@@ -1,5 +1,5 @@
 
-import type { OrderStatus, StaticDivision, StaticDistrict, StaticThana, Category, Brand, DeliveryChargeSettings, CommissionSetting, AdminNavItem, BusinessSettings, HeroBannerSlide, CustomPage } from './types';
+import type { OrderStatus, StaticDivision, StaticDistrict, StaticThana, Category, Brand, DeliveryChargeSettings, CommissionSetting, AdminNavItem, BusinessSettings, HeroBannerSlide, CustomPage, ShippingMethod } from './types';
 import {
   Smartphone, Laptop, Shirt, Armchair, BookOpen, Tag,
   Package as PackageIcon,
@@ -7,7 +7,7 @@ import {
   Handshake as HandshakeIcon,
   LayoutDashboard, CheckSquare, ShoppingCart, Users as UsersIcon,
   ListChecks, FolderTree, Tags as TagsIcon, Settings2 as SettingsIcon, // Renamed Settings2 to SettingsIcon for clarity
-  Globe, Library, MapPin, Home, DollarSign, Briefcase, Edit, Trash2, CreditCard, PieChart, FileText, TrendingUp, Percent, Image as ImageIcon, FileType
+  Globe, Library, MapPin, Home, DollarSign, Briefcase, Edit, Trash2, CreditCard, PieChart, FileText, TrendingUp, Percent, Image as ImageIcon, FileType, Ship
 } from 'lucide-react';
 
 export let APP_NAME = '2ndhandbajar.com'; // Made it mutable
@@ -91,6 +91,7 @@ export const ADMIN_NAVIGATION: AdminNavItem[] = [
       { name: 'Districts', href: '/admin/locations/districts', icon: MapPin },
       { name: 'Thanas/Upazillas', href: '/admin/locations/thanas', icon: Home },
       { name: 'Delivery Charges', href: '/admin/locations/delivery-charges', icon: DollarSign },
+      { name: 'Shipping Methods', href: '/admin/locations/shipping-methods', icon: Ship },
     ]
   },
   {
@@ -182,6 +183,7 @@ export const DEFAULT_COMMISSION_SETTINGS: CommissionSetting[] = [];
 export const BUSINESS_SETTINGS_STORAGE_KEY = 'businessSettings';
 export const HERO_BANNERS_STORAGE_KEY = 'heroBannerSlides';
 export const CUSTOM_PAGES_STORAGE_KEY = 'customPages';
+export const SHIPPING_METHODS_STORAGE_KEY = 'shippingMethods';
 
 export const DEFAULT_BUSINESS_SETTINGS: BusinessSettings = {
   appName: '2ndhandbajar.com',
@@ -249,4 +251,7 @@ export const MOCK_CUSTOM_PAGES: CustomPage[] = [ // Added MOCK_CUSTOM_PAGES expo
   },
 ];
 
-  
+export const DEFAULT_SHIPPING_METHODS: ShippingMethod[] = [
+  { id: 'standard-delivery', name: 'Standard Delivery' },
+  { id: 'express-delivery', name: 'Express Delivery (Next Day)' },
+];

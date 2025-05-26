@@ -7,13 +7,15 @@ import { useCart } from '@/contexts/cart-context';
 import { AddressForm } from '@/components/address-form';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import type { ShippingAddress, Order, DeliveryChargeSettings, Product as ProductType, User as UserType, CartItem } from '@/lib/types';
+import type { ShippingAddress, Order, DeliveryChargeSettings, Product as ProductType, User as UserType, CartItem, ShippingMethod } from '@/lib/types';
 import { MOCK_ORDERS, MOCK_PRODUCTS, MOCK_USERS } from '@/lib/mock-data'; 
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
-import { Loader2, ShieldCheck, Edit3, Home, Truck } from 'lucide-react';
+import { Loader2, ShieldCheck, Edit3, Home, Truck, Ship } from 'lucide-react';
 import useLocalStorage from '@/hooks/use-local-storage';
-import { DELIVERY_CHARGES_STORAGE_KEY, DEFAULT_DELIVERY_CHARGES } from '@/lib/constants';
+import { DELIVERY_CHARGES_STORAGE_KEY, DEFAULT_DELIVERY_CHARGES, SHIPPING_METHODS_STORAGE_KEY, DEFAULT_SHIPPING_METHODS } from '@/lib/constants';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from '@/components/ui/label';
 
 export default function CheckoutPage() {
   const { currentUser, isAuthenticated, loading: authLoading, updateCurrentUserData } = useAuth();
@@ -33,6 +35,12 @@ export default function CheckoutPage() {
     DEFAULT_DELIVERY_CHARGES
   );
 
+  const [availableShippingMethods, setAvailableShippingMethods] = useLocalStorage<ShippingMethod[]>(
+    SHIPPING_METHODS_STORAGE_KEY,
+    DEFAULT_SHIPPING_METHODS
+  );
+  const [selectedShippingMethodId, setSelectedShippingMethodId] = useState<string>('');
+
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
       router.push('/login?redirect=/checkout');
@@ -48,11 +56,18 @@ export default function CheckoutPage() {
         setOrderShippingAddress(currentUser.defaultShippingAddress);
         setIsEditingAddress(false);
       } else {
-        setOrderShippingAddress(null); // Explicitly null if not set
+        setOrderShippingAddress(null); 
         setIsEditingAddress(true);
       }
     }
   }, [isAuthenticated, authLoading, router, itemCount, currentUser]);
+
+  useEffect(() => {
+    if (availableShippingMethods.length === 1 && !selectedShippingMethodId) {
+      setSelectedShippingMethodId(availableShippingMethods[0].id);
+    }
+  }, [availableShippingMethods, selectedShippingMethodId]);
+
 
   useEffect(() => {
     const calculateTotalDeliveryCharge = () => {
@@ -91,7 +106,7 @@ export default function CheckoutPage() {
             let chargePerSeller: number | null = null;
 
             if (!sellerAddress) {
-                chargePerSeller = deliverySettings.interDistrict; // Fallback
+                chargePerSeller = deliverySettings.interDistrict; 
             } else {
                 if (buyerAddress.thana === sellerAddress.thana && buyerAddress.district === sellerAddress.district) {
                     chargePerSeller = deliverySettings.intraThana;
@@ -105,7 +120,7 @@ export default function CheckoutPage() {
             if (chargePerSeller !== null) {
                 calculatedTotal += chargePerSeller;
             } else {
-                allChargesCalculated = false; // Should not happen with fallbacks, but good check
+                allChargesCalculated = false; 
             }
         }
         setTotalDeliveryCharge(allChargesCalculated ? calculatedTotal : null);
@@ -116,8 +131,8 @@ export default function CheckoutPage() {
 
 
   const initialAddressFormData = (): Partial<ShippingAddress> => {
-    if (orderShippingAddress) { // Use state which is derived from currentUser.defaultShippingAddress
-      return orderShippingAddress;
+    if (currentUser?.defaultShippingAddress) { 
+      return currentUser.defaultShippingAddress;
     }
     return {};
   };
@@ -132,10 +147,10 @@ export default function CheckoutPage() {
   };
 
   const handlePlaceOrder = async () => {
-    if (!orderShippingAddress || !currentUser || totalDeliveryCharge === null) {
+    if (!orderShippingAddress || !currentUser || totalDeliveryCharge === null || !selectedShippingMethodId) {
         toast({
             title: "Order Cannot Be Placed",
-            description: "Please ensure your shipping address is confirmed and delivery charges are calculated.",
+            description: "Please ensure your shipping address is confirmed, delivery charges are calculated, and a shipping method is selected.",
             variant: "destructive",
         });
         return;
@@ -145,16 +160,20 @@ export default function CheckoutPage() {
     await new Promise(resolve => setTimeout(resolve, 1500));
 
     const itemsSubtotal = getCartTotal();
-    const finalTotalAmount = itemsSubtotal + totalDeliveryCharge; // Use totalDeliveryCharge from state
+    const finalTotalAmount = itemsSubtotal + totalDeliveryCharge; 
+    const selectedMethod = availableShippingMethods.find(m => m.id === selectedShippingMethodId);
 
     const newOrder: Order = {
       id: `order${MOCK_ORDERS.length + 1}-${Date.now()}`,
       userId: currentUser.id,
       items: cartItems.map(item => ({ ...item })), 
       totalAmount: finalTotalAmount,
-      deliveryChargeAmount: totalDeliveryCharge, // Store the total delivery charge
+      deliveryChargeAmount: totalDeliveryCharge, 
       shippingAddress: orderShippingAddress, 
       status: 'pending', 
+      paymentStatus: 'unpaid',
+      selectedShippingMethodId: selectedShippingMethodId,
+      shippingMethodName: selectedMethod?.name,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -165,6 +184,7 @@ export default function CheckoutPage() {
       title: "Order Placed Successfully!",
       description: `Your order #${newOrder.id} has been placed.`,
       variant: "default", 
+      duration: 4000,
     });
     router.push(`/account/orders?orderId=${newOrder.id}`);
     setIsPlacingOrder(false);
@@ -220,9 +240,47 @@ export default function CheckoutPage() {
                 </Button>
               </div>
             ) : (
-                 <p className="text-muted-foreground">Please add a shipping address by clicking "Edit Address".</p>
+                 <div className="space-y-3">
+                    <p className="text-muted-foreground">Please add your shipping address.</p>
+                    <Button variant="outline" onClick={() => setIsEditingAddress(true)} className="w-full sm:w-auto">
+                        Add Address
+                    </Button>
+                 </div>
             )}
           </CardContent>
+        </Card>
+
+        <Card className="shadow-lg mb-8">
+            <CardHeader>
+                <CardTitle className="text-2xl flex items-center gap-2"><Ship className="h-6 w-6 text-primary"/>Shipping Method</CardTitle>
+            </CardHeader>
+            <CardContent>
+                {availableShippingMethods.length === 0 ? (
+                    <p className="text-muted-foreground">No shipping methods available. Please contact support.</p>
+                ) : availableShippingMethods.length === 1 ? (
+                    <div className="p-4 border rounded-md bg-muted/50">
+                        <p className="font-semibold">{availableShippingMethods[0].name}</p>
+                        <p className="text-sm text-muted-foreground">(Default shipping method applied)</p>
+                    </div>
+                ) : (
+                    <div className="space-y-2">
+                        <Label htmlFor="shipping-method">Select Shipping Method</Label>
+                        <Select value={selectedShippingMethodId} onValueChange={setSelectedShippingMethodId}>
+                            <SelectTrigger id="shipping-method">
+                                <SelectValue placeholder="Choose a shipping method" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {availableShippingMethods.map(method => (
+                                    <SelectItem key={method.id} value={method.id}>
+                                        {method.name}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        {!selectedShippingMethodId && <p className="text-xs text-destructive">Please select a shipping method.</p>}
+                    </div>
+                )}
+            </CardContent>
         </Card>
 
         <Card className="shadow-lg">
@@ -283,7 +341,7 @@ export default function CheckoutPage() {
               onClick={handlePlaceOrder} 
               className="w-full" 
               size="lg"
-              disabled={isPlacingOrder || cartItems.length === 0 || !orderShippingAddress || totalDeliveryCharge === null || isCalculatingDelivery}
+              disabled={isPlacingOrder || cartItems.length === 0 || !orderShippingAddress || totalDeliveryCharge === null || isCalculatingDelivery || !selectedShippingMethodId}
             >
               {isPlacingOrder ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -294,11 +352,10 @@ export default function CheckoutPage() {
             </Button>
           </CardFooter>
         </Card>
-        {(!orderShippingAddress || totalDeliveryCharge === null) && cartItems.length > 0 && (
-          <p className="text-xs text-destructive text-center mt-2">Please complete and confirm your shipping address. Delivery charges must be calculated.</p>
+        {(!orderShippingAddress || totalDeliveryCharge === null || !selectedShippingMethodId) && cartItems.length > 0 && (
+          <p className="text-xs text-destructive text-center mt-2">Please complete address, and select a shipping method. Delivery charges must be calculated.</p>
         )}
       </div>
     </div>
   );
 }
-
