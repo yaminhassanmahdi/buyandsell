@@ -8,7 +8,7 @@ import { AddressForm } from '@/components/address-form';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import type { ShippingAddress, Order, DeliveryChargeSettings, Product as ProductType, User as UserType, CartItem, ShippingMethod } from '@/lib/types';
-import { MOCK_ORDERS, MOCK_PRODUCTS, MOCK_USERS } from '@/lib/mock-data'; 
+import { MOCK_ORDERS, MOCK_PRODUCTS, MOCK_USERS } from '@/lib/mock-data';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
 import { Loader2, ShieldCheck, Edit3, Home, Truck, Ship } from 'lucide-react';
@@ -22,11 +22,11 @@ export default function CheckoutPage() {
   const { cartItems, getCartTotal, clearCart, itemCount } = useCart();
   const router = useRouter();
   const { toast } = useToast();
-  
+
   const [orderShippingAddress, setOrderShippingAddress] = useState<ShippingAddress | null>(null);
   const [isEditingAddress, setIsEditingAddress] = useState(false);
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
-  
+
   const [totalDeliveryCharge, setTotalDeliveryCharge] = useState<number | null>(null);
   const [isCalculatingDelivery, setIsCalculatingDelivery] = useState(true);
 
@@ -46,9 +46,9 @@ export default function CheckoutPage() {
       router.push('/login?redirect=/checkout');
       return;
     }
-    // Add !isPlacingOrder to prevent redirect to cart immediately after order placement
-    if (!authLoading && itemCount === 0 && !isPlacingOrder) {
-      router.push('/cart'); 
+    // If auth is loaded, user is authenticated, cart is empty, and not in the middle of placing an order, redirect to cart.
+    if (!authLoading && isAuthenticated && itemCount === 0 && !isPlacingOrder) {
+      router.push('/cart');
       return;
     }
 
@@ -57,17 +57,17 @@ export default function CheckoutPage() {
         setOrderShippingAddress(currentUser.defaultShippingAddress);
         setIsEditingAddress(false);
       } else {
-        setOrderShippingAddress(null); 
+        setOrderShippingAddress(null);
         setIsEditingAddress(true);
       }
     }
-  }, [isAuthenticated, authLoading, router, itemCount, currentUser, isPlacingOrder]); // Added isPlacingOrder to dependency array
+  }, [isAuthenticated, authLoading, router, itemCount, currentUser, isPlacingOrder]);
 
   useEffect(() => {
     if (availableShippingMethods.length === 1 && !selectedShippingMethodId) {
       setSelectedShippingMethodId(availableShippingMethods[0].id);
     } else if (availableShippingMethods.length > 1 && !selectedShippingMethodId) {
-      setSelectedShippingMethodId(''); 
+      setSelectedShippingMethodId('');
     }
   }, [availableShippingMethods, selectedShippingMethodId]);
 
@@ -75,7 +75,7 @@ export default function CheckoutPage() {
   useEffect(() => {
     const calculateTotalDeliveryCharge = () => {
         if (!orderShippingAddress || cartItems.length === 0 || !deliverySettings || !currentUser) {
-            setTotalDeliveryCharge(0); 
+            setTotalDeliveryCharge(0);
             setIsCalculatingDelivery(false);
             return;
         }
@@ -93,7 +93,7 @@ export default function CheckoutPage() {
                 }
                 groupedBySeller[productDetails.sellerId].items.push(cartItem);
             } else {
-                 if (!groupedBySeller['unknown_seller']) { 
+                 if (!groupedBySeller['unknown_seller']) {
                     groupedBySeller['unknown_seller'] = { seller: undefined, items: [] };
                 }
                 groupedBySeller['unknown_seller'].items.push(cartItem);
@@ -109,7 +109,7 @@ export default function CheckoutPage() {
             let chargePerSeller: number | null = null;
 
             if (!sellerAddress) {
-                chargePerSeller = deliverySettings.interDistrict; 
+                chargePerSeller = deliverySettings.interDistrict;
             } else {
                 if (buyerAddress.thana === sellerAddress.thana && buyerAddress.district === sellerAddress.district) {
                     chargePerSeller = deliverySettings.intraThana;
@@ -119,11 +119,11 @@ export default function CheckoutPage() {
                     chargePerSeller = deliverySettings.interDistrict;
                 }
             }
-            
+
             if (chargePerSeller !== null) {
                 calculatedTotal += chargePerSeller;
             } else {
-                allChargesCalculated = false; 
+                allChargesCalculated = false;
             }
         }
         setTotalDeliveryCharge(allChargesCalculated ? calculatedTotal : null);
@@ -134,7 +134,7 @@ export default function CheckoutPage() {
 
 
   const initialAddressFormData = (): Partial<ShippingAddress> => {
-    if (currentUser?.defaultShippingAddress) { 
+    if (currentUser?.defaultShippingAddress) {
       return currentUser.defaultShippingAddress;
     }
     return {};
@@ -163,37 +163,37 @@ export default function CheckoutPage() {
     await new Promise(resolve => setTimeout(resolve, 1500));
 
     const itemsSubtotal = getCartTotal();
-    const finalTotalAmount = itemsSubtotal + totalDeliveryCharge; 
+    const finalTotalAmount = itemsSubtotal + totalDeliveryCharge;
     const selectedMethod = availableShippingMethods.find(m => m.id === selectedShippingMethodId);
 
     const newOrder: Order = {
       id: `order${MOCK_ORDERS.length + 1}-${Date.now()}`,
       userId: currentUser.id,
-      items: cartItems.map(item => ({ ...item })), 
+      items: cartItems.map(item => ({ ...item })),
       totalAmount: finalTotalAmount,
-      deliveryChargeAmount: totalDeliveryCharge, 
-      shippingAddress: orderShippingAddress, 
-      status: 'pending', 
+      deliveryChargeAmount: totalDeliveryCharge,
+      shippingAddress: orderShippingAddress,
+      status: 'pending',
       paymentStatus: 'unpaid',
       selectedShippingMethodId: selectedShippingMethodId,
       shippingMethodName: selectedMethod?.name,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
-    MOCK_ORDERS.push(newOrder); 
-    
+    MOCK_ORDERS.push(newOrder);
+
     clearCart();
     toast({
       title: "Order Placed Successfully!",
       description: `Your order #${newOrder.id} has been placed.`,
-      variant: "default", 
+      variant: "default",
       duration: 4000,
     });
-    router.push(`/order-confirmation/${newOrder.id}`); 
-    setIsPlacingOrder(false); // Set to false after navigation
+    router.push(`/order-confirmation/${newOrder.id}`);
+    // setIsPlacingOrder(false); // Removed: Let component unmount handle state reset
   };
 
-  if (authLoading || (!authLoading && !isAuthenticated) || (itemCount === 0 && !isPlacingOrder && !authLoading)) { 
+  if (authLoading || (!authLoading && !isAuthenticated) || (itemCount === 0 && !isPlacingOrder && !authLoading)) {
     return (
       <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -223,9 +223,9 @@ export default function CheckoutPage() {
           </CardHeader>
           <CardContent>
             {isEditingAddress ? (
-              <AddressForm 
-                onSubmit={handleAddressSubmit} 
-                initialData={initialAddressFormData()} 
+              <AddressForm
+                onSubmit={handleAddressSubmit}
+                initialData={initialAddressFormData()}
               />
             ) : orderShippingAddress ? (
               <div className="space-y-3">
@@ -329,7 +329,7 @@ export default function CheckoutPage() {
                 <div className="flex justify-between">
                     <span className="flex items-center gap-1"><Truck className="h-4 w-4 text-muted-foreground"/>Shipping</span>
                     <span>
-                        {isCalculatingDelivery ? 'Calculating...' : 
+                        {isCalculatingDelivery ? 'Calculating...' :
                          (totalDeliveryCharge !== null ? `$${totalDeliveryCharge.toFixed(2)}` : 'N/A')}
                     </span>
                 </div>
@@ -340,9 +340,9 @@ export default function CheckoutPage() {
             </div>
           </CardContent>
           <CardFooter>
-            <Button 
-              onClick={handlePlaceOrder} 
-              className="w-full" 
+            <Button
+              onClick={handlePlaceOrder}
+              className="w-full"
               size="lg"
               disabled={isPlacingOrder || cartItems.length === 0 || !orderShippingAddress || totalDeliveryCharge === null || isCalculatingDelivery || !selectedShippingMethodId}
             >
@@ -362,5 +362,3 @@ export default function CheckoutPage() {
     </div>
   );
 }
-
-    
