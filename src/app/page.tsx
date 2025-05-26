@@ -12,46 +12,71 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 
 export default function HomePage() {
-  const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [filters, setFilters] = useState<FilterValues>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    setLoading(true);
     // Simulate API call
     setTimeout(() => {
-      const approvedProducts = MOCK_PRODUCTS.filter(p => p.status === 'approved');
-      setAllProducts(approvedProducts);
-      setFilteredProducts(approvedProducts);
+      // Initial filter and sort for approved products
+      let initialApprovedProducts = MOCK_PRODUCTS.filter(p => p.status === 'approved');
+      // Default sort by newest if no filters are set yet, or if filters don't specify a sort
+      const sortBy = filters.sortBy || 'date_newest';
+      switch (sortBy) {
+        case 'price_asc':
+          initialApprovedProducts.sort((a, b) => a.price - b.price);
+          break;
+        case 'price_desc':
+          initialApprovedProducts.sort((a, b) => b.price - a.price);
+          break;
+        case 'date_newest':
+          initialApprovedProducts.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+          break;
+        case 'date_oldest':
+          initialApprovedProducts.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+          break;
+        default:
+          initialApprovedProducts.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+          break;
+      }
+      setFilteredProducts(initialApprovedProducts);
       setLoading(false);
     }, 500);
-  }, []);
+  // Re-run when filters.sortBy changes to apply default sort correctly on initial load with filters from ProductFilters
+  // This primarily helps if ProductFilters initializes with a sort order.
+  }, [filters.sortBy]); 
 
   const handleFilterChange = (newFilters: FilterValues) => {
-    setFilters(newFilters);
-    let products = [...allProducts];
+    setFilters(newFilters); // Store the active filters
+    setLoading(true);
 
-    if (newFilters.searchTerm) {
-      const searchTermLower = newFilters.searchTerm.toLowerCase();
-      products = products.filter(
-        p => p.name.toLowerCase().includes(searchTermLower) || p.description.toLowerCase().includes(searchTermLower)
-      );
-    }
-    if (newFilters.category) {
-      products = products.filter(p => p.category.id === newFilters.category);
-    }
-    if (newFilters.brand) {
-      products = products.filter(p => p.brand.id === newFilters.brand);
-    }
-    if (newFilters.minPrice) {
-      products = products.filter(p => p.price >= Number(newFilters.minPrice));
-    }
-    if (newFilters.maxPrice) {
-      products = products.filter(p => p.price <= Number(newFilters.maxPrice));
-    }
-    
-    if (newFilters.sortBy) {
-      switch (newFilters.sortBy) {
+    // Simulate API call or heavy filtering
+    setTimeout(() => {
+      let products = MOCK_PRODUCTS.filter(p => p.status === 'approved');
+
+      if (newFilters.searchTerm) {
+        const searchTermLower = newFilters.searchTerm.toLowerCase();
+        products = products.filter(
+          p => p.name.toLowerCase().includes(searchTermLower) || p.description.toLowerCase().includes(searchTermLower)
+        );
+      }
+      if (newFilters.category) {
+        products = products.filter(p => p.category.id === newFilters.category);
+      }
+      if (newFilters.brand) {
+        products = products.filter(p => p.brand.id === newFilters.brand);
+      }
+      if (newFilters.minPrice) {
+        products = products.filter(p => p.price >= Number(newFilters.minPrice));
+      }
+      if (newFilters.maxPrice) {
+        products = products.filter(p => p.price <= Number(newFilters.maxPrice));
+      }
+      
+      const sortBy = newFilters.sortBy || 'date_newest'; // Default to newest if not specified
+      switch (sortBy) {
         case 'price_asc':
           products.sort((a, b) => a.price - b.price);
           break;
@@ -64,17 +89,19 @@ export default function HomePage() {
         case 'date_oldest':
           products.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
           break;
+        default: // Handle unrecognized sort or ensure default
+          products.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+          break;
       }
-    }
-
-
-    setFilteredProducts(products);
+      setFilteredProducts(products);
+      setLoading(false);
+    }, 300); // Shorter timeout for filter changes
   };
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
       <div className="md:col-span-1">
-        <ProductFilters onFilterChange={handleFilterChange} />
+        <ProductFilters onFilterChange={handleFilterChange} initialFilters={{sortBy: 'date_newest'}} />
       </div>
       <div className="md:col-span-3">
         {loading ? (
