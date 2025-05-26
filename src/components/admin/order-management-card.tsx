@@ -1,6 +1,6 @@
 
 "use client";
-import type { Order, OrderStatus } from '@/lib/types';
+import type { Order, OrderStatus, User } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -8,8 +8,9 @@ import { format } from 'date-fns';
 import { OrderStatusBadge } from '@/components/order-status-badge';
 import { ORDER_STATUSES } from '@/lib/constants';
 import Image from 'next/image';
-import { UserCircle, MapPin, Calendar, Edit3, Save } from 'lucide-react';
-import { useState } from 'react';
+import { UserCircle, MapPin, Calendar, Edit3, Save, Briefcase, Home } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { MOCK_PRODUCTS, MOCK_USERS } from '@/lib/mock-data'; // To find seller
 
 interface OrderManagementCardProps {
   order: Order;
@@ -20,6 +21,19 @@ interface OrderManagementCardProps {
 export function OrderManagementCard({ order, onUpdateStatus, isProcessing }: OrderManagementCardProps) {
   const [selectedStatus, setSelectedStatus] = useState<OrderStatus>(order.status);
   const [isEditingStatus, setIsEditingStatus] = useState(false);
+  const [seller, setSeller] = useState<User | null>(null);
+
+  useEffect(() => {
+    // Find the first product to determine the seller
+    if (order.items.length > 0) {
+      const firstItemId = order.items[0].id;
+      const product = MOCK_PRODUCTS.find(p => p.id === firstItemId);
+      if (product && product.sellerId) {
+        const foundSeller = MOCK_USERS.find(u => u.id === product.sellerId);
+        setSeller(foundSeller || null);
+      }
+    }
+  }, [order.items]);
 
   const handleStatusChange = (newStatus: OrderStatus) => {
     setSelectedStatus(newStatus);
@@ -30,8 +44,13 @@ export function OrderManagementCard({ order, onUpdateStatus, isProcessing }: Ord
     setIsEditingStatus(false);
   };
   
-  const { shippingAddress } = order;
-  const displayAddress = `${shippingAddress.houseAddress}${shippingAddress.roadNumber ? `, ${shippingAddress.roadNumber}` : ''}, ${shippingAddress.thana}, ${shippingAddress.district}, ${shippingAddress.division}, Bangladesh`;
+  const { shippingAddress: buyerAddress } = order;
+  const displayBuyerAddress = `${buyerAddress.houseAddress}${buyerAddress.roadNumber ? `, ${buyerAddress.roadNumber}` : ''}, ${buyerAddress.thana}, ${buyerAddress.district}, ${buyerAddress.division}, Bangladesh`;
+
+  const sellerAddress = seller?.defaultShippingAddress;
+  const displaySellerAddress = sellerAddress
+    ? `${sellerAddress.houseAddress}${sellerAddress.roadNumber ? `, ${sellerAddress.roadNumber}` : ''}, ${sellerAddress.thana}, ${sellerAddress.district}, ${sellerAddress.division}, Bangladesh`
+    : "N/A";
 
   return (
     <Card className="shadow-lg">
@@ -47,16 +66,28 @@ export function OrderManagementCard({ order, onUpdateStatus, isProcessing }: Ord
       <CardContent className="pt-4">
         <div className="grid md:grid-cols-2 gap-6 mb-4">
           <div>
-            <h4 className="font-semibold mb-1 text-md">Customer & Shipping</h4>
-            <div className="text-sm text-muted-foreground space-y-0.5">
-              <p className="flex items-center"><UserCircle className="h-4 w-4 mr-2 shrink-0" /> {shippingAddress.fullName} (User ID: {order.userId})</p>
-              <p className="flex items-start"><MapPin className="h-4 w-4 mr-2 shrink-0 mt-0.5" /> {displayAddress}</p>
+            <h4 className="font-semibold mb-1 text-md flex items-center"><UserCircle className="h-5 w-5 mr-2 text-primary" />Customer (Buyer)</h4>
+            <div className="text-sm text-muted-foreground space-y-0.5 pl-7">
+              <p>{buyerAddress.fullName} (ID: {order.userId})</p>
+              <p className="flex items-start"><Home className="h-4 w-4 mr-2 shrink-0 mt-0.5" /> {displayBuyerAddress}</p>
             </div>
           </div>
           <div>
-             <h4 className="font-semibold mb-1 text-md">Order Value</h4>
-             <p className="text-2xl font-bold text-primary">${order.totalAmount.toFixed(2)}</p>
+            <h4 className="font-semibold mb-1 text-md flex items-center"><Briefcase className="h-5 w-5 mr-2 text-primary" />Seller</h4>
+            {seller ? (
+              <div className="text-sm text-muted-foreground space-y-0.5 pl-7">
+                <p>{seller.name} (ID: {seller.id})</p>
+                <p className="flex items-start"><Home className="h-4 w-4 mr-2 shrink-0 mt-0.5" /> {displaySellerAddress}</p>
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground pl-7">Seller information not available.</p>
+            )}
           </div>
+        </div>
+        
+        <div className="mb-4 pt-3 border-t">
+            <h4 className="font-semibold mb-1 text-md">Order Value</h4>
+            <p className="text-2xl font-bold text-primary">${order.totalAmount.toFixed(2)}</p>
         </div>
         
         <h4 className="font-semibold mb-2 text-md border-t pt-3">Items ({order.items.length})</h4>
@@ -66,7 +97,7 @@ export function OrderManagementCard({ order, onUpdateStatus, isProcessing }: Ord
                 <Image src={item.imageUrl} alt={item.name} width={40} height={40} className="rounded aspect-square object-cover" data-ai-hint="product item"/>
                 <div>
                 <p className="font-medium">{item.name}</p>
-                <p className="text-xs text-muted-foreground">Qty: {item.quantity} &bull; ${item.price.toFixed(2)}</p>
+                <p className="text-xs text-muted-foreground">Qty: {item.quantity} &bull; Price: ${item.price.toFixed(2)} &bull; Subtotal: ${(item.quantity * item.price).toFixed(2)}</p>
                 </div>
             </div>
             ))}
