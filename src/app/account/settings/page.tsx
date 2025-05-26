@@ -1,7 +1,7 @@
 
 "use client";
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
 import { AddressForm } from '@/components/address-form';
 import { WithdrawalMethodForm, type WithdrawalFormData } from '@/components/withdrawal-method-form';
@@ -11,16 +11,20 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from '@/components/ui/dialog';
 import type { ShippingAddress, WithdrawalMethod, User } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Home, CreditCard, PlusCircle } from 'lucide-react';
+import { Loader2, Home, CreditCard, PlusCircle, AlertTriangle } from 'lucide-react';
+import { Alert, AlertTitle, AlertDescription as AlertDesc } from '@/components/ui/alert'; // Renamed AlertDescription to avoid conflict
 
 export default function AccountSettingsPage() {
   const { currentUser, isAuthenticated, loading: authLoading, updateCurrentUserData } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
 
   const [isAddressDialogOpen, setIsAddressDialogOpen] = useState(false);
   const [isWithdrawalDialogOpen, setIsWithdrawalDialogOpen] = useState(false);
   const [formSubmitting, setFormSubmitting] = useState(false);
+
+  const fromSellPage = searchParams.get('from') === 'sell';
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -31,7 +35,7 @@ export default function AccountSettingsPage() {
   const handleAddressSubmit = async (data: ShippingAddress) => {
     if (!currentUser) return;
     setFormSubmitting(true);
-    await new Promise(resolve => setTimeout(resolve, 500)); // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 500)); 
     
     updateCurrentUserData({ defaultShippingAddress: data });
 
@@ -43,14 +47,14 @@ export default function AccountSettingsPage() {
   const handleWithdrawalSubmit = async (data: WithdrawalFormData) => {
     if (!currentUser) return;
     setFormSubmitting(true);
-    await new Promise(resolve => setTimeout(resolve, 500)); // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 500)); 
 
     const newMethod: WithdrawalMethod = {
-      id: `wm-${Date.now()}`, // Simple unique ID for mock
+      id: `wm-${Date.now()}`, 
       type: data.type,
-      // @ts-ignore TODO: Fix type assertion for details based on data.type
+      // @ts-ignore 
       details: data.type === 'bkash' ? { accountNumber: data.accountNumber } : { bankName: data.bankName, accountHolderName: data.accountHolderName, accountNumber: data.accountNumber, routingNumber: data.routingNumber, branchName: data.branchName },
-      isDefault: !(currentUser.withdrawalMethods && currentUser.withdrawalMethods.length > 0), // First method is default
+      isDefault: !(currentUser.withdrawalMethods && currentUser.withdrawalMethods.length > 0),
       createdAt: new Date(),
     };
     
@@ -65,7 +69,6 @@ export default function AccountSettingsPage() {
   const handleRemoveWithdrawalMethod = (methodId: string) => {
     if (!currentUser) return;
      const updatedMethods = (currentUser.withdrawalMethods || []).filter(m => m.id !== methodId);
-     // If the removed method was default, and there are other methods, make the first one default.
      if (updatedMethods.length > 0 && !updatedMethods.some(m => m.isDefault)) {
         updatedMethods[0].isDefault = true;
      }
@@ -93,16 +96,37 @@ export default function AccountSettingsPage() {
   }
 
   const currentAddress = currentUser.defaultShippingAddress;
+  const noAddressSet = !currentAddress;
+  const noWithdrawalMethodsSet = !currentUser.withdrawalMethods || currentUser.withdrawalMethods.length === 0;
+  const profileIncompleteForSelling = fromSellPage && (noAddressSet || noWithdrawalMethodsSet);
+
 
   return (
     <div className="space-y-8 max-w-3xl mx-auto">
       <h1 className="text-3xl font-bold">Account Settings</h1>
+
+      {profileIncompleteForSelling && (
+        <Alert variant="destructive" className="mb-6">
+          <AlertTriangle className="h-5 w-5" />
+          <AlertTitle>Profile Incomplete for Selling</AlertTitle>
+          <AlertDesc> {/* Use renamed import */}
+            To list items for sale, please ensure you have:
+            <ul className="list-disc pl-5 mt-1">
+              {!currentAddress && <li>A saved shipping address.</li>}
+              {noWithdrawalMethodsSet && <li>At least one withdrawal method.</li>}
+            </ul>
+          </AlertDesc>
+        </Alert>
+      )}
 
       {/* Shipping Address Section */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2"><Home className="h-6 w-6 text-primary" /> Shipping Address</CardTitle>
           <CardDescription>Manage your default shipping address for orders.</CardDescription>
+           {fromSellPage && noAddressSet && (
+            <p className="text-sm text-destructive mt-1">A shipping address is required to sell items.</p>
+          )}
         </CardHeader>
         <CardContent>
           {currentAddress ? (
@@ -144,6 +168,9 @@ export default function AccountSettingsPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2"><CreditCard className="h-6 w-6 text-primary" /> Withdrawal Methods</CardTitle>
           <CardDescription>Manage your payment withdrawal methods for selling items.</CardDescription>
+          {fromSellPage && noWithdrawalMethodsSet && (
+             <p className="text-sm text-destructive mt-1">At least one withdrawal method is required to sell items.</p>
+          )}
         </CardHeader>
         <CardContent>
           {(currentUser.withdrawalMethods && currentUser.withdrawalMethods.length > 0) ? (

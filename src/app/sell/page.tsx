@@ -6,18 +6,38 @@ import { useAuth } from '@/contexts/auth-context';
 import { ProductUploadForm } from '@/components/product-upload-form';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, DollarSign } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 export default function SellPage() {
   const { currentUser, isAuthenticated, loading: authLoading } = useAuth();
   const router = useRouter();
+  const { toast } = useToast();
 
   useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
-      router.push('/login?redirect=/sell');
+    if (!authLoading) {
+      if (!isAuthenticated) {
+        router.push('/login?redirect=/sell');
+        return;
+      }
+      if (currentUser) {
+        const addressSet = !!currentUser.defaultShippingAddress;
+        const withdrawalSet = currentUser.withdrawalMethods && currentUser.withdrawalMethods.length > 0;
+        if (!addressSet || !withdrawalSet) {
+          toast({
+            title: "Profile Incomplete",
+            description: "Please complete your address and add a withdrawal method in settings to sell items.",
+            variant: "destructive",
+            duration: 5000,
+          });
+          router.push('/account/settings?from=sell');
+          return;
+        }
+      }
     }
-  }, [isAuthenticated, authLoading, router]);
+  }, [isAuthenticated, authLoading, router, currentUser, toast]);
 
-  if (authLoading || (!authLoading && !isAuthenticated)) {
+  if (authLoading || (!authLoading && !isAuthenticated) || 
+      (currentUser && (!currentUser.defaultShippingAddress || !currentUser.withdrawalMethods || currentUser.withdrawalMethods.length === 0)) ) {
     return (
       <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
