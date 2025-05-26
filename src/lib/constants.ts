@@ -1,16 +1,16 @@
 
-import type { OrderStatus, StaticDivision, StaticDistrict, StaticThana, Category, Brand, DeliveryChargeSettings, CommissionSetting, AdminNavItem } from './types';
+import type { OrderStatus, StaticDivision, StaticDistrict, StaticThana, Category, Brand, DeliveryChargeSettings, CommissionSetting, AdminNavItem, BusinessSettings, HeroBannerSlide, CustomPage } from './types';
 import {
   Smartphone, Laptop, Shirt, Armchair, BookOpen, Tag,
   Package as PackageIcon,
   PackageCheck, PackageX, Truck, CheckCircle2, Hourglass,
   Handshake as HandshakeIcon,
   LayoutDashboard, CheckSquare, ShoppingCart, Users as UsersIcon,
-  ListChecks, FolderTree, Tags as TagsIcon, Settings2,
-  Globe, Library, MapPin, Home, DollarSign, Briefcase, Edit, Trash2, CreditCard, PieChart, FileText, TrendingUp, Percent
+  ListChecks, FolderTree, Tags as TagsIcon, Settings2 as SettingsIcon, // Renamed Settings2 to SettingsIcon for clarity
+  Globe, Library, MapPin, Home, DollarSign, Briefcase, Edit, Trash2, CreditCard, PieChart, FileText, TrendingUp, Percent, Image as ImageIcon, FileType
 } from 'lucide-react';
 
-export const APP_NAME = '2ndhandbajar.com';
+export let APP_NAME = '2ndhandbajar.com'; // Made it mutable
 
 export const INITIAL_CATEGORIES: Category[] = [
   { id: 'electronics', name: 'Electronics' },
@@ -53,7 +53,7 @@ export const USER_NAVIGATION = [
   { name: 'My Orders', href: '/account/orders' },
   { name: 'My Products', href: '/account/my-products', icon: Briefcase },
   { name: 'My Earnings', href: '/account/my-earnings', icon: TrendingUp },
-  { name: 'Account Settings', href: '/account/settings', icon: Settings2 },
+  { name: 'Account Settings', href: '/account/settings', icon: SettingsIcon },
 ];
 
 export const ADMIN_NAVIGATION: AdminNavItem[] = [
@@ -75,7 +75,7 @@ export const ADMIN_NAVIGATION: AdminNavItem[] = [
     href: '/admin/orders/manage',
     icon: ShoppingCart,
     subItems: [
-      { name: 'Manage Orders', href: '/admin/orders/manage', icon: Settings2 },
+      { name: 'Manage Orders', href: '/admin/orders/manage', icon: SettingsIcon },
       { name: 'Processing Orders', href: '/admin/orders/processing', icon: PackageIcon },
       { name: 'Delivered Orders', href: '/admin/orders/delivered', icon: PackageCheck },
       { name: 'Cancelled Orders', href: '/admin/orders/cancelled', icon: PackageX },
@@ -100,6 +100,16 @@ export const ADMIN_NAVIGATION: AdminNavItem[] = [
     subItems: [
       { name: 'Withdrawal Requests', href: '/admin/financials/withdrawal-requests', icon: CreditCard },
       { name: 'Commissions', href: '/admin/financials/commissions', icon: Percent },
+    ]
+  },
+  {
+    name: 'General Settings',
+    href: '/admin/settings/business',
+    icon: SettingsIcon,
+    subItems: [
+      { name: 'Business Settings', href: '/admin/settings/business', icon: Briefcase },
+      { name: 'Banners (Sliders)', href: '/admin/settings/banners', icon: ImageIcon },
+      { name: 'Custom Pages', href: '/admin/settings/custom-pages', icon: FileType },
     ]
   },
   { name: 'Manage Users', href: '/admin/users', icon: UsersIcon },
@@ -163,9 +173,80 @@ export const DEFAULT_DELIVERY_CHARGES: DeliveryChargeSettings = {
   intraDistrict: 110,
   interDistrict: 130,
 };
-
 export const DELIVERY_CHARGES_STORAGE_KEY = 'deliveryChargeSettings';
 
-// New constants for Commission
 export const COMMISSION_SETTINGS_STORAGE_KEY = 'commissionSettings';
-export const DEFAULT_COMMISSION_SETTINGS: CommissionSetting[] = []; // Empty by default, admin sets them
+export const DEFAULT_COMMISSION_SETTINGS: CommissionSetting[] = [];
+
+// New constants for General Settings
+export const BUSINESS_SETTINGS_STORAGE_KEY = 'businessSettings';
+export const HERO_BANNERS_STORAGE_KEY = 'heroBannerSlides';
+export const CUSTOM_PAGES_STORAGE_KEY = 'customPages';
+
+export const DEFAULT_BUSINESS_SETTINGS: BusinessSettings = {
+  appName: '2ndhandbajar.com',
+  logoUrl: '/logo-placeholder.png', // Default path to a placeholder logo
+  primaryColor: '217 91% 60%', // HSL for --primary
+  secondaryColor: '216 34% 90%', // HSL for --secondary
+  faviconUrl: '/favicon.ico',
+};
+
+export const DEFAULT_HERO_BANNER_SLIDES: HeroBannerSlide[] = [
+  {
+    id: 'slide1',
+    imageUrl: 'https://placehold.co/1200x400.png',
+    imageHint: 'promotional banner electronics',
+    title: 'Latest Gadgets on Sale!',
+    description: 'Discover amazing deals on smartphones, laptops, and more.',
+    buttonText: 'Shop Electronics',
+    buttonLink: '/?category=electronics',
+    bgColor: 'bg-blue-600',
+    textColor: 'text-white',
+    isActive: true,
+  },
+  {
+    id: 'slide2',
+    imageUrl: 'https://placehold.co/1200x400.png',
+    imageHint: 'fashion sale banner',
+    title: 'Trendy Fashion Finds',
+    description: 'Upgrade your wardrobe with the latest styles.',
+    buttonText: 'Explore Fashion',
+    buttonLink: '/?category=fashion',
+    bgColor: 'bg-pink-500',
+    textColor: 'text-white',
+    isActive: true,
+  },
+  {
+    id: 'slide3',
+    imageUrl: 'https://placehold.co/1200x400.png',
+    imageHint: 'home decor banner',
+    title: 'Home Decor Specials',
+    description: 'Beautify your space with unique second-hand treasures.',
+    buttonText: 'View Home Goods',
+    buttonLink: '/?category=home-garden',
+    bgColor: 'bg-green-500',
+    textColor: 'text-white',
+    isActive: false, // Example of an inactive slide
+  },
+];
+
+export const MOCK_CUSTOM_PAGES: CustomPage[] = [ // Added MOCK_CUSTOM_PAGES export for consistency, though it's also used in mock-data.ts
+  {
+    id: 'page-privacy',
+    slug: 'privacy-policy',
+    title: 'Privacy Policy',
+    content: '## Our Privacy Policy\n\nThis is a placeholder for the privacy policy content. Please replace this with your actual policy.\n\nWe collect information to provide better services to all our users.',
+    createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // Approx 30 days ago
+    updatedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),  // Approx 5 days ago
+  },
+  {
+    id: 'page-terms',
+    slug: 'terms-and-conditions',
+    title: 'Terms and Conditions',
+    content: '## Terms and Conditions\n\nWelcome to our website. If you continue to browse and use this website, you are agreeing to comply with and be bound by the following terms and conditions of use...',
+    createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // Approx 30 days ago
+    updatedAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000), // Approx 10 days ago
+  },
+];
+
+  

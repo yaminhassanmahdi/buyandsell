@@ -43,10 +43,10 @@ export type CartItem = {
 export type ShippingAddress = {
   fullName: string;
   phoneNumber?: string;
-  country: string;
-  division: string;
-  district: string;
-  thana: string;
+  country: string; // Default to Bangladesh
+  division: string; // Selected Division Name
+  district: string; // Selected District Name
+  thana: string; // Selected Thana Name
   houseAddress: string;
   roadNumber?: string;
 };
@@ -62,8 +62,8 @@ export type Order = {
   deliveryChargeAmount?: number;
   shippingAddress: ShippingAddress;
   status: OrderStatus;
-  paymentStatus: PaymentStatus; // New field
-  platformCommission?: number; // New field: Commission earned by platform from this order
+  paymentStatus: PaymentStatus;
+  platformCommission?: number;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -147,8 +147,45 @@ export type WithdrawalRequest = {
   adminNote?: string;
 };
 
-// New type for Commission Settings
 export type CommissionSetting = {
-  categoryId: string; // Parent Category ID
-  percentage: number; // Commission percentage (e.g., 10 for 10%)
+  categoryId: string;
+  percentage: number;
+};
+
+export type AdminNavItem = {
+  name: string;
+  href: string;
+  icon: React.ComponentType<{ className?: string }>;
+  subItems?: AdminNavItem[];
+};
+
+// New types for General Settings
+export type BusinessSettings = {
+  logoUrl?: string;
+  primaryColor?: string; // e.g., HSL string "217 91% 60%" or hex "#3B82F6"
+  secondaryColor?: string; // e.g., HSL string "216 34% 90%" or hex "#E0E7FF"
+  faviconUrl?: string;
+  appName?: string; // Added for business name
+};
+
+export type HeroBannerSlide = {
+  id: string;
+  imageUrl: string;
+  imageHint: string;
+  title: string;
+  description: string;
+  buttonText: string;
+  buttonLink: string;
+  bgColor?: string; // Optional background color for the slide overlay
+  textColor?: string; // Optional text color for the slide overlay
+  isActive: boolean; // To control if the slide is shown
+};
+
+export type CustomPage = {
+  id: string;
+  slug: string; // URL-friendly identifier (e.g., "privacy-policy")
+  title: string; // Page title
+  content: string; // HTML or Markdown content
+  createdAt: Date;
+  updatedAt: Date;
 };

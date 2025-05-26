@@ -1,6 +1,6 @@
 
-import type { Product, User, Order, ShippingAddress, Category, SubCategory, Brand, WithdrawalRequest, PaymentStatus } from './types';
-import { INITIAL_CATEGORIES, INITIAL_BRANDS } from './constants';
+import type { Product, User, Order, ShippingAddress, Category, SubCategory, Brand, WithdrawalRequest, PaymentStatus, HeroBannerSlide, CustomPage } from './types';
+import { INITIAL_CATEGORIES, INITIAL_BRANDS, DEFAULT_HERO_BANNER_SLIDES, MOCK_CUSTOM_PAGES as DEFAULT_CUSTOM_PAGES } from './constants'; // DEFAULT_HERO_BANNER_SLIDES for admin panel default
 
 const createPastDate = (daysAgo: number): Date => {
   const date = new Date();
@@ -214,8 +214,8 @@ export const MOCK_ORDERS: Order[] = [
     deliveryChargeAmount: 70,
     shippingAddress: MOCK_USERS.find(u => u.id === 'user1')?.defaultShippingAddress || MOCK_SHIPPING_ADDRESS_BANGLADESH,
     status: 'delivered',
-    paymentStatus: 'paid', // Added
-    platformCommission: 0, // Example
+    paymentStatus: 'paid',
+    platformCommission: 0,
     createdAt: createPastDate(7),
     updatedAt: createPastDate(3),
   },
@@ -230,8 +230,8 @@ export const MOCK_ORDERS: Order[] = [
     deliveryChargeAmount: 130,
     shippingAddress: { ...(MOCK_USERS.find(u => u.id === 'user1')?.defaultShippingAddress || MOCK_SHIPPING_ADDRESS_BANGLADESH), fullName: 'John Doe Updated', district: 'Gazipur', thana: 'Gazipur Sadar' },
     status: 'delivered',
-    paymentStatus: 'unpaid', // Added
-    platformCommission: 0, // Example
+    paymentStatus: 'unpaid',
+    platformCommission: 0,
     createdAt: createPastDate(3),
     updatedAt: createPastDate(1),
   },
@@ -245,8 +245,8 @@ export const MOCK_ORDERS: Order[] = [
     deliveryChargeAmount: 110,
     shippingAddress: { ...MOCK_SHIPPING_ADDRESS_BANGLADESH, fullName: 'Jane Smith BD', division: 'Chittagong', district: 'Chittagong', thana: 'Kotwali (Chittagong)' },
     status: 'processing',
-    paymentStatus: 'unpaid', // Added
-    platformCommission: 0, // Example
+    paymentStatus: 'unpaid',
+    platformCommission: 0,
     createdAt: createPastDate(1),
     updatedAt: createPastDate(0),
   },
@@ -265,3 +265,12 @@ export let MOCK_WITHDRAWAL_REQUESTS: WithdrawalRequest[] = [
     requestedAt: createPastDate(2),
   }
 ];
+
+// MOCK_HERO_BANNER_SLIDES is removed from here.
+// Its default definition is now in src/lib/constants.ts as DEFAULT_HERO_BANNER_SLIDES.
+// The admin panel will use localStorage, seeded by this default.
+
+// MOCK_CUSTOM_PAGES is also managed by localStorage, seeded by DEFAULT_CUSTOM_PAGES from constants.ts
+export let MOCK_CUSTOM_PAGES: CustomPage[] = [...DEFAULT_CUSTOM_PAGES];
+
+  
