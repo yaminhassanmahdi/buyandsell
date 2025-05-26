@@ -121,3 +121,10 @@ export type StaticThana = {
   name: string;
   districtId: string; 
 };
+
+// New type for delivery charge settings
+export interface DeliveryChargeSettings {
+  intraThana: number;
+  intraDistrict: number;
+  interDistrict: number;
+}
