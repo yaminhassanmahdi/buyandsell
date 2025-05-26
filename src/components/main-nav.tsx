@@ -5,10 +5,16 @@ import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { SITE_NAVIGATION } from '@/lib/constants';
 import { useAuth } from '@/contexts/auth-context';
+import React, { useState, useEffect } from 'react';
 
 export function MainNav({ className, ...props }: React.HTMLAttributes<HTMLElement>) {
   const pathname = usePathname();
   const { isAuthenticated } = useAuth();
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   return (
     <nav
@@ -16,8 +22,10 @@ export function MainNav({ className, ...props }: React.HTMLAttributes<HTMLElemen
       {...props}
     >
       {SITE_NAVIGATION.map((item) => {
-        if (item.authRequired && !isAuthenticated) {
-          return null;
+        if (item.authRequired) {
+          if (!isClient || !isAuthenticated) {
+            return null; // Don't render auth-required links on server or if not authenticated on client
+          }
         }
         return (
           <Link
