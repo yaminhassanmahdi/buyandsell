@@ -29,11 +29,13 @@ const productSchema = z.object({
   description: z.string().min(10, "Description must be at least 10 characters.").max(1000),
   price: z.coerce.number().min(0.01, "Price must be a positive number."),
   categoryId: z.string().min(1, "Please select a parent category."),
-  subCategoryId: z.string().optional(),
+  subCategoryId: z.string().optional(), // Stays as string or empty string in form, converted to undefined on submit
   brandId: z.string().min(1, "Please select a brand."),
 });
 
 type ProductFormData = z.infer<typeof productSchema>;
+
+const VALUE_FOR_NO_SUBCATEGORY_SELECTED = "__NONE_SUBCATEGORY__";
 
 export function ProductUploadForm() {
   const { currentUser } = useAuth();
@@ -53,7 +55,7 @@ export function ProductUploadForm() {
       description: "",
       price: 0,
       categoryId: "",
-      subCategoryId: "",
+      subCategoryId: "", // Initialize as empty string for placeholder to work
       brandId: "",
     },
   });
@@ -69,15 +71,16 @@ export function ProductUploadForm() {
 
   useEffect(() => {
     if (watchedCategoryId) {
-      setAvailableSubCategories(subCategories.filter(sc => sc.parentCategoryId === watchedCategoryId));
-      // Reset subCategoryId if parent changes and current subCategory is not valid for new parent
+      const filteredSubs = subCategories.filter(sc => sc.parentCategoryId === watchedCategoryId);
+      setAvailableSubCategories(filteredSubs);
+      
       const currentSubCategoryId = form.getValues("subCategoryId");
-      if (currentSubCategoryId && !subCategories.some(sc => sc.id === currentSubCategoryId && sc.parentCategoryId === watchedCategoryId)) {
-        form.setValue("subCategoryId", "");
+      if (currentSubCategoryId && !filteredSubs.some(sc => sc.id === currentSubCategoryId)) {
+        form.setValue("subCategoryId", ""); // Reset if current sub-category is no longer valid
       }
     } else {
       setAvailableSubCategories([]);
-      form.setValue("subCategoryId", "");
+      form.setValue("subCategoryId", ""); // Reset if no parent category
     }
   }, [watchedCategoryId, subCategories, form]);
 
@@ -99,7 +102,7 @@ export function ProductUploadForm() {
       imageUrl: `https://placehold.co/600x400.png`, 
       imageHint: `${values.name.substring(0,15)} product`,
       categoryId: values.categoryId,
-      subCategoryId: values.subCategoryId || undefined, // Ensure it's undefined if empty string
+      subCategoryId: values.subCategoryId === "" ? undefined : values.subCategoryId, // Convert empty string to undefined
       brandId: values.brandId,
       sellerId: currentUser.id,
       sellerName: currentUser.name,
@@ -115,8 +118,7 @@ export function ProductUploadForm() {
     });
     setIsLoading(false);
     form.reset();
-    setAvailableSubCategories([]); // Reset subcategories dropdown after submission
-    // router.push('/'); // Or redirect to a "my products" page
+    setAvailableSubCategories([]); 
   }
 
   return (
@@ -168,7 +170,7 @@ export function ProductUploadForm() {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Parent Category</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value} defaultValue="">
+              <Select onValueChange={field.onChange} value={field.value}>
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder="Select a parent category" />
@@ -192,9 +194,8 @@ export function ProductUploadForm() {
             <FormItem>
               <FormLabel>Sub-Category (Optional)</FormLabel>
               <Select 
-                onValueChange={field.onChange} 
+                onValueChange={(value) => field.onChange(value === VALUE_FOR_NO_SUBCATEGORY_SELECTED ? "" : value)} 
                 value={field.value} 
-                defaultValue=""
                 disabled={!watchedCategoryId || availableSubCategories.length === 0}
               >
                 <FormControl>
@@ -203,7 +204,7 @@ export function ProductUploadForm() {
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value="">-- No Sub-Category --</SelectItem>
+                  <SelectItem value={VALUE_FOR_NO_SUBCATEGORY_SELECTED}>-- No Sub-Category --</SelectItem>
                   {availableSubCategories.map(subCat => (
                     <SelectItem key={subCat.id} value={subCat.id}>{subCat.name}</SelectItem>
                   ))}
@@ -220,7 +221,7 @@ export function ProductUploadForm() {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Brand</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value} defaultValue="">
+              <Select onValueChange={field.onChange} value={field.value}>
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder="Select a brand" />
