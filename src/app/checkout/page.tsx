@@ -11,34 +11,48 @@ import type { ShippingAddress, Order } from '@/lib/types';
 import { MOCK_ORDERS } from '@/lib/mock-data'; 
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
-import { Loader2, ShieldCheck } from 'lucide-react';
+import { Loader2, ShieldCheck, Edit3, Home } from 'lucide-react';
+
+const formatAddressCompact = (address: ShippingAddress): string => {
+  return `${address.fullName}, ${address.houseAddress}${address.roadNumber ? `, ${address.roadNumber}` : ''}, ${address.thana}, ${address.district}, ${address.division}`;
+};
 
 export default function CheckoutPage() {
   const { currentUser, isAuthenticated, loading: authLoading, updateCurrentUserData } = useAuth();
   const { cartItems, getCartTotal, clearCart, itemCount } = useCart();
   const router = useRouter();
   const { toast } = useToast();
-  const [shippingAddress, setShippingAddress] = useState<ShippingAddress | null>(null);
+  
+  // This state holds the address confirmed for *this specific order*
+  const [orderShippingAddress, setOrderShippingAddress] = useState<ShippingAddress | null>(null);
+  const [isEditingAddress, setIsEditingAddress] = useState(false);
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
       router.push('/login?redirect=/checkout');
+      return; // Early return
     }
     if (!authLoading && itemCount === 0) {
       router.push('/cart'); 
+      return; // Early return
     }
-  }, [isAuthenticated, authLoading, router, itemCount]);
 
-  // Effect to set initial shipping address from profile or keep it null
-  useEffect(() => {
-    if (currentUser?.defaultShippingAddress) {
-      setShippingAddress(currentUser.defaultShippingAddress);
+    // Initialize address editing state and orderShippingAddress
+    if (currentUser) {
+      if (currentUser.defaultShippingAddress) {
+        setOrderShippingAddress(currentUser.defaultShippingAddress);
+        setIsEditingAddress(false); // Collapse form if default address exists
+      } else {
+        setIsEditingAddress(true); // Open form if no default address
+      }
     }
-  }, [currentUser?.defaultShippingAddress]);
+  }, [isAuthenticated, authLoading, router, itemCount, currentUser]);
 
 
   const initialAddressFormData = (): Partial<ShippingAddress> => {
+    // Prefill form with orderShippingAddress if available, otherwise current user's default, or empty
+    if (orderShippingAddress) return orderShippingAddress;
     if (currentUser?.defaultShippingAddress) {
       return currentUser.defaultShippingAddress;
     }
@@ -47,18 +61,19 @@ export default function CheckoutPage() {
 
 
   const handleAddressSubmit = (data: ShippingAddress) => {
-    setShippingAddress(data); // For the current order
+    setOrderShippingAddress(data); // Set for the current order
     if (currentUser) {
       updateCurrentUserData({ defaultShippingAddress: data }); // Update user's default
     }
-    toast({ title: "Address Confirmed", description: "Shipping address for this order has been confirmed." });
+    toast({ title: "Address Confirmed", description: "Shipping address for this order has been updated." });
+    setIsEditingAddress(false); // Collapse the form after submission
   };
 
   const handlePlaceOrder = async () => {
-    if (!shippingAddress || !currentUser) {
+    if (!orderShippingAddress || !currentUser) {
         toast({
             title: "Shipping Address Required",
-            description: "Please provide a shipping address to place your order.",
+            description: "Please provide and confirm a shipping address to place your order.",
             variant: "destructive",
         });
         return;
@@ -72,7 +87,7 @@ export default function CheckoutPage() {
       userId: currentUser.id,
       items: cartItems.map(item => ({ ...item })), 
       totalAmount: getCartTotal(),
-      shippingAddress: shippingAddress, 
+      shippingAddress: orderShippingAddress, 
       status: 'pending', 
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -103,15 +118,41 @@ export default function CheckoutPage() {
         <Card className="shadow-lg mb-8">
           <CardHeader>
             <CardTitle className="text-2xl">Shipping Address</CardTitle>
-            <CardDescription>
-              {shippingAddress ? "Confirm or update your shipping address." : "Enter your shipping details for Bangladesh."}
-            </CardDescription>
+             {!isEditingAddress && orderShippingAddress && (
+                <CardDescription>
+                    Your order will be shipped to the address below.
+                </CardDescription>
+             )}
+             {isEditingAddress && (
+                <CardDescription>
+                 {orderShippingAddress ? "Update your shipping address." : "Enter your shipping details for Bangladesh."}
+                </CardDescription>
+             )}
           </CardHeader>
           <CardContent>
-            <AddressForm 
-              onSubmit={handleAddressSubmit} 
-              initialData={initialAddressFormData()} 
-            />
+            {isEditingAddress ? (
+              <AddressForm 
+                onSubmit={handleAddressSubmit} 
+                initialData={initialAddressFormData()} 
+              />
+            ) : orderShippingAddress ? (
+              <div className="space-y-3">
+                <div className="p-4 border rounded-md bg-muted/50">
+                    <p className="font-semibold flex items-center gap-2"><Home className="h-5 w-5 text-primary" /> {orderShippingAddress.fullName}</p>
+                    <address className="text-sm text-muted-foreground not-italic pl-7 space-y-0.5">
+                        <p>{orderShippingAddress.houseAddress}{orderShippingAddress.roadNumber ? `, ${orderShippingAddress.roadNumber}` : ''}</p>
+                        <p>{orderShippingAddress.thana}, {orderShippingAddress.district}</p>
+                        <p>{orderShippingAddress.division}, {orderShippingAddress.country}</p>
+                        {orderShippingAddress.phoneNumber && <p>Phone: {orderShippingAddress.phoneNumber}</p>}
+                    </address>
+                </div>
+                <Button variant="outline" onClick={() => setIsEditingAddress(true)} className="w-full sm:w-auto">
+                  <Edit3 className="mr-2 h-4 w-4" /> Edit Address
+                </Button>
+              </div>
+            ) : (
+                 <p className="text-muted-foreground">Please add a shipping address.</p> // Should not happen if logic is correct
+            )}
           </CardContent>
         </Card>
 
@@ -168,7 +209,7 @@ export default function CheckoutPage() {
               onClick={handlePlaceOrder} 
               className="w-full" 
               size="lg"
-              disabled={isPlacingOrder || cartItems.length === 0} // shippingAddress check is handled by handlePlaceOrder
+              disabled={isPlacingOrder || cartItems.length === 0 || !orderShippingAddress}
             >
               {isPlacingOrder ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -179,8 +220,8 @@ export default function CheckoutPage() {
             </Button>
           </CardFooter>
         </Card>
-        {!shippingAddress && cartItems.length > 0 && (
-          <p className="text-xs text-destructive text-center mt-2">Please complete your shipping address to proceed.</p>
+        {!orderShippingAddress && cartItems.length > 0 && (
+          <p className="text-xs text-destructive text-center mt-2">Please complete and confirm your shipping address to proceed.</p>
         )}
       </div>
     </div>
