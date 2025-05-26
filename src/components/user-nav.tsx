@@ -30,6 +30,7 @@ export function UserNav() {
     setIsClient(true);
   }, []);
 
+  // Determine the main div class name consistently
   const mainDivClassName = currentUser ? "flex items-center gap-2 md:gap-4" : "flex items-center gap-2";
 
   if (currentUser) {
@@ -137,45 +138,44 @@ export function UserNav() {
         </Sheet>
       )}
       {!isClient && ( // Render a placeholder for the cart icon on SSR for unauthenticated users
-        <Button variant="ghost" size="icon" aria-label="Shopping Cart" className="relative">
+        <Button variant="ghost" size="icon" aria-label="Shopping Cart" className="relative" type="button">
           <ShoppingCart className="h-5 w-5" />
         </Button>
       )}
 
-      {isClient && (
+      {isClient ? (
         <>
           <Link href="/login" passHref className="hidden md:inline-flex">
-            <Button variant="ghost">
+            <Button variant="ghost" type="button">
               <UserCircle className="mr-2 h-4 w-4" /> Login
             </Button>
           </Link>
           <Link href="/sell" passHref className="hidden md:inline-flex">
-            <Button variant="outline">
+            <Button variant="outline" type="button">
               <DollarSign className="mr-2 h-4 w-4" /> Sell Your Item
             </Button>
           </Link>
           <Link href="/login" passHref className="md:hidden">
-            <Button variant="ghost" size="icon">
+            <Button variant="ghost" size="icon" type="button">
                 <UserCircle className="h-5 w-5" />
                 <span className="sr-only">Login</span>
             </Button>
          </Link>
         </>
-      )}
-      {!isClient && ( // SSR placeholders for login/sell buttons to maintain structure
+      ) : ( // SSR placeholders for login/sell buttons to maintain structure
         <>
-          <div className="hidden md:inline-flex"> {/* Placeholder for desktop Login */}
-            <Button variant="ghost" disabled style={{ visibility: 'hidden' }}>
+          <div className="hidden md:inline-flex"> 
+            <Button variant="ghost" disabled style={{ visibility: 'hidden' }} type="button">
               <UserCircle className="mr-2 h-4 w-4" /> Login
             </Button>
           </div>
-           <div className="hidden md:inline-flex"> {/* Placeholder for desktop Sell */}
-            <Button variant="outline" disabled style={{ visibility: 'hidden' }}>
+           <div className="hidden md:inline-flex"> 
+            <Button variant="outline" disabled style={{ visibility: 'hidden' }} type="button">
               <DollarSign className="mr-2 h-4 w-4" /> Sell Your Item
             </Button>
           </div>
-          <div className="md:hidden"> {/* Placeholder for mobile Login */}
-            <Button variant="ghost" size="icon" disabled style={{ visibility: 'hidden' }}>
+          <div className="md:hidden"> 
+            <Button variant="ghost" size="icon" disabled style={{ visibility: 'hidden' }} type="button">
                 <UserCircle className="h-5 w-5" />
             </Button>
           </div>

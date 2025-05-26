@@ -5,13 +5,15 @@ import { MOCK_WITHDRAWAL_REQUESTS } from '@/lib/mock-data';
 import type { WithdrawalRequest, WithdrawalRequestStatus } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogClose } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, CheckCircle, XCircle, Edit, CreditCard, FileText } from 'lucide-react';
 import { format } from 'date-fns';
+import { Label } from '@/components/ui/label'; // Added missing import
+import { DialogFooter } from '@/components/ui/dialog'; // Added missing import
 
 export default function AdminWithdrawalRequestsPage() {
   const [requests, setRequests] = useState<WithdrawalRequest[]>([]);
@@ -207,3 +209,4 @@ export default function AdminWithdrawalRequestsPage() {
     </div>
   );
 }
+
