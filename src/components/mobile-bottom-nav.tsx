@@ -40,10 +40,10 @@ export function MobileBottomNav() {
 
   return (
     <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 border-t bg-background shadow-t-lg print:hidden">
-      <div className="container mx-auto flex h-16 items-center justify-between px-2 gap-1 sm:gap-2">
-        {/* Checkout Button Section */}
-        <div className="w-3/5 flex"> {/* Approx 60% width */}
-          {itemCount > 0 && isClient ? (
+      <div className="container mx-auto flex h-16 items-center px-2 gap-1 sm:gap-2">
+        {/* Checkout Button Section - Appears only if cart has items */}
+        {itemCount > 0 && isClient && (
+          <div className="w-3/5 flex"> {/* Takes up ~60% width */}
             <Button asChild variant="default" className="w-full h-10 sm:h-11 p-0 overflow-hidden shadow-md rounded-lg">
               <Link href="/checkout" className="flex items-stretch w-full h-full">
                 <span className="flex items-center justify-center flex-grow px-2 text-sm font-medium text-primary-foreground whitespace-nowrap">
@@ -54,14 +54,14 @@ export function MobileBottomNav() {
                 </span>
               </Link>
             </Button>
-          ) : (
-            // Placeholder div to maintain layout when cart is empty
-            <div className="w-full h-10 sm:h-11"></div> 
-          )}
-        </div>
+          </div>
+        )}
 
-        {/* Navigation Icons Section */}
-        <nav className="w-2/5 flex justify-around items-center h-full"> {/* Approx 40% width */}
+        {/* Navigation Icons Section - Adjusts width based on checkout button visibility */}
+        <nav className={cn(
+          "flex justify-around items-center h-full",
+          (itemCount > 0 && isClient) ? "w-2/5" : "w-full" // Takes remaining ~40% or full width
+        )}>
           {finalNavItems.map((item) => {
             let isActive = false;
             if (item.id === 'home') {
@@ -72,7 +72,6 @@ export function MobileBottomNav() {
               isActive = pathname === item.href;
             }
             
-            // For categories link, append a query param if not already filtered by category, to hint at category view intent
             const categoryLinkSuffix = (item.id === 'categories' && !searchParams.has('category')) 
                                      ? (item.href.includes('?') ? '&openCategories=true' : '?openCategories=true') 
                                      : '';
