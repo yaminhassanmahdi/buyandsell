@@ -65,7 +65,7 @@ export default function HomePage() {
           CATEGORIES.map(category => (
             <div key={category.id} className="mb-12">
               <Skeleton className="h-8 w-1/2 md:w-1/4 mb-6" />
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-6"> {/* Adjusted for mobile */}
                 {[...Array(PRODUCTS_PER_CATEGORY_HOME)].map((_, i) => (
                   <Card key={i} className="flex flex-col overflow-hidden rounded-lg">
                     <Skeleton className="aspect-[4/3] w-full" />
@@ -97,7 +97,7 @@ export default function HomePage() {
                 )}
               </div>
               {products.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+                <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6"> {/* Adjusted for mobile */}
                   {products.map(product => (
                     <ProductCard key={product.id} product={product} />
                   ))}
