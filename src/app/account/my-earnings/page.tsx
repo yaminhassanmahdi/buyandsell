@@ -2,20 +2,22 @@
 "use client";
 import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link'; // Added Link import
+import Link from 'next/link';
 import { useAuth } from '@/contexts/auth-context';
-import { MOCK_ORDERS, MOCK_PRODUCTS, MOCK_WITHDRAWAL_REQUESTS } from '@/lib/mock-data';
-import type { WithdrawalRequest, WithdrawalRequestStatus, WithdrawalMethod, User } from '@/lib/types';
+import { MOCK_ORDERS, MOCK_PRODUCTS, MOCK_WITHDRAWAL_REQUESTS, MOCK_CATEGORIES } from '@/lib/mock-data';
+import type { WithdrawalRequest, WithdrawalRequestStatus, WithdrawalMethod, User, CommissionSetting } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogClose, DialogFooter } from '@/components/ui/dialog'; // Added DialogFooter
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogClose, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, DollarSign, TrendingUp, History, CheckCircle2, XCircle, AlertTriangle, PlusCircle } from 'lucide-react';
+import { Loader2, DollarSign, TrendingUp, History, CheckCircle2, XCircle, AlertTriangle, PlusCircle, Percent } from 'lucide-react';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
+import useLocalStorage from '@/hooks/use-local-storage';
+import { COMMISSION_SETTINGS_STORAGE_KEY, DEFAULT_COMMISSION_SETTINGS } from '@/lib/constants';
 
 const getWithdrawalMethodSummary = (method: WithdrawalMethod | undefined): string => {
     if (!method) return "Unknown Method";
@@ -31,11 +33,16 @@ export default function MyEarningsPage() {
 
   const [pageLoading, setPageLoading] = useState(true);
   const [userWithdrawalRequests, setUserWithdrawalRequests] = useState<WithdrawalRequest[]>([]);
-  
+
   const [isWithdrawDialogOpen, setIsWithdrawDialogOpen] = useState(false);
   const [withdrawAmount, setWithdrawAmount] = useState<number | string>('');
   const [selectedWithdrawalMethodId, setSelectedWithdrawalMethodId] = useState<string>('');
   const [formSubmitting, setFormSubmitting] = useState(false);
+
+  const [commissionSettings] = useLocalStorage<CommissionSetting[]>(
+    COMMISSION_SETTINGS_STORAGE_KEY,
+    DEFAULT_COMMISSION_SETTINGS
+  );
 
   useEffect(() => {
     if (!authLoading) {
@@ -50,9 +57,7 @@ export default function MyEarningsPage() {
         setUserWithdrawalRequests(requests);
         setPageLoading(false);
       } else {
-        // If currentUser is null even after authLoading is false (should not happen if isAuthenticated is true)
-        // Handle appropriately, maybe redirect or show error
-        setPageLoading(false); // Still stop loading
+        setPageLoading(false);
       }
     }
   }, [isAuthenticated, authLoading, router, currentUser]);
@@ -61,12 +66,15 @@ export default function MyEarningsPage() {
     if (!currentUser) return 0;
     let earned = 0;
     MOCK_ORDERS.forEach(order => {
-      if (order.status === 'delivered') {
+      if (order.status === 'delivered' && order.paymentStatus === 'paid') {
         order.items.forEach(item => {
           const product = MOCK_PRODUCTS.find(p => p.id === item.id);
-          // Ensure product.sellerId is checked against currentUser.id
           if (product && product.sellerId === currentUser.id) {
-            earned += item.price * item.quantity;
+            const itemValue = item.price * item.quantity;
+            const categoryCommissionSetting = commissionSettings.find(cs => cs.categoryId === product.categoryId);
+            const commissionPercentage = categoryCommissionSetting ? categoryCommissionSetting.percentage : 0;
+            const commissionAmount = itemValue * (commissionPercentage / 100);
+            earned += (itemValue - commissionAmount);
           }
         });
       }
@@ -74,9 +82,9 @@ export default function MyEarningsPage() {
     const pendingOrApprovedWithdrawals = MOCK_WITHDRAWAL_REQUESTS
       .filter(req => req.userId === currentUser.id && (req.status === 'pending' || req.status === 'approved'))
       .reduce((sum, req) => sum + req.amount, 0);
-    
+
     return Math.max(0, earned - pendingOrApprovedWithdrawals);
-  }, [currentUser]);
+  }, [currentUser, commissionSettings]);
 
   const totalWithdrawn = useMemo(() => {
     if (!currentUser) return 0;
@@ -122,8 +130,9 @@ export default function MyEarningsPage() {
       requestedAt: new Date(),
     };
     MOCK_WITHDRAWAL_REQUESTS.push(newRequest);
+    // Optimistically update UI or re-fetch/re-calculate pendingEarnings
     setUserWithdrawalRequests(prev => [newRequest, ...prev].sort((a, b) => new Date(b.requestedAt).getTime() - new Date(a.requestedAt).getTime()));
-    
+
     toast({ title: "Withdrawal Requested", description: `Your request for $${amount.toFixed(2)} has been submitted.` });
     setIsWithdrawDialogOpen(false);
     setWithdrawAmount('');
@@ -139,8 +148,16 @@ export default function MyEarningsPage() {
       </div>
     );
   }
+  if (!currentUser) { // Should be caught by isAuthenticated check earlier
+    return (
+      <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
+        <AlertTriangle className="h-12 w-12 text-destructive" />
+        <p className="ml-4">Could not load user data.</p>
+      </div>
+    );
+  }
 
-  const noWithdrawalMethods = !currentUser?.withdrawalMethods || currentUser.withdrawalMethods.length === 0;
+  const noWithdrawalMethods = !currentUser.withdrawalMethods || currentUser.withdrawalMethods.length === 0;
 
   return (
     <div className="space-y-8">
@@ -158,13 +175,13 @@ export default function MyEarningsPage() {
           </CardHeader>
           <CardContent>
             <p className="text-4xl font-bold text-green-600">${pendingEarnings.toFixed(2)}</p>
-            <CardDescription className="text-green-500 mt-1">Available for withdrawal.</CardDescription>
+            <CardDescription className="text-green-500 mt-1">Available for withdrawal after platform commission. Earnings are credited after orders are delivered & paid.</CardDescription>
           </CardContent>
           <CardFooter>
             <Dialog open={isWithdrawDialogOpen} onOpenChange={setIsWithdrawDialogOpen}>
               <DialogTrigger asChild>
-                <Button 
-                  className="w-full bg-green-600 hover:bg-green-700 text-white" 
+                <Button
+                  className="w-full bg-green-600 hover:bg-green-700 text-white"
                   disabled={pendingEarnings <= 0 || noWithdrawalMethods}
                 >
                   <PlusCircle className="mr-2 h-4 w-4" /> Withdraw Funds
@@ -183,7 +200,7 @@ export default function MyEarningsPage() {
                         <SelectValue placeholder="Select a method" />
                       </SelectTrigger>
                       <SelectContent>
-                        {currentUser?.withdrawalMethods?.map(method => (
+                        {currentUser.withdrawalMethods?.map(method => (
                           <SelectItem key={method.id} value={method.id}>
                             {getWithdrawalMethodSummary(method)} {method.isDefault && "(Default)"}
                           </SelectItem>
@@ -193,9 +210,9 @@ export default function MyEarningsPage() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="withdraw-amount">Amount ($)</Label>
-                    <Input 
-                      id="withdraw-amount" 
-                      type="number" 
+                    <Input
+                      id="withdraw-amount"
+                      type="number"
                       step="0.01"
                       value={withdrawAmount}
                       onChange={(e) => setWithdrawAmount(e.target.value)}
@@ -219,6 +236,11 @@ export default function MyEarningsPage() {
                     Please <Link href="/account/settings" className="underline">add a withdrawal method</Link> to request funds.
                 </p>
             )}
+             {pendingEarnings <= 0 && (
+                 <p className="text-xs text-muted-foreground mt-2 text-center">
+                    No earnings available for withdrawal.
+                </p>
+            )}
           </CardFooter>
         </Card>
 
@@ -232,7 +254,7 @@ export default function MyEarningsPage() {
           </CardContent>
         </Card>
       </div>
-      
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2"><History className="h-6 w-6 text-primary" /> Withdrawal History</CardTitle>
@@ -247,12 +269,12 @@ export default function MyEarningsPage() {
                 <div key={req.id} className="p-4 border rounded-lg hover:shadow-sm">
                   <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2 mb-2">
                     <p className="font-semibold text-lg">${req.amount.toFixed(2)}</p>
-                    <Badge 
+                    <Badge
                         variant={
                             req.status === 'approved' ? 'default' :
                             req.status === 'pending' ? 'secondary' :
                             'destructive'
-                        } 
+                        }
                         className="capitalize self-start sm:self-center"
                     >
                         {req.status}

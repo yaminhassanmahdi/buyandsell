@@ -3,7 +3,7 @@
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState, useMemo } from 'react';
 import { MOCK_ORDERS, MOCK_PRODUCTS, MOCK_USERS } from '@/lib/mock-data';
-import type { Order, Product as ProductType, User as UserType, ShippingAddress, CartItem, OrderStatus, WithdrawalMethod } from '@/lib/types';
+import type { Order, Product as ProductType, User as UserType, ShippingAddress, CartItem, OrderStatus, PaymentStatus, WithdrawalMethod, CommissionSetting } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -11,13 +11,15 @@ import { Separator } from '@/components/ui/separator';
 import { OrderStatusBadge } from '@/components/order-status-badge';
 import Image from 'next/image';
 import { format } from 'date-fns';
-import { ArrowLeft, UserCircle, MapPin, CalendarDays, ShoppingBag, Briefcase, Home, Loader2, CreditCard, Smartphone, Banknote, Save, Truck } from 'lucide-react';
-import { ORDER_STATUSES } from '@/lib/constants';
+import { ArrowLeft, UserCircle, MapPin, CalendarDays, ShoppingBag, Briefcase, Home, Loader2, CreditCard, Smartphone, Banknote, Save, Truck, AlertTriangle } from 'lucide-react';
+import { ORDER_STATUSES, PAYMENT_STATUSES, COMMISSION_SETTINGS_STORAGE_KEY, DEFAULT_COMMISSION_SETTINGS } from '@/lib/constants';
 import { useToast } from '@/hooks/use-toast';
+import { Badge } from '@/components/ui/badge';
+import useLocalStorage from '@/hooks/use-local-storage';
 
 interface EnrichedOrderItem extends CartItem {
   productDetails?: ProductType;
-  sellerDetails?: UserType; 
+  sellerDetails?: UserType;
 }
 
 interface EnrichedOrder extends Omit<Order, 'items'> {
@@ -35,10 +37,13 @@ export default function AdminOrderDetailPage() {
   const orderId = params.orderId as string;
   const { toast } = useToast();
 
-  const [order, setOrder] = useState<EnrichedOrder | null | undefined>(undefined); 
+  const [order, setOrder] = useState<EnrichedOrder | null | undefined>(undefined);
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
-  const [selectedStatus, setSelectedStatus] = useState<OrderStatus | undefined>(undefined);
+  const [selectedOrderStatus, setSelectedOrderStatus] = useState<OrderStatus | undefined>(undefined);
+  const [selectedPaymentStatus, setSelectedPaymentStatus] = useState<PaymentStatus | undefined>(undefined);
+  const [commissionSettings] = useLocalStorage<CommissionSetting[]>(COMMISSION_SETTINGS_STORAGE_KEY, DEFAULT_COMMISSION_SETTINGS);
+
 
   useEffect(() => {
     if (orderId) {
@@ -52,9 +57,10 @@ export default function AdminOrderDetailPage() {
             return { ...item, productDetails, sellerDetails };
           });
           setOrder({ ...foundOrder, items: enrichedItems });
-          setSelectedStatus(foundOrder.status);
+          setSelectedOrderStatus(foundOrder.status);
+          setSelectedPaymentStatus(foundOrder.paymentStatus);
         } else {
-          setOrder(null); 
+          setOrder(null);
         }
         setIsLoading(false);
       }, 500);
@@ -72,20 +78,52 @@ export default function AdminOrderDetailPage() {
     return Array.from(sellerMap.values());
   }, [order]);
 
+  const calculateAndStorePlatformCommission = (currentOrder: Order): number => {
+    if (!currentOrder || currentOrder.status !== 'delivered' || currentOrder.paymentStatus !== 'paid') {
+      return 0;
+    }
+    let totalCommission = 0;
+    currentOrder.items.forEach(item => {
+      const product = MOCK_PRODUCTS.find(p => p.id === item.id);
+      if (product) {
+        const categoryCommissionSetting = commissionSettings.find(cs => cs.categoryId === product.categoryId);
+        const commissionPercentage = categoryCommissionSetting ? categoryCommissionSetting.percentage : 0;
+        totalCommission += (item.price * item.quantity) * (commissionPercentage / 100);
+      }
+    });
+    return parseFloat(totalCommission.toFixed(2));
+  };
+
   const handleStatusUpdate = async () => {
-    if (!order || !selectedStatus || selectedStatus === order.status) return;
+    if (!order || !selectedOrderStatus || (selectedOrderStatus === order.status && selectedPaymentStatus === order.paymentStatus)) return;
 
     setIsUpdatingStatus(true);
-    await new Promise(resolve => setTimeout(resolve, 700)); 
+    await new Promise(resolve => setTimeout(resolve, 700));
 
     const orderIndex = MOCK_ORDERS.findIndex(o => o.id === orderId);
     if (orderIndex !== -1) {
-      MOCK_ORDERS[orderIndex].status = selectedStatus;
+      MOCK_ORDERS[orderIndex].status = selectedOrderStatus!;
+      MOCK_ORDERS[orderIndex].paymentStatus = selectedPaymentStatus!;
       MOCK_ORDERS[orderIndex].updatedAt = new Date();
-    }
+      
+      // Recalculate and store commission if status is delivered and paid
+      if (selectedOrderStatus === 'delivered' && selectedPaymentStatus === 'paid') {
+        MOCK_ORDERS[orderIndex].platformCommission = calculateAndStorePlatformCommission(MOCK_ORDERS[orderIndex]);
+      } else {
+        MOCK_ORDERS[orderIndex].platformCommission = 0; // Reset commission if not delivered and paid
+      }
+       setOrder(prevOrder => prevOrder ? { 
+        ...prevOrder, 
+        status: selectedOrderStatus!, 
+        paymentStatus: selectedPaymentStatus!, 
+        updatedAt: new Date(),
+        platformCommission: MOCK_ORDERS[orderIndex].platformCommission 
+      } : null);
 
-    setOrder(prevOrder => prevOrder ? { ...prevOrder, status: selectedStatus!, updatedAt: new Date() } : null);
-    toast({ title: "Order Status Updated", description: `Order #${orderId} status changed to ${selectedStatus}.` });
+      toast({ title: "Order Updated", description: `Order #${orderId} details have been updated.` });
+    } else {
+       toast({ title: "Error", description: "Order not found for update.", variant: "destructive" });
+    }
     setIsUpdatingStatus(false);
   };
 
@@ -113,6 +151,8 @@ export default function AdminOrderDetailPage() {
   const buyer = MOCK_USERS.find(u => u.id === order.userId);
   const itemsSubtotal = order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
+  const isSaveDisabled = isUpdatingStatus || (selectedOrderStatus === order.status && selectedPaymentStatus === order.paymentStatus);
+
   return (
     <div className="space-y-8 py-4">
       <div className="flex items-center justify-between">
@@ -124,36 +164,63 @@ export default function AdminOrderDetailPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2"><ShoppingBag className="h-6 w-6 text-primary" /> Order Status</CardTitle>
+          <CardTitle className="flex items-center gap-2"><ShoppingBag className="h-6 w-6 text-primary" /> Order & Payment Status</CardTitle>
         </CardHeader>
-        <CardContent className="flex flex-col sm:flex-row items-center gap-4">
-          <div className="flex-shrink-0">
-            <span className="text-muted-foreground mr-2">Current Status:</span>
-            <OrderStatusBadge status={order.status} />
-          </div>
-          <div className="flex items-center gap-2 flex-grow">
-            <Select 
-              value={selectedStatus} 
-              onValueChange={(value) => setSelectedStatus(value as OrderStatus)}
-              disabled={isUpdatingStatus}
-            >
-              <SelectTrigger className="w-full sm:w-[200px] h-10">
-                 <SelectValue placeholder="Change Status" />
-              </SelectTrigger>
-              <SelectContent>
-                 {ORDER_STATUSES.map(statusOpt => (
-                  <SelectItem key={statusOpt.value} value={statusOpt.value}>{statusOpt.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Button 
-              onClick={handleStatusUpdate} 
-              disabled={isUpdatingStatus || selectedStatus === order.status}
-            >
-              {isUpdatingStatus ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-              Save Status
-            </Button>
-          </div>
+        <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+                <div>
+                    <Label htmlFor="order-status-select">Order Status</Label>
+                    <Select
+                        value={selectedOrderStatus}
+                        onValueChange={(value) => setSelectedOrderStatus(value as OrderStatus)}
+                        disabled={isUpdatingStatus}
+                        name="order-status-select"
+                    >
+                        <SelectTrigger className="w-full h-10">
+                            <SelectValue placeholder="Change Order Status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {ORDER_STATUSES.map(statusOpt => (
+                                <SelectItem key={statusOpt.value} value={statusOpt.value}>{statusOpt.label}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+                 <div>
+                    <Label htmlFor="payment-status-select">Payment Status</Label>
+                    <Select
+                        value={selectedPaymentStatus}
+                        onValueChange={(value) => setSelectedPaymentStatus(value as PaymentStatus)}
+                        disabled={isUpdatingStatus}
+                        name="payment-status-select"
+                    >
+                        <SelectTrigger className="w-full h-10">
+                            <SelectValue placeholder="Change Payment Status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {PAYMENT_STATUSES.map(statusOpt => (
+                                <SelectItem key={statusOpt.value} value={statusOpt.value}>{statusOpt.label}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+            </div>
+             <div className="flex justify-end mt-2">
+                <Button
+                    onClick={handleStatusUpdate}
+                    disabled={isSaveDisabled}
+                >
+                    {isUpdatingStatus ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                    Save Changes
+                </Button>
+            </div>
+             <div className="mt-2 flex flex-wrap gap-2">
+                <span className="text-sm text-muted-foreground">Current Order Status:</span> <OrderStatusBadge status={order.status} />
+                <span className="text-sm text-muted-foreground">Current Payment Status:</span>
+                <Badge variant={order.paymentStatus === 'paid' ? 'default' : 'destructive'} className="capitalize">
+                    {order.paymentStatus}
+                </Badge>
+            </div>
         </CardContent>
       </Card>
 
@@ -188,8 +255,14 @@ export default function AdminOrderDetailPage() {
                   <span className="font-medium">${order.deliveryChargeAmount.toFixed(2)}</span>
                 </div>
               )}
+              {order.platformCommission !== undefined && order.platformCommission > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground flex items-center gap-1"><Percent className="h-4 w-4 text-blue-500"/>Platform Commission:</span>
+                  <span className="font-medium text-blue-600">-${order.platformCommission.toFixed(2)}</span>
+                </div>
+              )}
               <div className="flex justify-between font-bold text-lg pt-2 border-t">
-                <span>Order Total:</span>
+                <span>Order Total (Paid by Buyer):</span>
                 <span>${order.totalAmount.toFixed(2)}</span>
               </div>
             </CardContent>
@@ -236,7 +309,7 @@ export default function AdminOrderDetailPage() {
                                 <div className="flex items-center gap-2 mb-1">
                                     {method.type === 'bkash' ? <Smartphone className="h-5 w-5 text-pink-500" /> : <Banknote className="h-5 w-5 text-blue-500" />}
                                     <span className="font-semibold capitalize">{method.type}</span>
-                                    {method.isDefault && <span className="text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full">Default</span>}
+                                    {method.isDefault && <Badge variant="default" className="text-xs">Default</Badge>}
                                 </div>
                                 {method.type === 'bkash' && (
                                     <p>Account Number: {method.details.accountNumber}</p>
@@ -255,7 +328,13 @@ export default function AdminOrderDetailPage() {
                         ))}
                         </div>
                     ) : (
-                        <p className="text-sm text-muted-foreground pl-5">No withdrawal methods on file for this seller.</p>
+                         <div className="pl-5">
+                            <Alert variant="default" className="mt-2">
+                                <AlertTriangle className="h-4 w-4" />
+                                <AlertTitle>No Withdrawal Methods</AlertTitle>
+                                <CardDescription>This seller has not added any withdrawal methods.</CardDescription>
+                            </Alert>
+                        </div>
                     )}
                 </div>
             </CardContent>
@@ -269,7 +348,7 @@ export default function AdminOrderDetailPage() {
         </CardHeader>
         <CardContent className="space-y-6">
           {order.items.map((item, index) => (
-            <div key={item.id + index} className="rounded-lg border p-4 hover:shadow-sm">
+            <div key={item.id + "_" + index} className="rounded-lg border p-4 hover:shadow-sm">
               <div className="flex flex-col sm:flex-row gap-4">
                 <Image
                   src={item.imageUrl}
@@ -302,4 +381,3 @@ export default function AdminOrderDetailPage() {
     </div>
   );
 }
-

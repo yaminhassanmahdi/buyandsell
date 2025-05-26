@@ -22,46 +22,48 @@ export type Product = {
   price: number;
   imageUrl: string;
   imageHint?: string;
-  categoryId: string; 
-  subCategoryId?: string; 
-  brandId: string; 
+  categoryId: string;
+  subCategoryId?: string;
+  brandId: string;
   sellerId: string;
   sellerName?: string;
-  status: 'pending' | 'approved' | 'rejected' | 'sold'; // 'sold' implies delivered for earnings
+  status: 'pending' | 'approved' | 'rejected' | 'sold';
   createdAt: Date;
 };
 
 export type CartItem = {
-  id: string; 
+  id: string;
   name: string;
   price: number;
   imageUrl: string;
   quantity: number;
-  // For per-seller delivery charge calculation
-  sellerId?: string; 
+  sellerId?: string;
 };
 
 export type ShippingAddress = {
   fullName: string;
   phoneNumber?: string;
-  country: string; 
-  division: string; 
-  district: string; 
-  thana: string;    
+  country: string;
+  division: string;
+  district: string;
+  thana: string;
   houseAddress: string;
   roadNumber?: string;
 };
 
 export type OrderStatus = 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'accepted' | 'handed_over' | 'in_shipping';
+export type PaymentStatus = 'paid' | 'unpaid';
 
 export type Order = {
   id: string;
   userId: string;
   items: CartItem[];
-  totalAmount: number; 
-  deliveryChargeAmount?: number; 
+  totalAmount: number;
+  deliveryChargeAmount?: number;
   shippingAddress: ShippingAddress;
   status: OrderStatus;
+  paymentStatus: PaymentStatus; // New field
+  platformCommission?: number; // New field: Commission earned by platform from this order
   createdAt: Date;
   updatedAt: Date;
 };
@@ -69,7 +71,7 @@ export type Order = {
 export type WithdrawalMethodType = 'bkash' | 'bank';
 
 export type BKashDetails = {
-  accountNumber: string; 
+  accountNumber: string;
 };
 
 export type BankDetails = {
@@ -114,13 +116,13 @@ export type StaticDivision = {
 export type StaticDistrict = {
   id: string;
   name: string;
-  divisionId: string; 
+  divisionId: string;
 };
 
 export type StaticThana = {
   id: string;
   name: string;
-  districtId: string; 
+  districtId: string;
 };
 
 export interface DeliveryChargeSettings {
@@ -129,19 +131,24 @@ export interface DeliveryChargeSettings {
   interDistrict: number;
 }
 
-// New types for Withdrawal Requests
 export type WithdrawalRequestStatus = 'pending' | 'approved' | 'rejected';
 
 export type WithdrawalRequest = {
   id: string;
-  userId: string; 
-  userName: string; 
+  userId: string;
+  userName: string;
   amount: number;
-  withdrawalMethodId: string; 
-  withdrawalMethodType: WithdrawalMethodType; 
-  withdrawalMethodDetails: string; // e.g., "bKash: ****1234" or "Bank ABC: ****5678"
+  withdrawalMethodId: string;
+  withdrawalMethodType: WithdrawalMethodType;
+  withdrawalMethodDetails: string;
   status: WithdrawalRequestStatus;
   requestedAt: Date;
   processedAt?: Date;
   adminNote?: string;
+};
+
+// New type for Commission Settings
+export type CommissionSetting = {
+  categoryId: string; // Parent Category ID
+  percentage: number; // Commission percentage (e.g., 10 for 10%)
 };

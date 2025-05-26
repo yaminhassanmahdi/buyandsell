@@ -1,26 +1,103 @@
 
+"use client"; // Make it a client component to use hooks like useLocalStorage
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { MOCK_ORDERS, MOCK_PRODUCTS, MOCK_USERS } from "@/lib/mock-data";
-import { DollarSign, ShoppingCart, Users, CheckSquare } from "lucide-react";
+import { MOCK_ORDERS, MOCK_PRODUCTS, MOCK_USERS, MOCK_CATEGORIES } from "@/lib/mock-data";
+import { DollarSign, ShoppingCart, Users, CheckSquare, Percent, Truck } from "lucide-react";
+import useLocalStorage from "@/hooks/use-local-storage";
+import type { CommissionSetting } from "@/lib/types";
+import { COMMISSION_SETTINGS_STORAGE_KEY, DEFAULT_COMMISSION_SETTINGS } from "@/lib/constants";
+import { useMemo } from "react";
 
 export default function AdminDashboardPage() {
-  const totalSales = MOCK_ORDERS.filter(o => o.status === 'delivered').reduce((sum, order) => sum + order.totalAmount, 0);
-  const pendingProducts = MOCK_PRODUCTS.filter(p => p.status === 'pending').length;
-  const totalUsers = MOCK_USERS.length;
-  const totalOrders = MOCK_ORDERS.length;
+  const [commissionSettings] = useLocalStorage<CommissionSetting[]>(
+    COMMISSION_SETTINGS_STORAGE_KEY,
+    DEFAULT_COMMISSION_SETTINGS
+  );
+
+  const dashboardStats = useMemo(() => {
+    let totalPlatformSales = 0;
+    let totalPlatformCommission = 0;
+    let totalDeliveryChargesCollected = 0;
+
+    MOCK_ORDERS.forEach(order => {
+      if (order.status === 'delivered' && order.paymentStatus === 'paid') {
+        // Calculate item subtotal for this order
+        const orderItemSubtotal = order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        totalPlatformSales += orderItemSubtotal; // Commission is based on item subtotal before delivery
+
+        if (order.deliveryChargeAmount) {
+          totalDeliveryChargesCollected += order.deliveryChargeAmount;
+        }
+
+        // Calculate commission for this order
+        let orderCommission = 0;
+        order.items.forEach(item => {
+          const product = MOCK_PRODUCTS.find(p => p.id === item.id);
+          if (product) {
+            const categoryCommissionSetting = commissionSettings.find(cs => cs.categoryId === product.categoryId);
+            const commissionPercentage = categoryCommissionSetting ? categoryCommissionSetting.percentage : 0;
+            orderCommission += (item.price * item.quantity) * (commissionPercentage / 100);
+          }
+        });
+        totalPlatformCommission += orderCommission;
+        
+        // Store calculated commission on the order object if needed (optional, MOCK_ORDERS is mutable)
+        // This might be redundant if platformCommission is already being stored when order status changes
+        const orderInMock = MOCK_ORDERS.find(mo => mo.id === order.id);
+        if(orderInMock && orderInMock.platformCommission !== orderCommission) {
+            // console.log(`Updating commission for order ${order.id} from ${orderInMock.platformCommission} to ${orderCommission}`);
+            // orderInMock.platformCommission = parseFloat(orderCommission.toFixed(2)); // ensure precision
+        }
+      }
+    });
+
+    const pendingProducts = MOCK_PRODUCTS.filter(p => p.status === 'pending').length;
+    const totalUsers = MOCK_USERS.length;
+    const totalOrders = MOCK_ORDERS.length; // All orders, regardless of status
+
+    return {
+      totalPlatformCommission: parseFloat(totalPlatformCommission.toFixed(2)),
+      totalPlatformSales: parseFloat(totalPlatformSales.toFixed(2)),
+      totalDeliveryChargesCollected: parseFloat(totalDeliveryChargesCollected.toFixed(2)),
+      pendingProducts,
+      totalUsers,
+      totalOrders,
+    };
+  }, [commissionSettings]);
+
 
   return (
     <div className="space-y-8 py-4">
       <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+            <CardTitle className="text-sm font-medium">Total Platform Commission</CardTitle>
+            <Percent className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">${dashboardStats.totalPlatformCommission.toFixed(2)}</div>
+            <p className="text-xs text-muted-foreground">From delivered & paid orders</p>
+          </CardContent>
+        </Card>
+         <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Platform Sales (GMV)</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${totalSales.toFixed(2)}</div>
-            <p className="text-xs text-muted-foreground">From delivered orders</p>
+            <div className="text-2xl font-bold">${dashboardStats.totalPlatformSales.toFixed(2)}</div>
+            <p className="text-xs text-muted-foreground">Subtotal of items in delivered & paid orders</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Delivery Charges</CardTitle>
+            <Truck className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">${dashboardStats.totalDeliveryChargesCollected.toFixed(2)}</div>
+            <p className="text-xs text-muted-foreground">Collected from delivered & paid orders</p>
           </CardContent>
         </Card>
         <Card>
@@ -29,17 +106,17 @@ export default function AdminDashboardPage() {
             <ShoppingCart className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalOrders}</div>
-            <p className="text-xs text-muted-foreground">All processed orders</p>
+            <div className="text-2xl font-bold">{dashboardStats.totalOrders}</div>
+            <p className="text-xs text-muted-foreground">All orders placed</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Registered Users</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+            <UsersIcon className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalUsers}</div>
+            <div className="text-2xl font-bold">{dashboardStats.totalUsers}</div>
             <p className="text-xs text-muted-foreground">Total users on the platform</p>
           </CardContent>
         </Card>
@@ -49,7 +126,7 @@ export default function AdminDashboardPage() {
             <CheckSquare className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{pendingProducts}</div>
+            <div className="text-2xl font-bold">{dashboardStats.pendingProducts}</div>
             <p className="text-xs text-muted-foreground">Items awaiting review</p>
           </CardContent>
         </Card>
@@ -57,10 +134,10 @@ export default function AdminDashboardPage() {
       <Card>
         <CardHeader>
             <CardTitle>Welcome, Admin!</CardTitle>
-            <CardDescription>Use the navigation on the left to manage products and orders.</CardDescription>
+            <CardDescription>Use the navigation on the left to manage the platform.</CardDescription>
         </CardHeader>
         <CardContent>
-            <p>This is your central hub for overseeing 2ndhandbajar.com. From here you can approve new product listings, track all orders, and monitor the overall activity on the platform.</p>
+            <p>This is your central hub for overseeing 2ndhandbajar.com. From here you can manage products, orders, users, locations, and financial settings like commissions and withdrawal requests.</p>
         </CardContent>
       </Card>
     </div>

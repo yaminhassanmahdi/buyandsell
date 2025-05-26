@@ -3,19 +3,20 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { MOCK_ORDERS, MOCK_PRODUCTS, MOCK_USERS } from '@/lib/mock-data';
-import type { Order, OrderStatus, User } from '@/lib/types';
+import type { Order, OrderStatus, User, PaymentStatus } from '@/lib/types'; // Added PaymentStatus
 import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Card } from "@/components/ui/card"; // Added import
+import { Card } from "@/components/ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { OrderStatusBadge } from '@/components/order-status-badge';
-import { Settings2, Loader2, SearchX, Filter, Edit, Trash2, MoreHorizontal, Eye } from 'lucide-react';
+import { Settings2, Loader2, SearchX, Filter, Edit, Trash2, MoreHorizontal, Eye, CreditCard } from 'lucide-react'; // Added CreditCard
 import { format } from 'date-fns';
-import { ORDER_STATUSES } from '@/lib/constants';
+import { ORDER_STATUSES, PAYMENT_STATUSES } from '@/lib/constants'; // Added PAYMENT_STATUSES
+import { Badge } from '@/components/ui/badge'; // Added Badge for payment status
 
 export default function AdminManageOrdersPage() {
   const [allOrders, setAllOrders] = useState<Order[]>([]);
@@ -26,6 +27,7 @@ export default function AdminManageOrdersPage() {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<OrderStatus | 'all'>('all');
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState<PaymentStatus | 'all'>('all'); // New filter
 
   useEffect(() => {
     setIsLoading(true);
@@ -40,7 +42,7 @@ export default function AdminManageOrdersPage() {
   useEffect(() => {
     let tempOrders = [...allOrders];
     if (searchTerm) {
-      tempOrders = tempOrders.filter(order => 
+      tempOrders = tempOrders.filter(order =>
         order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
         order.userId.toLowerCase().includes(searchTerm.toLowerCase()) ||
         order.shippingAddress.fullName.toLowerCase().includes(searchTerm.toLowerCase())
@@ -49,40 +51,58 @@ export default function AdminManageOrdersPage() {
     if (statusFilter !== 'all') {
       tempOrders = tempOrders.filter(order => order.status === statusFilter);
     }
+    if (paymentStatusFilter !== 'all') { // Apply new filter
+      tempOrders = tempOrders.filter(order => order.paymentStatus === paymentStatusFilter);
+    }
     setFilteredOrders(tempOrders);
-  }, [searchTerm, statusFilter, allOrders]);
+  }, [searchTerm, statusFilter, paymentStatusFilter, allOrders]);
 
-  const handleUpdateStatus = async (orderId: string, newStatus: OrderStatus) => {
+  const handleUpdateOrderStatus = async (orderId: string, newStatus: OrderStatus) => {
     setProcessingOrderId(orderId);
-    await new Promise(resolve => setTimeout(resolve, 700)); // Simulate API call
-    
+    await new Promise(resolve => setTimeout(resolve, 700));
+
     const orderIndex = MOCK_ORDERS.findIndex(o => o.id === orderId);
     if (orderIndex !== -1) {
       MOCK_ORDERS[orderIndex].status = newStatus;
       MOCK_ORDERS[orderIndex].updatedAt = new Date();
     }
 
-    setAllOrders(prevOrders => 
-        prevOrders.map(order => 
+    setAllOrders(prevOrders =>
+        prevOrders.map(order =>
             order.id === orderId ? { ...order, status: newStatus, updatedAt: new Date() } : order
         )
     );
     toast({ title: "Order Status Updated", description: `Order #${orderId} status changed to ${newStatus}.` });
     setProcessingOrderId(null);
   };
+  
+  const handleUpdatePaymentStatus = async (orderId: string, newPaymentStatus: PaymentStatus) => {
+    setProcessingOrderId(orderId);
+    await new Promise(resolve => setTimeout(resolve, 700));
+
+    const orderIndex = MOCK_ORDERS.findIndex(o => o.id === orderId);
+    if (orderIndex !== -1) {
+      MOCK_ORDERS[orderIndex].paymentStatus = newPaymentStatus;
+      MOCK_ORDERS[orderIndex].updatedAt = new Date(); // Also update updatedAt for consistency
+    }
+
+    setAllOrders(prevOrders =>
+        prevOrders.map(order =>
+            order.id === orderId ? { ...order, paymentStatus: newPaymentStatus, updatedAt: new Date() } : order
+        )
+    );
+    toast({ title: "Payment Status Updated", description: `Order #${orderId} payment status changed to ${newPaymentStatus}.` });
+    setProcessingOrderId(null);
+  };
+
 
   const handleEditOrder = (orderId: string) => {
-    // Placeholder for edit functionality
     toast({ title: "Edit Action", description: `Edit order #${orderId} (Not implemented).` });
-    console.log("Edit order:", orderId);
   };
 
   const handleDeleteOrder = (orderId: string) => {
-    // Placeholder for delete functionality - in a real app, show confirmation
-    // MOCK_ORDERS = MOCK_ORDERS.filter(o => o.id !== orderId); // This would mutate import
     setAllOrders(prevOrders => prevOrders.filter(o => o.id !== orderId));
     toast({ title: "Order Deleted", description: `Order #${orderId} has been removed (mock).`, variant: "destructive" });
-    console.log("Delete order:", orderId);
   };
 
   if (isLoading) {
@@ -100,14 +120,12 @@ export default function AdminManageOrdersPage() {
           <Settings2 className="h-8 w-8 text-primary"/>
           Manage All Orders
         </h1>
-        <Button onClick={() => toast({ title: "Add New Order", description: "Functionality not implemented yet."})}>
-          Add New Order
-        </Button>
+        {/* Removed Add New Order button as it was not implemented */}
       </div>
 
-      <div className="p-4 border rounded-lg bg-card shadow space-y-4 md:space-y-0 md:flex md:items-center md:gap-4">
-        <div className="flex-grow">
-          <Input 
+      <div className="p-4 border rounded-lg bg-card shadow grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+        <div className="flex-grow md:col-span-1">
+          <Input
             placeholder="Search by Order ID, User ID, Name..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -117,12 +135,26 @@ export default function AdminManageOrdersPage() {
         <div className="flex items-center gap-2">
           <Filter className="h-5 w-5 text-muted-foreground" />
           <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as OrderStatus | 'all')}>
-            <SelectTrigger className="w-full md:w-[180px] h-10">
-              <SelectValue placeholder="Filter by status" />
+            <SelectTrigger className="w-full h-10">
+              <SelectValue placeholder="Filter by order status" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Statuses</SelectItem>
+              <SelectItem value="all">All Order Statuses</SelectItem>
               {ORDER_STATUSES.map(status => (
+                <SelectItem key={status.value} value={status.value}>{status.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex items-center gap-2">
+          <CreditCard className="h-5 w-5 text-muted-foreground" />
+          <Select value={paymentStatusFilter} onValueChange={(value) => setPaymentStatusFilter(value as PaymentStatus | 'all')}>
+            <SelectTrigger className="w-full h-10">
+              <SelectValue placeholder="Filter by payment status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Payment Statuses</SelectItem>
+              {PAYMENT_STATUSES.map(status => (
                 <SelectItem key={status.value} value={status.value}>{status.label}</SelectItem>
               ))}
             </SelectContent>
@@ -146,20 +178,15 @@ export default function AdminManageOrdersPage() {
                 <TableHead>Order ID</TableHead>
                 <TableHead>Date</TableHead>
                 <TableHead>Customer</TableHead>
-                <TableHead>Items</TableHead>
                 <TableHead>Total</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>Order Status</TableHead>
+                <TableHead>Payment Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredOrders.map(order => {
                 const buyer = MOCK_USERS.find(u => u.id === order.userId);
-                const firstItem = order.items[0];
-                const itemsSummary = firstItem 
-                  ? `${firstItem.quantity} x ${firstItem.name}${order.items.length > 1 ? ` (+${order.items.length - 1} more)` : ''}`
-                  : `${order.items.length} items`;
-
                 return (
                   <TableRow key={order.id}>
                     <TableCell className="font-medium">
@@ -169,19 +196,34 @@ export default function AdminManageOrdersPage() {
                     </TableCell>
                     <TableCell>{format(new Date(order.createdAt), 'dd MMM yyyy')}</TableCell>
                     <TableCell>{buyer?.name || order.shippingAddress.fullName}</TableCell>
-                    <TableCell className="text-xs text-muted-foreground">{itemsSummary}</TableCell>
                     <TableCell>${order.totalAmount.toFixed(2)}</TableCell>
                     <TableCell>
-                      <Select 
-                        value={order.status} 
-                        onValueChange={(newStatus) => handleUpdateStatus(order.id, newStatus as OrderStatus)}
+                      <Select
+                        value={order.status}
+                        onValueChange={(newStatus) => handleUpdateOrderStatus(order.id, newStatus as OrderStatus)}
                         disabled={processingOrderId === order.id}
                       >
                         <SelectTrigger className="h-8 text-xs w-[130px]">
-                           <SelectValue placeholder="Change Status" />
+                           <SelectValue placeholder="Order Status" />
                         </SelectTrigger>
                         <SelectContent>
                            {ORDER_STATUSES.map(status => (
+                            <SelectItem key={status.value} value={status.value}>{status.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </TableCell>
+                    <TableCell>
+                       <Select
+                        value={order.paymentStatus}
+                        onValueChange={(newPaymentStatus) => handleUpdatePaymentStatus(order.id, newPaymentStatus as PaymentStatus)}
+                        disabled={processingOrderId === order.id}
+                      >
+                        <SelectTrigger className="h-8 text-xs w-[110px]">
+                           <SelectValue placeholder="Payment Status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                           {PAYMENT_STATUSES.map(status => (
                             <SelectItem key={status.value} value={status.value}>{status.label}</SelectItem>
                           ))}
                         </SelectContent>
@@ -202,10 +244,10 @@ export default function AdminManageOrdersPage() {
                             </Link>
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => handleEditOrder(order.id)}>
-                            <Edit className="mr-2 h-4 w-4" /> Edit Order
+                            <Edit className="mr-2 h-4 w-4" /> Edit Order (Mock)
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => handleDeleteOrder(order.id)} className="text-destructive focus:text-destructive focus:bg-destructive/10">
-                            <Trash2 className="mr-2 h-4 w-4" /> Delete Order
+                            <Trash2 className="mr-2 h-4 w-4" /> Delete Order (Mock)
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>

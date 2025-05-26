@@ -1,13 +1,13 @@
 
-import type { OrderStatus, StaticDivision, StaticDistrict, StaticThana, Category, Brand, DeliveryChargeSettings } from './types'; 
-import { 
-  Smartphone, Laptop, Shirt, Armchair, BookOpen, Tag, 
-  Package as PackageIcon, 
-  PackageCheck, PackageX, Truck, CheckCircle2, Hourglass, 
-  Handshake as HandshakeIcon, 
-  LayoutDashboard, CheckSquare, ShoppingCart, Users as UsersIcon, 
+import type { OrderStatus, StaticDivision, StaticDistrict, StaticThana, Category, Brand, DeliveryChargeSettings, CommissionSetting, AdminNavItem } from './types';
+import {
+  Smartphone, Laptop, Shirt, Armchair, BookOpen, Tag,
+  Package as PackageIcon,
+  PackageCheck, PackageX, Truck, CheckCircle2, Hourglass,
+  Handshake as HandshakeIcon,
+  LayoutDashboard, CheckSquare, ShoppingCart, Users as UsersIcon,
   ListChecks, FolderTree, Tags as TagsIcon, Settings2,
-  Globe, Library, MapPin, Home, DollarSign, Briefcase, Edit, Trash2, CreditCard, PieChart, FileText, TrendingUp
+  Globe, Library, MapPin, Home, DollarSign, Briefcase, Edit, Trash2, CreditCard, PieChart, FileText, TrendingUp, Percent
 } from 'lucide-react';
 
 export const APP_NAME = '2ndhandbajar.com';
@@ -39,6 +39,11 @@ export const ORDER_STATUSES: { value: OrderStatus; label: string, icon?: React.C
   { value: 'cancelled', label: 'Cancelled', icon: PackageX },
 ];
 
+export const PAYMENT_STATUSES: {value: 'paid' | 'unpaid', label: string}[] = [
+    {value: 'paid', label: 'Paid'},
+    {value: 'unpaid', label: 'Unpaid'},
+];
+
 export const SITE_NAVIGATION = [
   { name: 'Home', href: '/' },
   { name: 'Sell Product', href: '/sell', authRequired: true },
@@ -48,33 +53,26 @@ export const USER_NAVIGATION = [
   { name: 'My Orders', href: '/account/orders' },
   { name: 'My Products', href: '/account/my-products', icon: Briefcase },
   { name: 'My Earnings', href: '/account/my-earnings', icon: TrendingUp },
-  { name: 'Account Settings', href: '/account/settings', icon: Settings2 }, 
+  { name: 'Account Settings', href: '/account/settings', icon: Settings2 },
 ];
-
-export interface AdminNavItem {
-  name: string;
-  href: string;
-  icon?: React.ComponentType<{ className?: string }>;
-  subItems?: AdminNavItem[];
-}
 
 export const ADMIN_NAVIGATION: AdminNavItem[] = [
   { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
   { name: 'Approve Products', href: '/admin/products', icon: CheckSquare },
-  { 
-    name: 'Products', 
-    href: '/admin/products/manage', 
+  {
+    name: 'Products',
+    href: '/admin/products/manage',
     icon: PackageIcon,
     subItems: [
       { name: 'Manage Products', href: '/admin/products/manage', icon: ListChecks },
       { name: 'Manage Categories', href: '/admin/products/categories', icon: FolderTree },
-      { name: 'Manage Sub-Categories', href: '/admin/products/sub-categories', icon: FolderTree }, 
-      { name: 'Manage Brands', href: '/admin/products/brands', icon: TagsIcon }, 
+      { name: 'Manage Sub-Categories', href: '/admin/products/sub-categories', icon: FolderTree },
+      { name: 'Manage Brands', href: '/admin/products/brands', icon: TagsIcon },
     ]
   },
-  { 
-    name: 'Orders', 
-    href: '/admin/orders/manage', 
+  {
+    name: 'Orders',
+    href: '/admin/orders/manage',
     icon: ShoppingCart,
     subItems: [
       { name: 'Manage Orders', href: '/admin/orders/manage', icon: Settings2 },
@@ -83,24 +81,25 @@ export const ADMIN_NAVIGATION: AdminNavItem[] = [
       { name: 'Cancelled Orders', href: '/admin/orders/cancelled', icon: PackageX },
     ]
   },
-  { 
-    name: 'Location', 
-    href: '/admin/locations/countries', 
-    icon: MapPin, 
+  {
+    name: 'Location',
+    href: '/admin/locations/countries',
+    icon: MapPin,
     subItems: [
       { name: 'Countries', href: '/admin/locations/countries', icon: Globe },
-      { name: 'Divisions', href: '/admin/locations/divisions', icon: Library }, 
+      { name: 'Divisions', href: '/admin/locations/divisions', icon: Library },
       { name: 'Districts', href: '/admin/locations/districts', icon: MapPin },
-      { name: 'Thanas/Upazillas', href: '/admin/locations/thanas', icon: Home }, 
+      { name: 'Thanas/Upazillas', href: '/admin/locations/thanas', icon: Home },
       { name: 'Delivery Charges', href: '/admin/locations/delivery-charges', icon: DollarSign },
     ]
   },
-  { 
-    name: 'Financials', 
-    href: '/admin/financials/withdrawal-requests', 
-    icon: PieChart, // Example icon for financials
+  {
+    name: 'Financials',
+    href: '/admin/financials/withdrawal-requests',
+    icon: PieChart,
     subItems: [
       { name: 'Withdrawal Requests', href: '/admin/financials/withdrawal-requests', icon: CreditCard },
+      { name: 'Commissions', href: '/admin/financials/commissions', icon: Percent },
     ]
   },
   { name: 'Manage Users', href: '/admin/users', icon: UsersIcon },
@@ -166,3 +165,7 @@ export const DEFAULT_DELIVERY_CHARGES: DeliveryChargeSettings = {
 };
 
 export const DELIVERY_CHARGES_STORAGE_KEY = 'deliveryChargeSettings';
+
+// New constants for Commission
+export const COMMISSION_SETTINGS_STORAGE_KEY = 'commissionSettings';
+export const DEFAULT_COMMISSION_SETTINGS: CommissionSetting[] = []; // Empty by default, admin sets them
