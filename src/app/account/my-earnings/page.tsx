@@ -2,12 +2,13 @@
 "use client";
 import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link'; // Added Link import
 import { useAuth } from '@/contexts/auth-context';
 import { MOCK_ORDERS, MOCK_PRODUCTS, MOCK_WITHDRAWAL_REQUESTS } from '@/lib/mock-data';
 import type { WithdrawalRequest, WithdrawalRequestStatus, WithdrawalMethod, User } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogClose, DialogFooter } from '@/components/ui/dialog'; // Added DialogFooter
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -48,6 +49,10 @@ export default function MyEarningsPage() {
           .sort((a, b) => new Date(b.requestedAt).getTime() - new Date(a.requestedAt).getTime());
         setUserWithdrawalRequests(requests);
         setPageLoading(false);
+      } else {
+        // If currentUser is null even after authLoading is false (should not happen if isAuthenticated is true)
+        // Handle appropriately, maybe redirect or show error
+        setPageLoading(false); // Still stop loading
       }
     }
   }, [isAuthenticated, authLoading, router, currentUser]);
@@ -59,6 +64,7 @@ export default function MyEarningsPage() {
       if (order.status === 'delivered') {
         order.items.forEach(item => {
           const product = MOCK_PRODUCTS.find(p => p.id === item.id);
+          // Ensure product.sellerId is checked against currentUser.id
           if (product && product.sellerId === currentUser.id) {
             earned += item.price * item.quantity;
           }
@@ -69,7 +75,7 @@ export default function MyEarningsPage() {
       .filter(req => req.userId === currentUser.id && (req.status === 'pending' || req.status === 'approved'))
       .reduce((sum, req) => sum + req.amount, 0);
     
-    return Math.max(0, earned - pendingOrApprovedWithdrawals); // Ensure it's not negative
+    return Math.max(0, earned - pendingOrApprovedWithdrawals);
   }, [currentUser]);
 
   const totalWithdrawn = useMemo(() => {

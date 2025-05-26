@@ -12,13 +12,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"; // Added Sheet components
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from '@/contexts/auth-context';
 import { USER_NAVIGATION, ADMIN_NAVIGATION } from '@/lib/constants';
-import { ShoppingCart, UserCircle, LogIn, LogOut, UserPlus, CreditCard, LayoutDashboard, DollarSign } from 'lucide-react';
+import { ShoppingCart, UserCircle, LogIn, LogOut, UserPlus, CreditCard, LayoutDashboard, DollarSign, Settings2, Briefcase, TrendingUp } from 'lucide-react';
 import { useCart } from '@/contexts/cart-context';
 import React, { useState, useEffect } from 'react';
-import { CartSidebar } from './cart-sidebar'; // Import the new CartSidebar component
+import { CartSidebar } from './cart-sidebar';
 
 export function UserNav() {
   const { currentUser, logout, isAdmin } = useAuth();
@@ -30,9 +30,11 @@ export function UserNav() {
     setIsClient(true);
   }, []);
 
+  const mainDivClassName = currentUser ? "flex items-center gap-2 md:gap-4" : "flex items-center gap-2";
+
   if (currentUser) {
     return (
-      <div className="flex items-center gap-2 md:gap-4">
+      <div className={mainDivClassName}>
         <Sheet open={isCartSidebarOpen} onOpenChange={setIsCartSidebarOpen}>
           <SheetTrigger asChild>
             <Button variant="ghost" size="icon" aria-label="Shopping Cart" className="relative">
@@ -71,8 +73,13 @@ export function UserNav() {
               {USER_NAVIGATION.map(item => (
                 <Link href={item.href} key={item.name} passHref>
                   <DropdownMenuItem className="cursor-pointer">
-                    {item.name === "My Orders" && <ShoppingCart className="mr-2 h-4 w-4" />}
-                    {item.name === "Account Settings" && <UserCircle className="mr-2 h-4 w-4" />}
+                    {item.icon ? <item.icon className="mr-2 h-4 w-4" /> : 
+                     item.name === "My Orders" ? <ShoppingCart className="mr-2 h-4 w-4" /> :
+                     item.name === "Account Settings" ? <Settings2 className="mr-2 h-4 w-4" /> :
+                     item.name === "My Products" ? <Briefcase className="mr-2 h-4 w-4" /> :
+                     item.name === "My Earnings" ? <TrendingUp className="mr-2 h-4 w-4" /> :
+                     null
+                    }
                     <span>{item.name}</span>
                   </DropdownMenuItem>
                 </Link>
@@ -111,41 +118,69 @@ export function UserNav() {
 
   // Unauthenticated user view
   return (
-    <div className="flex items-center gap-2">
-      <Sheet open={isCartSidebarOpen} onOpenChange={setIsCartSidebarOpen}>
-        <SheetTrigger asChild>
-          <Button variant="ghost" size="icon" aria-label="Shopping Cart" className="relative">
-            <ShoppingCart className="h-5 w-5" />
-            {isClient && itemCount > 0 && (
-            <span className="absolute -top-1 -right-1 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-red-100 bg-red-600 rounded-full">
-                {itemCount}
-            </span>
-            )}
-          </Button>
-        </SheetTrigger>
-        <SheetContent className="w-[350px] sm:w-[400px] p-0 flex flex-col" side="right">
-          <CartSidebar onClose={() => setIsCartSidebarOpen(false)} />
-        </SheetContent>
-      </Sheet>
-      <Link href="/login" passHref className="hidden md:inline-flex">
-        <Button variant="ghost">
-          <UserCircle className="mr-2 h-4 w-4" /> Login
+    <div className={mainDivClassName}>
+      {isClient && (
+        <Sheet open={isCartSidebarOpen} onOpenChange={setIsCartSidebarOpen}>
+          <SheetTrigger asChild>
+            <Button variant="ghost" size="icon" aria-label="Shopping Cart" className="relative">
+              <ShoppingCart className="h-5 w-5" />
+              {itemCount > 0 && (
+              <span className="absolute -top-1 -right-1 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-red-100 bg-red-600 rounded-full">
+                  {itemCount}
+              </span>
+              )}
+            </Button>
+          </SheetTrigger>
+          <SheetContent className="w-[350px] sm:w-[400px] p-0 flex flex-col" side="right">
+            <CartSidebar onClose={() => setIsCartSidebarOpen(false)} />
+          </SheetContent>
+        </Sheet>
+      )}
+      {!isClient && ( // Render a placeholder for the cart icon on SSR for unauthenticated users
+        <Button variant="ghost" size="icon" aria-label="Shopping Cart" className="relative">
+          <ShoppingCart className="h-5 w-5" />
         </Button>
-      </Link>
-      <Link href="/sell" passHref className="hidden md:inline-flex">
-        <Button variant="outline">
-          <DollarSign className="mr-2 h-4 w-4" /> Sell Your Item
-        </Button>
-      </Link>
-       {/* Login button for mobile if not authenticated */}
-       {!currentUser && (
-         <Link href="/login" passHref className="md:hidden">
+      )}
+
+      {isClient && (
+        <>
+          <Link href="/login" passHref className="hidden md:inline-flex">
+            <Button variant="ghost">
+              <UserCircle className="mr-2 h-4 w-4" /> Login
+            </Button>
+          </Link>
+          <Link href="/sell" passHref className="hidden md:inline-flex">
+            <Button variant="outline">
+              <DollarSign className="mr-2 h-4 w-4" /> Sell Your Item
+            </Button>
+          </Link>
+          <Link href="/login" passHref className="md:hidden">
             <Button variant="ghost" size="icon">
                 <UserCircle className="h-5 w-5" />
                 <span className="sr-only">Login</span>
             </Button>
          </Link>
-       )}
+        </>
+      )}
+      {!isClient && ( // SSR placeholders for login/sell buttons to maintain structure
+        <>
+          <div className="hidden md:inline-flex"> {/* Placeholder for desktop Login */}
+            <Button variant="ghost" disabled style={{ visibility: 'hidden' }}>
+              <UserCircle className="mr-2 h-4 w-4" /> Login
+            </Button>
+          </div>
+           <div className="hidden md:inline-flex"> {/* Placeholder for desktop Sell */}
+            <Button variant="outline" disabled style={{ visibility: 'hidden' }}>
+              <DollarSign className="mr-2 h-4 w-4" /> Sell Your Item
+            </Button>
+          </div>
+          <div className="md:hidden"> {/* Placeholder for mobile Login */}
+            <Button variant="ghost" size="icon" disabled style={{ visibility: 'hidden' }}>
+                <UserCircle className="h-5 w-5" />
+            </Button>
+          </div>
+        </>
+      )}
     </div>
   );
 }
