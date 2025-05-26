@@ -1,9 +1,11 @@
 
 "use client";
 import type { CartItem, Product } from '@/lib/types';
-import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import React, { createContext, useContext, useState, ReactNode } from 'react';
 import useLocalStorage from '@/hooks/use-local-storage';
 import { useToast } from '@/hooks/use-toast';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button'; // Added Button import
 
 interface CartContextType {
   cartItems: CartItem[];
@@ -31,7 +33,15 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       }
       return [...prevItems, { id: product.id, name: product.name, price: product.price, imageUrl: product.imageUrl, quantity }];
     });
-    toast({ title: "Added to cart", description: `${product.name} was added to your cart.` });
+    toast({ 
+      title: "Added to cart", 
+      description: `${product.name} was added to your cart.`,
+      action: (
+        <Button asChild variant="outline" size="sm">
+          <Link href="/cart">Check Cart</Link>
+        </Button>
+      ),
+    });
   };
 
   const removeFromCart = (productId: string) => {
