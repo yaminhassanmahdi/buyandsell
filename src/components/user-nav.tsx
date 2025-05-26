@@ -12,16 +12,19 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"; // Added Sheet components
 import { useAuth } from '@/contexts/auth-context';
 import { USER_NAVIGATION, ADMIN_NAVIGATION } from '@/lib/constants';
 import { ShoppingCart, UserCircle, LogIn, LogOut, UserPlus, CreditCard, LayoutDashboard, DollarSign } from 'lucide-react';
 import { useCart } from '@/contexts/cart-context';
 import React, { useState, useEffect } from 'react';
+import { CartSidebar } from './cart-sidebar'; // Import the new CartSidebar component
 
 export function UserNav() {
   const { currentUser, logout, isAdmin } = useAuth();
   const { itemCount } = useCart();
   const [isClient, setIsClient] = useState(false);
+  const [isCartSidebarOpen, setIsCartSidebarOpen] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
@@ -30,16 +33,21 @@ export function UserNav() {
   if (currentUser) {
     return (
       <div className="flex items-center gap-2 md:gap-4">
-        <Link href="/cart" passHref>
-          <Button variant="ghost" size="icon" aria-label="Shopping Cart" className="relative">
-            <ShoppingCart className="h-5 w-5" />
-            {isClient && itemCount > 0 && (
-              <span className="absolute -top-1 -right-1 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-red-100 bg-red-600 rounded-full">
-                {itemCount}
-              </span>
-            )}
-          </Button>
-        </Link>
+        <Sheet open={isCartSidebarOpen} onOpenChange={setIsCartSidebarOpen}>
+          <SheetTrigger asChild>
+            <Button variant="ghost" size="icon" aria-label="Shopping Cart" className="relative">
+              <ShoppingCart className="h-5 w-5" />
+              {isClient && itemCount > 0 && (
+                <span className="absolute -top-1 -right-1 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-red-100 bg-red-600 rounded-full">
+                  {itemCount}
+                </span>
+              )}
+            </Button>
+          </SheetTrigger>
+          <SheetContent className="w-[350px] sm:w-[400px] p-0 flex flex-col" side="right">
+            <CartSidebar onClose={() => setIsCartSidebarOpen(false)} />
+          </SheetContent>
+        </Sheet>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="relative h-9 w-9 rounded-full">
@@ -104,16 +112,21 @@ export function UserNav() {
   // Unauthenticated user view
   return (
     <div className="flex items-center gap-2">
-        <Link href="/cart" passHref>
+      <Sheet open={isCartSidebarOpen} onOpenChange={setIsCartSidebarOpen}>
+        <SheetTrigger asChild>
           <Button variant="ghost" size="icon" aria-label="Shopping Cart" className="relative">
             <ShoppingCart className="h-5 w-5" />
-             {isClient && itemCount > 0 && (
-              <span className="absolute -top-1 -right-1 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-red-100 bg-red-600 rounded-full">
+            {isClient && itemCount > 0 && (
+            <span className="absolute -top-1 -right-1 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-red-100 bg-red-600 rounded-full">
                 {itemCount}
-              </span>
+            </span>
             )}
           </Button>
-        </Link>
+        </SheetTrigger>
+        <SheetContent className="w-[350px] sm:w-[400px] p-0 flex flex-col" side="right">
+          <CartSidebar onClose={() => setIsCartSidebarOpen(false)} />
+        </SheetContent>
+      </Sheet>
       <Link href="/login" passHref className="hidden md:inline-flex">
         <Button variant="ghost">
           <UserCircle className="mr-2 h-4 w-4" /> Login
