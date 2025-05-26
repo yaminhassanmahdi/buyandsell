@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from '@/contexts/auth-context';
 import { USER_NAVIGATION, ADMIN_NAVIGATION } from '@/lib/constants';
-import { ShoppingCart, UserCircle, LogIn, LogOut, UserPlus, CreditCard } from 'lucide-react'; // Added CreditCard for sell
+import { ShoppingCart, UserCircle, LogIn, LogOut, UserPlus, CreditCard, LayoutDashboard, DollarSignSign } from 'lucide-react';
 import { useCart } from '@/contexts/cart-context';
 import React, { useState, useEffect } from 'react';
 
@@ -29,12 +29,12 @@ export function UserNav() {
 
   if (currentUser) {
     return (
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2 md:gap-4">
         <Link href="/cart" passHref>
           <Button variant="ghost" size="icon" aria-label="Shopping Cart" className="relative">
             <ShoppingCart className="h-5 w-5" />
             {isClient && itemCount > 0 && (
-              <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-red-100 transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full">
+              <span className="absolute -top-1 -right-1 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-red-100 bg-red-600 rounded-full">
                 {itemCount}
               </span>
             )}
@@ -64,11 +64,17 @@ export function UserNav() {
                 <Link href={item.href} key={item.name} passHref>
                   <DropdownMenuItem className="cursor-pointer">
                     {item.name === "My Orders" && <ShoppingCart className="mr-2 h-4 w-4" />}
-                     {item.name === "Account Settings" && <UserCircle className="mr-2 h-4 w-4" />}
+                    {item.name === "Account Settings" && <UserCircle className="mr-2 h-4 w-4" />}
                     <span>{item.name}</span>
                   </DropdownMenuItem>
                 </Link>
               ))}
+               <Link href="/sell" passHref>
+                  <DropdownMenuItem className="cursor-pointer">
+                    <DollarSignSign className="mr-2 h-4 w-4" />
+                    <span>Sell Your Item</span>
+                  </DropdownMenuItem>
+                </Link>
             </DropdownMenuGroup>
             {isAdmin && (
               <>
@@ -85,7 +91,7 @@ export function UserNav() {
               </>
             )}
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={logout} className="cursor-pointer">
+            <DropdownMenuItem onClick={logout} className="cursor-pointer text-red-600 hover:!text-red-600 focus:!text-red-600 focus:!bg-red-50">
               <LogOut className="mr-2 h-4 w-4" />
               <span>Log out</span>
             </DropdownMenuItem>
@@ -95,28 +101,38 @@ export function UserNav() {
     );
   }
 
+  // Unauthenticated user view
   return (
     <div className="flex items-center gap-2">
-       <Link href="/cart" passHref>
+        <Link href="/cart" passHref>
           <Button variant="ghost" size="icon" aria-label="Shopping Cart" className="relative">
             <ShoppingCart className="h-5 w-5" />
              {isClient && itemCount > 0 && (
-              <span className="absolute top-0 right-0 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-red-100 transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full">
+              <span className="absolute -top-1 -right-1 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-red-100 bg-red-600 rounded-full">
                 {itemCount}
               </span>
             )}
           </Button>
         </Link>
-      <Link href="/login" passHref>
+      <Link href="/login" passHref className="hidden md:inline-flex">
+        <Button variant="ghost">
+          <UserCircle className="mr-2 h-4 w-4" /> Login
+        </Button>
+      </Link>
+      <Link href="/sell" passHref className="hidden md:inline-flex">
         <Button variant="outline">
-          <LogIn className="mr-2 h-4 w-4" /> Login
+          <DollarSignSign className="mr-2 h-4 w-4" /> Sell Your Item
         </Button>
       </Link>
-      <Link href="/register" passHref>
-        <Button>
-          <UserPlus className="mr-2 h-4 w-4" /> Register
-        </Button>
-      </Link>
+       {/* Login button for mobile if not authenticated */}
+       {!currentUser && (
+         <Link href="/login" passHref className="md:hidden">
+            <Button variant="ghost" size="icon">
+                <UserCircle className="h-5 w-5" />
+                <span className="sr-only">Login</span>
+            </Button>
+         </Link>
+       )}
     </div>
   );
 }

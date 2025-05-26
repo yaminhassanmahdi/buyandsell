@@ -7,6 +7,9 @@ import { SITE_NAVIGATION } from '@/lib/constants';
 import { useAuth } from '@/contexts/auth-context';
 import React, { useState, useEffect } from 'react';
 
+// This component is now primarily used for the mobile drawer navigation,
+// or could be repurposed for other navigation needs if any.
+// The main site header structure has changed.
 export function MainNav({ className, ...props }: React.HTMLAttributes<HTMLElement>) {
   const pathname = usePathname();
   const { isAuthenticated } = useAuth();
@@ -18,13 +21,13 @@ export function MainNav({ className, ...props }: React.HTMLAttributes<HTMLElemen
 
   return (
     <nav
-      className={cn("flex items-center space-x-4 lg:space-x-6", className)}
+      className={cn("flex flex-col space-y-2 lg:flex-row lg:items-center lg:space-x-6 lg:space-y-0", className)}
       {...props}
     >
       {SITE_NAVIGATION.map((item) => {
         if (item.authRequired) {
           if (!isClient || !isAuthenticated) {
-            return null; // Don't render auth-required links on server or if not authenticated on client
+            return null; 
           }
         }
         return (
@@ -32,7 +35,7 @@ export function MainNav({ className, ...props }: React.HTMLAttributes<HTMLElemen
             key={item.name}
             href={item.href}
             className={cn(
-              "text-sm font-medium transition-colors hover:text-primary",
+              "text-base font-medium transition-colors hover:text-primary py-2 lg:py-0",
               pathname === item.href ? "text-primary" : "text-foreground/80"
             )}
           >
