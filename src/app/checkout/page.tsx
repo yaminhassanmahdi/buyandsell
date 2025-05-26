@@ -46,7 +46,8 @@ export default function CheckoutPage() {
       router.push('/login?redirect=/checkout');
       return;
     }
-    if (!authLoading && itemCount === 0) {
+    // Add !isPlacingOrder to prevent redirect to cart immediately after order placement
+    if (!authLoading && itemCount === 0 && !isPlacingOrder) {
       router.push('/cart'); 
       return;
     }
@@ -60,14 +61,12 @@ export default function CheckoutPage() {
         setIsEditingAddress(true);
       }
     }
-  }, [isAuthenticated, authLoading, router, itemCount, currentUser]);
+  }, [isAuthenticated, authLoading, router, itemCount, currentUser, isPlacingOrder]); // Added isPlacingOrder to dependency array
 
   useEffect(() => {
     if (availableShippingMethods.length === 1 && !selectedShippingMethodId) {
       setSelectedShippingMethodId(availableShippingMethods[0].id);
     } else if (availableShippingMethods.length > 1 && !selectedShippingMethodId) {
-      // Optionally, you could default to the first one, or leave it empty to force selection
-      // Forcing selection if multiple exist:
       setSelectedShippingMethodId(''); 
     }
   }, [availableShippingMethods, selectedShippingMethodId]);
@@ -76,7 +75,7 @@ export default function CheckoutPage() {
   useEffect(() => {
     const calculateTotalDeliveryCharge = () => {
         if (!orderShippingAddress || cartItems.length === 0 || !deliverySettings || !currentUser) {
-            setTotalDeliveryCharge(0); // Or null if you want to show "N/A" until all conditions are met
+            setTotalDeliveryCharge(0); 
             setIsCalculatingDelivery(false);
             return;
         }
@@ -94,7 +93,7 @@ export default function CheckoutPage() {
                 }
                 groupedBySeller[productDetails.sellerId].items.push(cartItem);
             } else {
-                 if (!groupedBySeller['unknown_seller']) { // Group items with no seller under a generic ID
+                 if (!groupedBySeller['unknown_seller']) { 
                     groupedBySeller['unknown_seller'] = { seller: undefined, items: [] };
                 }
                 groupedBySeller['unknown_seller'].items.push(cartItem);
@@ -110,7 +109,7 @@ export default function CheckoutPage() {
             let chargePerSeller: number | null = null;
 
             if (!sellerAddress) {
-                chargePerSeller = deliverySettings.interDistrict; // Fallback if seller address is missing
+                chargePerSeller = deliverySettings.interDistrict; 
             } else {
                 if (buyerAddress.thana === sellerAddress.thana && buyerAddress.district === sellerAddress.district) {
                     chargePerSeller = deliverySettings.intraThana;
@@ -124,7 +123,7 @@ export default function CheckoutPage() {
             if (chargePerSeller !== null) {
                 calculatedTotal += chargePerSeller;
             } else {
-                allChargesCalculated = false; // If any charge couldn't be determined, mark as not fully calculated
+                allChargesCalculated = false; 
             }
         }
         setTotalDeliveryCharge(allChargesCalculated ? calculatedTotal : null);
@@ -190,11 +189,11 @@ export default function CheckoutPage() {
       variant: "default", 
       duration: 4000,
     });
-    router.push(`/order-confirmation/${newOrder.id}`); // Redirect to confirmation page
-    setIsPlacingOrder(false);
+    router.push(`/order-confirmation/${newOrder.id}`); 
+    setIsPlacingOrder(false); // Set to false after navigation
   };
 
-  if (authLoading || (!authLoading && !isAuthenticated) || (itemCount === 0 && !isPlacingOrder)) {
+  if (authLoading || (!authLoading && !isAuthenticated) || (itemCount === 0 && !isPlacingOrder && !authLoading)) { 
     return (
       <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -363,3 +362,5 @@ export default function CheckoutPage() {
     </div>
   );
 }
+
+    
