@@ -25,11 +25,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const router = useRouter();
 
   useEffect(() => {
-    // On initial load, if there's a currentUser in localStorage,
-    // ensure its data (especially nested objects like withdrawalMethods)
-    // is correctly synchronized with the MOCK_USERS source if they logged in before.
-    // This is more relevant if MOCK_USERS could change structure or if we want to ensure consistency.
-    // For now, we trust useLocalStorage's initial load.
     setLoading(false);
   }, []);
 
@@ -38,12 +33,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     await new Promise(resolve => setTimeout(resolve, 500));
     const userFromMock = MOCK_USERS.find(u => u.email === email);
     if (userFromMock) {
-      // When logging in, ensure we're using the definitive version from MOCK_USERS
-      // This helps if MOCK_USERS was updated elsewhere (e.g. admin panel direct modification - though not implemented)
-      // or if the structure of User object in MOCK_USERS changed.
-      // Also ensures that arrays like withdrawalMethods are fresh.
       const userToStore: User = {
-        ...userFromMock, // Base data from MOCK_USERS
+        ...userFromMock,
         defaultShippingAddress: userFromMock.defaultShippingAddress || null,
         withdrawalMethods: userFromMock.withdrawalMethods || [],
       };
@@ -61,17 +52,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const existingUser = MOCK_USERS.find(u => u.email === email);
     if (existingUser) {
       setLoading(false);
-      return null; 
+      return null;
     }
-    const newUser: User = { 
-      id: `user${MOCK_USERS.length + 1}`, 
-      email, 
-      name, 
-      isAdmin: false, 
-      defaultShippingAddress: null, 
-      withdrawalMethods: [] 
+    const newUser: User = {
+      id: `user${MOCK_USERS.length + 1}`,
+      email,
+      name,
+      isAdmin: false,
+      defaultShippingAddress: null,
+      withdrawalMethods: []
     };
-    MOCK_USERS.push(newUser); 
+    MOCK_USERS.push(newUser);
     setCurrentUser(newUser);
     setLoading(false);
     return newUser;
@@ -79,39 +70,36 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const logout = () => {
     setCurrentUser(null);
-    router.push('/'); 
+    router.push('/');
   };
 
-  const updateCurrentUserData = (updatedData: Partial<Pick<User, 'name' | 'email' | 'defaultShippingAddress' | 'withdrawalMethods'>>) => {
+  const updateCurrentUserData = (dataToUpdate: Partial<Pick<User, 'name' | 'email' | 'defaultShippingAddress' | 'withdrawalMethods'>>) => {
     if (currentUser) {
+      // Create the new state for `currentUser` based on its current value + updates
+      // This ensures that if `dataToUpdate` is, e.g., just { defaultShippingAddress: ... },
+      // other properties like `withdrawalMethods` from the current `currentUser` state are preserved.
+      const newContextUser: User = {
+        ...currentUser, // Start with the current state from context/localStorage
+        ...dataToUpdate,  // Overlay the specific changes
+      };
+
+      // Now, update MOCK_USERS array (our "database" in this mock setup)
       const userIndex = MOCK_USERS.findIndex(u => u.id === currentUser.id);
       if (userIndex !== -1) {
-        // Create the updated user object
-        const updatedUserInMock = { 
-          ...MOCK_USERS[userIndex], 
-          ...updatedData 
+        // MOCK_USERS[userIndex] should reflect the complete new state.
+        MOCK_USERS[userIndex] = {
+          ...MOCK_USERS[userIndex], // Preserve any fields in MOCK_USERS that might not be in User type (less likely here)
+          ...newContextUser        // Ensure all fields from newContextUser are applied
         };
-        
-        // Ensure withdrawalMethods is always an array, even if updatedData.withdrawalMethods is undefined
-        if (updatedData.withdrawalMethods !== undefined) {
-            updatedUserInMock.withdrawalMethods = updatedData.withdrawalMethods;
-        } else {
-            updatedUserInMock.withdrawalMethods = MOCK_USERS[userIndex].withdrawalMethods || [];
-        }
-        
-        // Ensure defaultShippingAddress can be set to null
-        if (updatedData.hasOwnProperty('defaultShippingAddress')) {
-             updatedUserInMock.defaultShippingAddress = updatedData.defaultShippingAddress;
-        } else {
-            updatedUserInMock.defaultShippingAddress = MOCK_USERS[userIndex].defaultShippingAddress || null;
-        }
-
-        MOCK_USERS[userIndex] = updatedUserInMock; // Update the "database"
-        setCurrentUser(updatedUserInMock); // Update local storage and context state
       }
+      
+      // This is the crucial call to update React state (via useLocalStorage) and persist to localStorage.
+      // As newContextUser is a new object reference (due to the spread ...currentUser and ...dataToUpdate),
+      // React's change detection should work.
+      setCurrentUser(newContextUser);
     }
   };
-  
+
   const isAuthenticated = !!currentUser;
   const isAdmin = !!currentUser?.isAdmin;
 
