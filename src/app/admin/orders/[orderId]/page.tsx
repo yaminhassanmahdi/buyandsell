@@ -17,7 +17,7 @@ import { useToast } from '@/hooks/use-toast';
 
 interface EnrichedOrderItem extends CartItem {
   productDetails?: ProductType;
-  sellerDetails?: UserType; // This UserType will include withdrawalMethods
+  sellerDetails?: UserType; 
 }
 
 interface EnrichedOrder extends Omit<Order, 'items'> {
@@ -35,7 +35,7 @@ export default function AdminOrderDetailPage() {
   const orderId = params.orderId as string;
   const { toast } = useToast();
 
-  const [order, setOrder] = useState<EnrichedOrder | null | undefined>(undefined); // undefined for loading
+  const [order, setOrder] = useState<EnrichedOrder | null | undefined>(undefined); 
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState<OrderStatus | undefined>(undefined);
@@ -43,7 +43,6 @@ export default function AdminOrderDetailPage() {
   useEffect(() => {
     if (orderId) {
       setIsLoading(true);
-      // Simulate API call
       setTimeout(() => {
         const foundOrder = MOCK_ORDERS.find(o => o.id === orderId);
         if (foundOrder) {
@@ -55,7 +54,7 @@ export default function AdminOrderDetailPage() {
           setOrder({ ...foundOrder, items: enrichedItems });
           setSelectedStatus(foundOrder.status);
         } else {
-          setOrder(null); // Not found
+          setOrder(null); 
         }
         setIsLoading(false);
       }, 500);
@@ -303,3 +302,4 @@ export default function AdminOrderDetailPage() {
     </div>
   );
 }
+

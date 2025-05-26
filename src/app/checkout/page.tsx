@@ -7,7 +7,7 @@ import { useCart } from '@/contexts/cart-context';
 import { AddressForm } from '@/components/address-form';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import type { ShippingAddress, Order, DeliveryChargeSettings, Product as ProductType, User as UserType } from '@/lib/types';
+import type { ShippingAddress, Order, DeliveryChargeSettings, Product as ProductType, User as UserType, CartItem } from '@/lib/types';
 import { MOCK_ORDERS, MOCK_PRODUCTS, MOCK_USERS } from '@/lib/mock-data'; 
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
@@ -24,7 +24,9 @@ export default function CheckoutPage() {
   const [orderShippingAddress, setOrderShippingAddress] = useState<ShippingAddress | null>(null);
   const [isEditingAddress, setIsEditingAddress] = useState(false);
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
-  const [deliveryCharge, setDeliveryCharge] = useState<number>(0);
+  
+  const [totalDeliveryCharge, setTotalDeliveryCharge] = useState<number | null>(null);
+  const [isCalculatingDelivery, setIsCalculatingDelivery] = useState(true);
 
   const [deliverySettings] = useLocalStorage<DeliveryChargeSettings>(
     DELIVERY_CHARGES_STORAGE_KEY,
@@ -46,46 +48,76 @@ export default function CheckoutPage() {
         setOrderShippingAddress(currentUser.defaultShippingAddress);
         setIsEditingAddress(false);
       } else {
+        setOrderShippingAddress(null); // Explicitly null if not set
         setIsEditingAddress(true);
       }
     }
   }, [isAuthenticated, authLoading, router, itemCount, currentUser]);
 
   useEffect(() => {
-    if (!orderShippingAddress || cartItems.length === 0 || !deliverySettings) {
-      setDeliveryCharge(0); // Default to 0 if no address, no items, or no settings
-      return;
-    }
+    const calculateTotalDeliveryCharge = () => {
+        if (!orderShippingAddress || cartItems.length === 0 || !deliverySettings || !currentUser) {
+            setTotalDeliveryCharge(0);
+            setIsCalculatingDelivery(false);
+            return;
+        }
+        setIsCalculatingDelivery(true);
 
-    const firstItem = cartItems[0];
-    const product = MOCK_PRODUCTS.find(p => p.id === firstItem.id);
-    if (!product || !product.sellerId) {
-      setDeliveryCharge(deliverySettings.interDistrict); // Fallback if seller not found
-      return;
-    }
+        const buyerAddress = orderShippingAddress;
+        const groupedBySeller: Record<string, { seller?: UserType, items: CartItem[] }> = {};
 
-    const seller = MOCK_USERS.find(u => u.id === product.sellerId);
-    if (!seller || !seller.defaultShippingAddress) {
-      setDeliveryCharge(deliverySettings.interDistrict); // Fallback if seller or address not found
-      return;
-    }
+        for (const cartItem of cartItems) {
+            const productDetails = MOCK_PRODUCTS.find(p => p.id === cartItem.id);
+            if (productDetails?.sellerId) {
+                if (!groupedBySeller[productDetails.sellerId]) {
+                const seller = MOCK_USERS.find(u => u.id === productDetails.sellerId);
+                groupedBySeller[productDetails.sellerId] = { seller, items: [] };
+                }
+                groupedBySeller[productDetails.sellerId].items.push(cartItem);
+            } else {
+                 if (!groupedBySeller['unknown_seller']) {
+                    groupedBySeller['unknown_seller'] = { seller: undefined, items: [] };
+                }
+                groupedBySeller['unknown_seller'].items.push(cartItem);
+            }
+        }
 
-    const buyerAddr = orderShippingAddress;
-    const sellerAddr = seller.defaultShippingAddress;
+        let calculatedTotal = 0;
+        let allChargesCalculated = true;
 
-    if (buyerAddr.thana === sellerAddr.thana && buyerAddr.district === sellerAddr.district) {
-      setDeliveryCharge(deliverySettings.intraThana);
-    } else if (buyerAddr.district === sellerAddr.district) {
-      setDeliveryCharge(deliverySettings.intraDistrict);
-    } else {
-      setDeliveryCharge(deliverySettings.interDistrict);
-    }
-  }, [cartItems, orderShippingAddress, deliverySettings]);
+        for (const sellerId in groupedBySeller) {
+            const group = groupedBySeller[sellerId];
+            const sellerAddress = group.seller?.defaultShippingAddress;
+            let chargePerSeller: number | null = null;
+
+            if (!sellerAddress) {
+                chargePerSeller = deliverySettings.interDistrict; // Fallback
+            } else {
+                if (buyerAddress.thana === sellerAddress.thana && buyerAddress.district === sellerAddress.district) {
+                    chargePerSeller = deliverySettings.intraThana;
+                } else if (buyerAddress.district === sellerAddress.district) {
+                    chargePerSeller = deliverySettings.intraDistrict;
+                } else {
+                    chargePerSeller = deliverySettings.interDistrict;
+                }
+            }
+            
+            if (chargePerSeller !== null) {
+                calculatedTotal += chargePerSeller;
+            } else {
+                allChargesCalculated = false; // Should not happen with fallbacks, but good check
+            }
+        }
+        setTotalDeliveryCharge(allChargesCalculated ? calculatedTotal : null);
+        setIsCalculatingDelivery(false);
+    };
+    calculateTotalDeliveryCharge();
+  }, [cartItems, orderShippingAddress, deliverySettings, currentUser]);
 
 
   const initialAddressFormData = (): Partial<ShippingAddress> => {
-    if (currentUser?.defaultShippingAddress) {
-      return currentUser.defaultShippingAddress;
+    if (orderShippingAddress) { // Use state which is derived from currentUser.defaultShippingAddress
+      return orderShippingAddress;
     }
     return {};
   };
@@ -100,10 +132,10 @@ export default function CheckoutPage() {
   };
 
   const handlePlaceOrder = async () => {
-    if (!orderShippingAddress || !currentUser) {
+    if (!orderShippingAddress || !currentUser || totalDeliveryCharge === null) {
         toast({
-            title: "Shipping Address Required",
-            description: "Please provide and confirm a shipping address to place your order.",
+            title: "Order Cannot Be Placed",
+            description: "Please ensure your shipping address is confirmed and delivery charges are calculated.",
             variant: "destructive",
         });
         return;
@@ -113,14 +145,14 @@ export default function CheckoutPage() {
     await new Promise(resolve => setTimeout(resolve, 1500));
 
     const itemsSubtotal = getCartTotal();
-    const finalTotalAmount = itemsSubtotal + deliveryCharge;
+    const finalTotalAmount = itemsSubtotal + totalDeliveryCharge; // Use totalDeliveryCharge from state
 
     const newOrder: Order = {
-      id: `order${MOCK_ORDERS.length + 1}`,
+      id: `order${MOCK_ORDERS.length + 1}-${Date.now()}`,
       userId: currentUser.id,
       items: cartItems.map(item => ({ ...item })), 
       totalAmount: finalTotalAmount,
-      deliveryChargeAmount: deliveryCharge,
+      deliveryChargeAmount: totalDeliveryCharge, // Store the total delivery charge
       shippingAddress: orderShippingAddress, 
       status: 'pending', 
       createdAt: new Date(),
@@ -138,7 +170,7 @@ export default function CheckoutPage() {
     setIsPlacingOrder(false);
   };
 
-  if (authLoading || (!authLoading && !isAuthenticated) || (itemCount === 0 && !isPlacingOrder)) { // Allow viewing page briefly during order placement
+  if (authLoading || (!authLoading && !isAuthenticated) || (itemCount === 0 && !isPlacingOrder)) {
     return (
       <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -147,7 +179,7 @@ export default function CheckoutPage() {
   }
 
   const itemsSubtotal = getCartTotal();
-  const finalTotalAmount = itemsSubtotal + deliveryCharge;
+  const finalTotalAmount = totalDeliveryCharge !== null ? itemsSubtotal + totalDeliveryCharge : itemsSubtotal;
 
   return (
     <div className="grid md:grid-cols-3 gap-8">
@@ -188,7 +220,7 @@ export default function CheckoutPage() {
                 </Button>
               </div>
             ) : (
-                 <p className="text-muted-foreground">Please add a shipping address.</p>
+                 <p className="text-muted-foreground">Please add a shipping address by clicking "Edit Address".</p>
             )}
           </CardContent>
         </Card>
@@ -236,7 +268,8 @@ export default function CheckoutPage() {
                 <div className="flex justify-between">
                     <span className="flex items-center gap-1"><Truck className="h-4 w-4 text-muted-foreground"/>Shipping</span>
                     <span>
-                        {deliveryCharge > 0 ? `$${deliveryCharge.toFixed(2)}` : (cartItems.length > 0 ? 'Calculating...' : 'N/A')}
+                        {isCalculatingDelivery ? 'Calculating...' : 
+                         (totalDeliveryCharge !== null ? `$${totalDeliveryCharge.toFixed(2)}` : 'N/A')}
                     </span>
                 </div>
                 <div className="flex justify-between font-bold text-lg mt-2 pt-2 border-t">
@@ -250,7 +283,7 @@ export default function CheckoutPage() {
               onClick={handlePlaceOrder} 
               className="w-full" 
               size="lg"
-              disabled={isPlacingOrder || cartItems.length === 0 || !orderShippingAddress}
+              disabled={isPlacingOrder || cartItems.length === 0 || !orderShippingAddress || totalDeliveryCharge === null || isCalculatingDelivery}
             >
               {isPlacingOrder ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -261,10 +294,11 @@ export default function CheckoutPage() {
             </Button>
           </CardFooter>
         </Card>
-        {!orderShippingAddress && cartItems.length > 0 && (
-          <p className="text-xs text-destructive text-center mt-2">Please complete and confirm your shipping address to proceed.</p>
+        {(!orderShippingAddress || totalDeliveryCharge === null) && cartItems.length > 0 && (
+          <p className="text-xs text-destructive text-center mt-2">Please complete and confirm your shipping address. Delivery charges must be calculated.</p>
         )}
       </div>
     </div>
   );
 }
+
