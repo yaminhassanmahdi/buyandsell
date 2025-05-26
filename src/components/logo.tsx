@@ -25,11 +25,21 @@ export function Logo() {
   return (
     <Link href="/" className="flex items-center gap-2 text-xl font-bold text-primary hover:text-primary/90 transition-colors">
       {isClient && logoUrl && logoUrl !== DEFAULT_BUSINESS_SETTINGS.logoUrl ? (
-        <Image src={logoUrl} alt={`${appName} logo`} width={32} height={32} className="h-7 w-7 object-contain" />
+        <div style={{ width: '50px' }}>
+          <Image
+            src={logoUrl}
+            alt={`${appName} logo`}
+            width={0} // Required for "intrinsic" layout with style override if using older Next.js or specific styling
+            height={0}
+            sizes="100vw" // Necessary for intrinsic with width/height 0 or for responsive fill
+            style={{ width: '100%', height: 'auto' }} // Makes image responsive within the 50px wrapper
+            className="object-contain"
+          />
+        </div>
       ) : (
-        <Handshake className="h-7 w-7" />
+        <Handshake className="h-7 w-7" /> // Default icon if no custom logo
       )}
-      <span>{appName}</span>
+      {/* Text logo removed as per request */}
     </Link>
   );
 }
