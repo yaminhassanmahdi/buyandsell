@@ -8,11 +8,22 @@ import { PlusCircle, Search, Menu } from 'lucide-react';
 import { Input } from './ui/input';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { MainNav } from './main-nav'; // Keep for mobile drawer
-import { MOCK_CATEGORIES } from '@/lib/mock-data'; // For mobile drawer categories - UPDATED
+import { MOCK_CATEGORIES } from '@/lib/mock-data'; // For mobile drawer categories
 import { useAuth } from '@/contexts/auth-context'; // For mobile drawer sell link
+import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 export function SiteHeader() {
   const { isAuthenticated } = useAuth();
+  const [searchTerm, setSearchTerm] = useState('');
+  const router = useRouter();
+
+  const handleSearchSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (searchTerm.trim()) {
+      router.push(`/search?q=${encodeURIComponent(searchTerm.trim())}`);
+    }
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -38,7 +49,7 @@ export function SiteHeader() {
                   )}
                   <div className="pt-4">
                     <h3 className="mb-2 px-0 text-lg font-semibold tracking-tight">Categories</h3>
-                    {MOCK_CATEGORIES.map((category) => ( // UPDATED
+                    {MOCK_CATEGORIES.map((category) => (
                        <Link key={category.id} href={`/?category=${category.id}`} className="block py-2 text-muted-foreground hover:text-primary">
                         {category.name}
                       </Link>
@@ -50,6 +61,8 @@ export function SiteHeader() {
                         <h3 className="mb-2 px-0 text-lg font-semibold tracking-tight">My Account</h3>
                         <Link href="/account/orders" className="block py-2 text-muted-foreground hover:text-primary">My Orders</Link>
                         <Link href="/account/settings" className="block py-2 text-muted-foreground hover:text-primary">Account Settings</Link>
+                         <Link href="/account/my-products" className="block py-2 text-muted-foreground hover:text-primary">My Products</Link>
+                        <Link href="/account/my-earnings" className="block py-2 text-muted-foreground hover:text-primary">My Earnings</Link>
                       </div>
                      </>
                    )}
@@ -63,16 +76,18 @@ export function SiteHeader() {
           <Logo />
         </div>
 
-        <div className="flex-1 mx-4 md:mx-8">
+        <form onSubmit={handleSearchSubmit} className="flex-1 mx-4 md:mx-8">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               type="search"
               placeholder="Search for Products, Brands and More"
               className="w-full rounded-lg bg-muted pl-10 pr-4 py-2 h-10"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-        </div>
+        </form>
 
         <div className="hidden md:flex items-center space-x-4">
           <UserNav />
