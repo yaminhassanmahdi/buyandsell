@@ -8,7 +8,7 @@ import { format } from 'date-fns';
 import { OrderStatusBadge } from '@/components/order-status-badge';
 import { ORDER_STATUSES } from '@/lib/constants';
 import Image from 'next/image';
-import { UserCircle, MapPin, Calendar, Hash, Edit3, Save } from 'lucide-react';
+import { UserCircle, MapPin, Calendar, Edit3, Save } from 'lucide-react';
 import { useState } from 'react';
 
 interface OrderManagementCardProps {
@@ -29,6 +29,9 @@ export function OrderManagementCard({ order, onUpdateStatus, isProcessing }: Ord
     await onUpdateStatus(order.id, selectedStatus);
     setIsEditingStatus(false);
   };
+  
+  const { shippingAddress } = order;
+  const displayAddress = `${shippingAddress.houseAddress}${shippingAddress.roadNumber ? `, ${shippingAddress.roadNumber}` : ''}, ${shippingAddress.unionName}, ${shippingAddress.upazillaName}, ${shippingAddress.districtName}, ${shippingAddress.divisionName}, Bangladesh`;
 
   return (
     <Card className="shadow-lg">
@@ -46,8 +49,8 @@ export function OrderManagementCard({ order, onUpdateStatus, isProcessing }: Ord
           <div>
             <h4 className="font-semibold mb-1 text-md">Customer & Shipping</h4>
             <div className="text-sm text-muted-foreground space-y-0.5">
-              <p className="flex items-center"><UserCircle className="h-4 w-4 mr-2 shrink-0" /> {order.shippingAddress.fullName} (User ID: {order.userId})</p>
-              <p className="flex items-center"><MapPin className="h-4 w-4 mr-2 shrink-0" /> {order.shippingAddress.addressLine1}, {order.shippingAddress.city}, {order.shippingAddress.state} {order.shippingAddress.postalCode}</p>
+              <p className="flex items-center"><UserCircle className="h-4 w-4 mr-2 shrink-0" /> {shippingAddress.fullName} (User ID: {order.userId})</p>
+              <p className="flex items-start"><MapPin className="h-4 w-4 mr-2 shrink-0 mt-0.5" /> {displayAddress}</p>
             </div>
           </div>
           <div>

@@ -102,14 +102,20 @@ export const MOCK_PRODUCTS: Product[] = [
   },
 ];
 
-const MOCK_SHIPPING_ADDRESS: ShippingAddress = {
-  fullName: 'John Doe',
-  addressLine1: '123 Main St',
-  city: 'Anytown',
-  state: 'CA',
-  postalCode: '90210',
-  country: 'USA',
-  phoneNumber: '555-1234'
+const MOCK_SHIPPING_ADDRESS_BANGLADESH: ShippingAddress = {
+  fullName: 'Kazi Nazrul Islam',
+  phoneNumber: '01700000000',
+  country: 'Bangladesh',
+  divisionId: '3', // Dhaka Division (example _id)
+  divisionName: 'Dhaka Division',
+  districtId: '47', // Dhaka District (example _id)
+  districtName: 'Dhaka',
+  upazillaId: '322', // Dhanmondi (example _id)
+  upazillaName: 'Dhanmondi',
+  unionId: '3143', // Dhanmondi Union (example _id)
+  unionName: 'Dhanmondi Union', // Or a specific Ward name
+  houseAddress: 'House 123, Road 7A',
+  roadNumber: '7A', // Can be part of houseAddress or separate
 };
 
 export const MOCK_ORDERS: Order[] = [
@@ -120,7 +126,7 @@ export const MOCK_ORDERS: Order[] = [
       { id: 'prod1', name: 'Vintage Leather Jacket', price: 75, imageUrl: 'https://placehold.co/100x100.png', quantity: 1 },
     ],
     totalAmount: 75,
-    shippingAddress: MOCK_SHIPPING_ADDRESS,
+    shippingAddress: MOCK_SHIPPING_ADDRESS_BANGLADESH,
     status: 'delivered',
     createdAt: createPastDate(7),
     updatedAt: createPastDate(3),
@@ -133,21 +139,21 @@ export const MOCK_ORDERS: Order[] = [
       { id: 'prod5', name: 'Running Shoes Size 9', price: 40, imageUrl: 'https://placehold.co/100x100.png', quantity: 1 },
     ],
     totalAmount: 290,
-    shippingAddress: MOCK_SHIPPING_ADDRESS,
+    shippingAddress: { ...MOCK_SHIPPING_ADDRESS_BANGLADESH, fullName: 'John Doe Updated' },
     status: 'shipped',
     createdAt: createPastDate(3),
     updatedAt: createPastDate(1),
   },
   {
     id: 'order3',
-    userId: 'user2', // Order for another user
+    userId: 'user2',
     items: [
       { id: 'prod4', name: 'Samsung Galaxy S20', price: 300, imageUrl: 'https://placehold.co/100x100.png', quantity: 1 },
     ],
     totalAmount: 300,
-    shippingAddress: { ...MOCK_SHIPPING_ADDRESS, fullName: 'Jane Smith'},
+    shippingAddress: { ...MOCK_SHIPPING_ADDRESS_BANGLADESH, fullName: 'Jane Smith BD' },
     status: 'processing',
     createdAt: createPastDate(1),
-    updatedAt: createPastDate(0), // today
+    updatedAt: createPastDate(0), 
   },
 ];

@@ -7,8 +7,8 @@ import { useCart } from '@/contexts/cart-context';
 import { AddressForm } from '@/components/address-form';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import type { ShippingAddress, Order, CartItem as CartItemType } from '@/lib/types';
-import { MOCK_ORDERS } from '@/lib/mock-data'; // For adding the new order
+import type { ShippingAddress, Order } from '@/lib/types';
+import { MOCK_ORDERS } from '@/lib/mock-data'; 
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
 import { Loader2, ShieldCheck } from 'lucide-react';
@@ -26,9 +26,29 @@ export default function CheckoutPage() {
       router.push('/login?redirect=/checkout');
     }
     if (!authLoading && itemCount === 0) {
-      router.push('/cart'); // Redirect if cart is empty
+      router.push('/cart'); 
     }
   }, [isAuthenticated, authLoading, router, itemCount]);
+
+  // Attempt to find a previous shipping address for the user to pre-fill some details
+  // This will only pre-fill top-level fields. Dropdowns will need user selection.
+  const initialAddressData = (): Partial<ShippingAddress> => {
+    if (currentUser?.id) {
+      const userLastOrder = MOCK_ORDERS.find(o => o.userId === currentUser.id && o.shippingAddress);
+      if (userLastOrder?.shippingAddress) {
+        return {
+            fullName: userLastOrder.shippingAddress.fullName,
+            phoneNumber: userLastOrder.shippingAddress.phoneNumber,
+            houseAddress: userLastOrder.shippingAddress.houseAddress,
+            roadNumber: userLastOrder.shippingAddress.roadNumber,
+            // IDs for dropdowns could be pre-filled if available and desired,
+            // but that would require more complex logic to also fetch and set dependent dropdowns
+        };
+      }
+    }
+    return {};
+  };
+
 
   const handleAddressSubmit = (data: ShippingAddress) => {
     setShippingAddress(data);
@@ -39,26 +59,25 @@ export default function CheckoutPage() {
     if (!shippingAddress || !currentUser) return;
     setIsPlacingOrder(true);
 
-    // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1500));
 
     const newOrder: Order = {
       id: `order${MOCK_ORDERS.length + 1}`,
       userId: currentUser.id,
-      items: cartItems.map(item => ({ ...item })), // Create a copy of cart items
+      items: cartItems.map(item => ({ ...item })), 
       totalAmount: getCartTotal(),
-      shippingAddress: shippingAddress,
-      status: 'pending', // Or 'processing'
+      shippingAddress: shippingAddress, // Use the full new address object
+      status: 'pending', 
       createdAt: new Date(),
       updatedAt: new Date(),
     };
-    MOCK_ORDERS.push(newOrder); // Add to mock data store
+    MOCK_ORDERS.push(newOrder); 
     
     clearCart();
     toast({
       title: "Order Placed Successfully!",
       description: `Your order #${newOrder.id} has been placed.`,
-      variant: "default", // or success variant if you have one
+      variant: "default", 
     });
     router.push(`/account/orders?orderId=${newOrder.id}`);
     setIsPlacingOrder(false);
@@ -78,10 +97,10 @@ export default function CheckoutPage() {
         <Card className="shadow-lg mb-8">
           <CardHeader>
             <CardTitle className="text-2xl">Shipping Address</CardTitle>
-            <CardDescription>Enter your shipping details to proceed.</CardDescription>
+            <CardDescription>Enter your shipping details for Bangladesh.</CardDescription>
           </CardHeader>
           <CardContent>
-            <AddressForm onSubmit={handleAddressSubmit} initialData={currentUser?.id ? MOCK_ORDERS.find(o => o.userId === currentUser.id)?.shippingAddress : {}} />
+            <AddressForm onSubmit={handleAddressSubmit} initialData={initialAddressData()} />
           </CardContent>
         </Card>
 
