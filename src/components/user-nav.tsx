@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from '@/contexts/auth-context';
 import { USER_NAVIGATION, ADMIN_NAVIGATION } from '@/lib/constants';
-import { ShoppingCart, UserCircle, LogIn, LogOut, UserPlus, CreditCard, LayoutDashboard, DollarSignSign } from 'lucide-react';
+import { ShoppingCart, UserCircle, LogIn, LogOut, UserPlus, CreditCard, LayoutDashboard, DollarSign } from 'lucide-react';
 import { useCart } from '@/contexts/cart-context';
 import React, { useState, useEffect } from 'react';
 
@@ -71,7 +71,7 @@ export function UserNav() {
               ))}
                <Link href="/sell" passHref>
                   <DropdownMenuItem className="cursor-pointer">
-                    <DollarSignSign className="mr-2 h-4 w-4" />
+                    <DollarSign className="mr-2 h-4 w-4" />
                     <span>Sell Your Item</span>
                   </DropdownMenuItem>
                 </Link>
@@ -121,7 +121,7 @@ export function UserNav() {
       </Link>
       <Link href="/sell" passHref className="hidden md:inline-flex">
         <Button variant="outline">
-          <DollarSignSign className="mr-2 h-4 w-4" /> Sell Your Item
+          <DollarSign className="mr-2 h-4 w-4" /> Sell Your Item
         </Button>
       </Link>
        {/* Login button for mobile if not authenticated */}
