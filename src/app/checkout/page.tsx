@@ -8,14 +8,13 @@ import { AddressForm } from '@/components/address-form';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import type { ShippingAddress, Order } from '@/lib/types';
-import { MOCK_ORDERS } // MOCK_USERS no longer needed here for initial address
-from '@/lib/mock-data'; 
+import { MOCK_ORDERS } from '@/lib/mock-data'; 
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
 import { Loader2, ShieldCheck } from 'lucide-react';
 
 export default function CheckoutPage() {
-  const { currentUser, isAuthenticated, loading: authLoading } = useAuth();
+  const { currentUser, isAuthenticated, loading: authLoading, updateCurrentUserData } = useAuth();
   const { cartItems, getCartTotal, clearCart, itemCount } = useCart();
   const router = useRouter();
   const { toast } = useToast();
@@ -31,32 +30,39 @@ export default function CheckoutPage() {
     }
   }, [isAuthenticated, authLoading, router, itemCount]);
 
-  const initialAddressData = (): Partial<ShippingAddress> => {
-    if (currentUser?.id) {
-      const userLastOrder = MOCK_ORDERS.find(o => o.userId === currentUser.id && o.shippingAddress);
-      if (userLastOrder?.shippingAddress) {
-        return { // Return only names, IDs are not part of the new static model for initialData
-            fullName: userLastOrder.shippingAddress.fullName,
-            phoneNumber: userLastOrder.shippingAddress.phoneNumber,
-            division: userLastOrder.shippingAddress.division,
-            district: userLastOrder.shippingAddress.district,
-            thana: userLastOrder.shippingAddress.thana,
-            houseAddress: userLastOrder.shippingAddress.houseAddress,
-            roadNumber: userLastOrder.shippingAddress.roadNumber,
-        };
-      }
+  // Effect to set initial shipping address from profile or keep it null
+  useEffect(() => {
+    if (currentUser?.defaultShippingAddress) {
+      setShippingAddress(currentUser.defaultShippingAddress);
+    }
+  }, [currentUser?.defaultShippingAddress]);
+
+
+  const initialAddressFormData = (): Partial<ShippingAddress> => {
+    if (currentUser?.defaultShippingAddress) {
+      return currentUser.defaultShippingAddress;
     }
     return {};
   };
 
 
   const handleAddressSubmit = (data: ShippingAddress) => {
-    setShippingAddress(data); // Data is already in the correct ShippingAddress format
-    toast({ title: "Address Saved", description: "Shipping address has been saved." });
+    setShippingAddress(data); // For the current order
+    if (currentUser) {
+      updateCurrentUserData({ defaultShippingAddress: data }); // Update user's default
+    }
+    toast({ title: "Address Confirmed", description: "Shipping address for this order has been confirmed." });
   };
 
   const handlePlaceOrder = async () => {
-    if (!shippingAddress || !currentUser) return;
+    if (!shippingAddress || !currentUser) {
+        toast({
+            title: "Shipping Address Required",
+            description: "Please provide a shipping address to place your order.",
+            variant: "destructive",
+        });
+        return;
+    }
     setIsPlacingOrder(true);
 
     await new Promise(resolve => setTimeout(resolve, 1500));
@@ -97,10 +103,15 @@ export default function CheckoutPage() {
         <Card className="shadow-lg mb-8">
           <CardHeader>
             <CardTitle className="text-2xl">Shipping Address</CardTitle>
-            <CardDescription>Enter your shipping details for Bangladesh.</CardDescription>
+            <CardDescription>
+              {shippingAddress ? "Confirm or update your shipping address." : "Enter your shipping details for Bangladesh."}
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <AddressForm onSubmit={handleAddressSubmit} initialData={initialAddressData()} />
+            <AddressForm 
+              onSubmit={handleAddressSubmit} 
+              initialData={initialAddressFormData()} 
+            />
           </CardContent>
         </Card>
 
@@ -157,7 +168,7 @@ export default function CheckoutPage() {
               onClick={handlePlaceOrder} 
               className="w-full" 
               size="lg"
-              disabled={!shippingAddress || isPlacingOrder || cartItems.length === 0}
+              disabled={isPlacingOrder || cartItems.length === 0} // shippingAddress check is handled by handlePlaceOrder
             >
               {isPlacingOrder ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -168,6 +179,9 @@ export default function CheckoutPage() {
             </Button>
           </CardFooter>
         </Card>
+        {!shippingAddress && cartItems.length > 0 && (
+          <p className="text-xs text-destructive text-center mt-2">Please complete your shipping address to proceed.</p>
+        )}
       </div>
     </div>
   );

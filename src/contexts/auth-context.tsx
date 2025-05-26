@@ -11,7 +11,7 @@ interface AuthContextType {
   login: (email: string, pass: string) => Promise<User | null>; // pass is unused for mock
   logout: () => void;
   register: (name: string, email: string, pass: string) => Promise<User | null>; // pass is unused for mock
-  updateCurrentUserData: (updatedData: Partial<Pick<User, 'defaultShippingAddress' | 'withdrawalMethods'>>) => void;
+  updateCurrentUserData: (updatedData: Partial<Pick<User, 'name' | 'email' | 'defaultShippingAddress' | 'withdrawalMethods'>>) => void;
   loading: boolean;
   isAuthenticated: boolean;
   isAdmin: boolean;
@@ -25,17 +25,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const router = useRouter();
 
   useEffect(() => {
+    // On initial load, if there's a currentUser in localStorage,
+    // ensure its data (especially nested objects like withdrawalMethods)
+    // is correctly synchronized with the MOCK_USERS source if they logged in before.
+    // This is more relevant if MOCK_USERS could change structure or if we want to ensure consistency.
+    // For now, we trust useLocalStorage's initial load.
     setLoading(false);
   }, []);
 
   const login = async (email: string, _pass: string): Promise<User | null> => {
     setLoading(true);
     await new Promise(resolve => setTimeout(resolve, 500));
-    const user = MOCK_USERS.find(u => u.email === email);
-    if (user) {
-      setCurrentUser(user);
+    const userFromMock = MOCK_USERS.find(u => u.email === email);
+    if (userFromMock) {
+      // When logging in, ensure we're using the definitive version from MOCK_USERS
+      // This helps if MOCK_USERS was updated elsewhere (e.g. admin panel direct modification - though not implemented)
+      // or if the structure of User object in MOCK_USERS changed.
+      // Also ensures that arrays like withdrawalMethods are fresh.
+      const userToStore: User = {
+        ...userFromMock, // Base data from MOCK_USERS
+        defaultShippingAddress: userFromMock.defaultShippingAddress || null,
+        withdrawalMethods: userFromMock.withdrawalMethods || [],
+      };
+      setCurrentUser(userToStore);
       setLoading(false);
-      return user;
+      return userToStore;
     }
     setLoading(false);
     return null;
@@ -68,13 +82,32 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     router.push('/'); 
   };
 
-  const updateCurrentUserData = (updatedData: Partial<Pick<User, 'defaultShippingAddress' | 'withdrawalMethods'>>) => {
+  const updateCurrentUserData = (updatedData: Partial<Pick<User, 'name' | 'email' | 'defaultShippingAddress' | 'withdrawalMethods'>>) => {
     if (currentUser) {
       const userIndex = MOCK_USERS.findIndex(u => u.id === currentUser.id);
       if (userIndex !== -1) {
-        const updatedUser = { ...MOCK_USERS[userIndex], ...updatedData };
-        MOCK_USERS[userIndex] = updatedUser;
-        setCurrentUser(updatedUser); // Update local storage and context state
+        // Create the updated user object
+        const updatedUserInMock = { 
+          ...MOCK_USERS[userIndex], 
+          ...updatedData 
+        };
+        
+        // Ensure withdrawalMethods is always an array, even if updatedData.withdrawalMethods is undefined
+        if (updatedData.withdrawalMethods !== undefined) {
+            updatedUserInMock.withdrawalMethods = updatedData.withdrawalMethods;
+        } else {
+            updatedUserInMock.withdrawalMethods = MOCK_USERS[userIndex].withdrawalMethods || [];
+        }
+        
+        // Ensure defaultShippingAddress can be set to null
+        if (updatedData.hasOwnProperty('defaultShippingAddress')) {
+             updatedUserInMock.defaultShippingAddress = updatedData.defaultShippingAddress;
+        } else {
+            updatedUserInMock.defaultShippingAddress = MOCK_USERS[userIndex].defaultShippingAddress || null;
+        }
+
+        MOCK_USERS[userIndex] = updatedUserInMock; // Update the "database"
+        setCurrentUser(updatedUserInMock); // Update local storage and context state
       }
     }
   };

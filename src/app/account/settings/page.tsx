@@ -122,7 +122,7 @@ export default function AccountSettingsPage() {
             <DialogTrigger asChild>
               <Button variant="outline">{currentAddress ? "Edit Address" : "Add Address"}</Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-lg">
+            <DialogContent className="sm:max-w-lg max-h-[80vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>{currentAddress ? "Edit Shipping Address" : "Add Shipping Address"}</DialogTitle>
                 <DialogDescription>
@@ -147,14 +147,16 @@ export default function AccountSettingsPage() {
         </CardHeader>
         <CardContent>
           {(currentUser.withdrawalMethods && currentUser.withdrawalMethods.length > 0) ? (
-            currentUser.withdrawalMethods.map(method => (
-              <WithdrawalMethodItem 
-                key={method.id} 
-                method={method} 
-                onRemove={handleRemoveWithdrawalMethod}
-                onSetDefault={handleSetDefaultWithdrawalMethod}
-              />
-            ))
+             <div className="space-y-3">
+                {currentUser.withdrawalMethods.map(method => (
+                <WithdrawalMethodItem 
+                    key={method.id} 
+                    method={method} 
+                    onRemove={handleRemoveWithdrawalMethod}
+                    onSetDefault={handleSetDefaultWithdrawalMethod}
+                />
+                ))}
+            </div>
           ) : (
             <p className="text-muted-foreground">No withdrawal methods added yet.</p>
           )}
@@ -166,7 +168,7 @@ export default function AccountSettingsPage() {
                 <PlusCircle className="mr-2 h-4 w-4" /> Add New Method
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-lg">
+            <DialogContent className="sm:max-w-lg max-h-[80vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Add Withdrawal Method</DialogTitle>
                 <DialogDescription>
