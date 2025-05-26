@@ -3,7 +3,7 @@
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { MOCK_ORDERS, MOCK_PRODUCTS, MOCK_USERS } from '@/lib/mock-data';
-import type { Order, Product as ProductType, User as UserType, ShippingAddress } from '@/lib/types';
+import type { Order, Product as ProductType, User as UserType, ShippingAddress, CartItem } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
@@ -12,7 +12,7 @@ import Image from 'next/image';
 import { format } from 'date-fns';
 import { ArrowLeft, UserCircle, MapPin, CalendarDays, ShoppingBag, Briefcase, Home, Loader2 } from 'lucide-react';
 
-interface EnrichedOrderItem extends Order['items'][0] {
+interface EnrichedOrderItem extends CartItem {
   productDetails?: ProductType;
   sellerDetails?: UserType;
 }
