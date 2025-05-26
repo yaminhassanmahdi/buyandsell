@@ -1,15 +1,13 @@
 
-import type { Product, User, Order, ShippingAddress, Category, SubCategory, Brand } from './types';
-import { INITIAL_CATEGORIES, INITIAL_BRANDS } from './constants'; // Assuming constants now export these initial arrays
+import type { Product, User, Order, ShippingAddress, Category, SubCategory, Brand, WithdrawalRequest } from './types';
+import { INITIAL_CATEGORIES, INITIAL_BRANDS } from './constants'; 
 
-// Helper function to create a date in the past
 const createPastDate = (daysAgo: number): Date => {
   const date = new Date();
   date.setDate(date.getDate() - daysAgo);
   return date;
 };
 
-// --- Mutable Mock Data for Admin Management ---
 export let MOCK_CATEGORIES: Category[] = INITIAL_CATEGORIES.map(cat => ({ id: cat.id, name: cat.name }));
 
 export let MOCK_SUBCATEGORIES: SubCategory[] = [
@@ -21,8 +19,6 @@ export let MOCK_SUBCATEGORIES: SubCategory[] = [
 ];
 
 export let MOCK_BRANDS: Brand[] = INITIAL_BRANDS.map(brand => ({ ...brand }));
-// --- End Mutable Mock Data ---
-
 
 export const MOCK_USERS: User[] = [
   { 
@@ -39,20 +35,50 @@ export const MOCK_USERS: User[] = [
       houseAddress: '123 Gulshan Ave',
       roadNumber: 'Road 10',
     },
-    withdrawalMethods: [],
+    withdrawalMethods: [
+       {
+        id: 'wm_user1_bkash',
+        type: 'bkash',
+        details: { accountNumber: '01711223344' },
+        isDefault: true,
+        createdAt: createPastDate(5),
+      }
+    ],
   },
   { 
     id: 'user2', 
     email: 'seller@example.com', 
     name: 'Jane Smith',
-    defaultShippingAddress: null,
+    defaultShippingAddress: {
+      fullName: 'Jane Smith',
+      phoneNumber: '01822222222',
+      country: 'Bangladesh',
+      division: 'Chittagong',
+      district: 'Chittagong',
+      thana: 'Pahartali',
+      houseAddress: 'Apt 2B, Hill View Road',
+      roadNumber: 'Road 5',
+    },
     withdrawalMethods: [
       {
-        id: 'wm1',
+        id: 'wm1_user2',
         type: 'bkash',
         details: { accountNumber: '01812345678' },
         isDefault: true,
         createdAt: createPastDate(10),
+      },
+      {
+        id: 'wm2_user2',
+        type: 'bank',
+        details: { 
+          bankName: 'City Bank', 
+          accountHolderName: 'Jane Smith', 
+          accountNumber: '1234567890123', 
+          routingNumber: '112233445',
+          branchName: 'Agrabad Branch'
+        },
+        isDefault: false,
+        createdAt: createPastDate(20),
       }
     ],
   },
@@ -75,7 +101,7 @@ export const MOCK_USERS: User[] = [
   },
 ];
 
-export const MOCK_PRODUCTS: Product[] = [
+export let MOCK_PRODUCTS: Product[] = [
   {
     id: 'prod1',
     name: 'Vintage Leather Jacket',
@@ -84,7 +110,7 @@ export const MOCK_PRODUCTS: Product[] = [
     imageUrl: 'https://placehold.co/600x400.png',
     imageHint: 'leather jacket',
     categoryId: 'fashion',
-    subCategoryId: 'sc3', // Mens Apparel
+    subCategoryId: 'sc3', 
     brandId: 'generic',
     sellerId: 'user2',
     sellerName: 'Jane Smith',
@@ -99,7 +125,7 @@ export const MOCK_PRODUCTS: Product[] = [
     imageUrl: 'https://placehold.co/600x400.png',
     imageHint: 'smartphone electronics',
     categoryId: 'electronics',
-    subCategoryId: 'sc1', // Smartphones
+    subCategoryId: 'sc1', 
     brandId: 'apple',
     sellerId: 'user2',
     sellerName: 'Jane Smith',
@@ -114,7 +140,7 @@ export const MOCK_PRODUCTS: Product[] = [
     imageUrl: 'https://placehold.co/600x400.png',
     imageHint: 'bookshelf furniture',
     categoryId: 'home-garden',
-    subCategoryId: 'sc5', // Living Room Furniture
+    subCategoryId: 'sc5', 
     brandId: 'ikea',
     sellerId: 'user1',
     sellerName: 'John Doe',
@@ -129,11 +155,11 @@ export const MOCK_PRODUCTS: Product[] = [
     imageUrl: 'https://placehold.co/600x400.png',
     imageHint: 'android smartphone',
     categoryId: 'electronics',
-    subCategoryId: 'sc1', // Smartphones
+    subCategoryId: 'sc1', 
     brandId: 'samsung',
     sellerId: 'user2',
     sellerName: 'Jane Smith',
-    status: 'approved',
+    status: 'sold', // Mark as sold for earnings calculation
     createdAt: createPastDate(15),
   },
   {
@@ -143,8 +169,7 @@ export const MOCK_PRODUCTS: Product[] = [
     price: 40,
     imageUrl: 'https://placehold.co/600x400.png',
     imageHint: 'running shoes',
-    categoryId: 'fashion', // Belongs to Fashion main category
-    // subCategoryId: undefined, // No specific sub-category
+    categoryId: 'fashion', 
     brandId: 'nike',
     sellerId: 'user1',
     sellerName: 'John Doe',
@@ -158,7 +183,7 @@ export const MOCK_PRODUCTS: Product[] = [
     price: 20,
     imageUrl: 'https://placehold.co/600x400.png',
     imageHint: 'books literature',
-    categoryId: 'books', // Belongs to Books main category
+    categoryId: 'books', 
     brandId: 'generic',
     sellerId: 'user2',
     sellerName: 'Jane Smith',
@@ -181,39 +206,56 @@ const MOCK_SHIPPING_ADDRESS_BANGLADESH: ShippingAddress = {
 export const MOCK_ORDERS: Order[] = [
   {
     id: 'order1',
-    userId: 'user1',
+    userId: 'user1', // John Doe
     items: [
-      { id: 'prod1', name: 'Vintage Leather Jacket', price: 75, imageUrl: 'https://placehold.co/100x100.png', quantity: 1 },
+      { id: 'prod1', name: 'Vintage Leather Jacket', price: 75, imageUrl: 'https://placehold.co/100x100.png', quantity: 1, sellerId: 'user2' },
     ],
-    totalAmount: 75,
+    totalAmount: 75 + 70, // Price + intraThana (assuming buyer and seller1 are in same thana for this example)
+    deliveryChargeAmount: 70,
     shippingAddress: MOCK_USERS.find(u => u.id === 'user1')?.defaultShippingAddress || MOCK_SHIPPING_ADDRESS_BANGLADESH,
-    status: 'delivered',
+    status: 'delivered', // For earnings for user2
     createdAt: createPastDate(7),
     updatedAt: createPastDate(3),
   },
   {
     id: 'order2',
-    userId: 'user1',
+    userId: 'user1', // John Doe
     items: [
-      { id: 'prod2', name: 'Used iPhone X', price: 250, imageUrl: 'https://placehold.co/100x100.png', quantity: 1 },
-      { id: 'prod5', name: 'Running Shoes Size 9', price: 40, imageUrl: 'https://placehold.co/100x100.png', quantity: 1 },
+      { id: 'prod2', name: 'Used iPhone X', price: 250, imageUrl: 'https://placehold.co/100x100.png', quantity: 1, sellerId: 'user2' },
+      { id: 'prod5', name: 'Running Shoes Size 9', price: 40, imageUrl: 'https://placehold.co/100x100.png', quantity: 1, sellerId: 'user1' },
     ],
-    totalAmount: 290,
+    totalAmount: 290 + 130, // Price + interDistrict (example)
+    deliveryChargeAmount: 130,
     shippingAddress: { ...(MOCK_USERS.find(u => u.id === 'user1')?.defaultShippingAddress || MOCK_SHIPPING_ADDRESS_BANGLADESH), fullName: 'John Doe Updated', district: 'Gazipur', thana: 'Gazipur Sadar' },
-    status: 'shipped',
+    status: 'delivered', // For earnings for user2 (for iPhone) and user1 (for shoes)
     createdAt: createPastDate(3),
     updatedAt: createPastDate(1),
   },
   {
     id: 'order3',
-    userId: 'user2',
+    userId: 'user2', // Jane Smith
     items: [
-      { id: 'prod4', name: 'Samsung Galaxy S20', price: 300, imageUrl: 'https://placehold.co/100x100.png', quantity: 1 },
+      { id: 'prod4', name: 'Samsung Galaxy S20', price: 300, imageUrl: 'https://placehold.co/100x100.png', quantity: 1, sellerId: 'user2' },
     ],
-    totalAmount: 300,
+    totalAmount: 300 + 110, // Price + intraDistrict (example)
+    deliveryChargeAmount: 110,
     shippingAddress: { ...MOCK_SHIPPING_ADDRESS_BANGLADESH, fullName: 'Jane Smith BD', division: 'Chittagong', district: 'Chittagong', thana: 'Kotwali (Chittagong)' },
     status: 'processing',
     createdAt: createPastDate(1),
     updatedAt: createPastDate(0), 
   },
+];
+
+export let MOCK_WITHDRAWAL_REQUESTS: WithdrawalRequest[] = [
+  {
+    id: 'wr1',
+    userId: 'user2',
+    userName: 'Jane Smith',
+    amount: 50,
+    withdrawalMethodId: 'wm1_user2',
+    withdrawalMethodType: 'bkash',
+    withdrawalMethodDetails: 'bKash: ****5678',
+    status: 'pending',
+    requestedAt: createPastDate(2),
+  }
 ];

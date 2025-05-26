@@ -2,7 +2,6 @@
 export type Category = {
   id: string;
   name: string;
-  // icon field removed for dynamic management simplicity
 };
 
 export type SubCategory = {
@@ -23,21 +22,23 @@ export type Product = {
   price: number;
   imageUrl: string;
   imageHint?: string;
-  categoryId: string; // ID of the parent category
-  subCategoryId?: string; // Optional ID of the sub-category
-  brandId: string; // ID of the brand
+  categoryId: string; 
+  subCategoryId?: string; 
+  brandId: string; 
   sellerId: string;
   sellerName?: string;
-  status: 'pending' | 'approved' | 'rejected' | 'sold';
+  status: 'pending' | 'approved' | 'rejected' | 'sold'; // 'sold' implies delivered for earnings
   createdAt: Date;
 };
 
 export type CartItem = {
-  id: string; // This will be product.id
+  id: string; 
   name: string;
   price: number;
   imageUrl: string;
   quantity: number;
+  // For per-seller delivery charge calculation
+  sellerId?: string; 
 };
 
 export type ShippingAddress = {
@@ -57,8 +58,8 @@ export type Order = {
   id: string;
   userId: string;
   items: CartItem[];
-  totalAmount: number; // This will now be items subtotal + delivery charge
-  deliveryChargeAmount?: number; // The calculated delivery charge
+  totalAmount: number; 
+  deliveryChargeAmount?: number; 
   shippingAddress: ShippingAddress;
   status: OrderStatus;
   createdAt: Date;
@@ -105,7 +106,6 @@ export type FilterValues = {
   sortBy?: 'price_asc' | 'price_desc' | 'date_newest' | 'date_oldest';
 };
 
-// Simplified types for static address data (used in constants.ts for address form)
 export type StaticDivision = {
   id: string;
   name: string;
@@ -123,9 +123,25 @@ export type StaticThana = {
   districtId: string; 
 };
 
-// New type for delivery charge settings
 export interface DeliveryChargeSettings {
   intraThana: number;
   intraDistrict: number;
   interDistrict: number;
 }
+
+// New types for Withdrawal Requests
+export type WithdrawalRequestStatus = 'pending' | 'approved' | 'rejected';
+
+export type WithdrawalRequest = {
+  id: string;
+  userId: string; 
+  userName: string; 
+  amount: number;
+  withdrawalMethodId: string; 
+  withdrawalMethodType: WithdrawalMethodType; 
+  withdrawalMethodDetails: string; // e.g., "bKash: ****1234" or "Bank ABC: ****5678"
+  status: WithdrawalRequestStatus;
+  requestedAt: Date;
+  processedAt?: Date;
+  adminNote?: string;
+};

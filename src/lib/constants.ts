@@ -1,5 +1,5 @@
 
-import type { OrderStatus, StaticDivision, StaticDistrict, StaticThana, Category, Brand, DeliveryChargeSettings } from './types'; // Added Category, Brand
+import type { OrderStatus, StaticDivision, StaticDistrict, StaticThana, Category, Brand, DeliveryChargeSettings } from './types'; 
 import { 
   Smartphone, Laptop, Shirt, Armchair, BookOpen, Tag, 
   Package as PackageIcon, 
@@ -7,12 +7,11 @@ import {
   Handshake as HandshakeIcon, 
   LayoutDashboard, CheckSquare, ShoppingCart, Users as UsersIcon, 
   ListChecks, FolderTree, Tags as TagsIcon, Settings2,
-  Globe, Library, MapPin, Home, DollarSign
+  Globe, Library, MapPin, Home, DollarSign, Briefcase, Edit, Trash2, CreditCard, PieChart, FileText, TrendingUp
 } from 'lucide-react';
 
 export const APP_NAME = '2ndhandbajar.com';
 
-// These are now initial values for the mutable MOCK_CATEGORIES and MOCK_BRANDS in mock-data.ts
 export const INITIAL_CATEGORIES: Category[] = [
   { id: 'electronics', name: 'Electronics' },
   { id: 'fashion', name: 'Fashion' },
@@ -47,7 +46,9 @@ export const SITE_NAVIGATION = [
 
 export const USER_NAVIGATION = [
   { name: 'My Orders', href: '/account/orders' },
-  { name: 'Account Settings', href: '/account/settings' }, 
+  { name: 'My Products', href: '/account/my-products', icon: Briefcase },
+  { name: 'My Earnings', href: '/account/my-earnings', icon: TrendingUp },
+  { name: 'Account Settings', href: '/account/settings', icon: Settings2 }, 
 ];
 
 export interface AdminNavItem {
@@ -84,14 +85,22 @@ export const ADMIN_NAVIGATION: AdminNavItem[] = [
   },
   { 
     name: 'Location', 
-    href: '/admin/locations/countries', // Default to first sub-item or a dedicated overview
-    icon: MapPin, // Using MapPin as a general location icon for the main tab
+    href: '/admin/locations/countries', 
+    icon: MapPin, 
     subItems: [
       { name: 'Countries', href: '/admin/locations/countries', icon: Globe },
-      { name: 'Divisions', href: '/admin/locations/divisions', icon: Library }, // Library as an alternative to Map
+      { name: 'Divisions', href: '/admin/locations/divisions', icon: Library }, 
       { name: 'Districts', href: '/admin/locations/districts', icon: MapPin },
-      { name: 'Thanas/Upazillas', href: '/admin/locations/thanas', icon: Home }, // Using Home as Building is not in Lucide
+      { name: 'Thanas/Upazillas', href: '/admin/locations/thanas', icon: Home }, 
       { name: 'Delivery Charges', href: '/admin/locations/delivery-charges', icon: DollarSign },
+    ]
+  },
+  { 
+    name: 'Financials', 
+    href: '/admin/financials/withdrawal-requests', 
+    icon: PieChart, // Example icon for financials
+    subItems: [
+      { name: 'Withdrawal Requests', href: '/admin/financials/withdrawal-requests', icon: CreditCard },
     ]
   },
   { name: 'Manage Users', href: '/admin/users', icon: UsersIcon },
@@ -108,7 +117,6 @@ export const DIVISIONS_BD: StaticDivision[] = [
   { id: 'chittagong_div', name: 'Chittagong' },
   { id: 'sylhet_div', name: 'Sylhet' },
   { id: 'rajshahi_div', name: 'Rajshahi' },
-  // Add more divisions as needed for a complete list
   { id: 'khulna_div', name: 'Khulna' },
   { id: 'barisal_div', name: 'Barisal' },
   { id: 'rangpur_div', name: 'Rangpur' },
@@ -116,50 +124,39 @@ export const DIVISIONS_BD: StaticDivision[] = [
 ];
 
 export const DISTRICTS_BD: StaticDistrict[] = [
-  // Dhaka Division
   { id: 'dhaka_dist', name: 'Dhaka', divisionId: 'dhaka_div' },
   { id: 'gazipur_dist', name: 'Gazipur', divisionId: 'dhaka_div' },
   { id: 'narayanganj_dist', name: 'Narayanganj', divisionId: 'dhaka_div' },
   { id: 'tangail_dist', name: 'Tangail', divisionId: 'dhaka_div' },
   { id: 'kishoreganj_dist', name: 'Kishoreganj', divisionId: 'dhaka_div' },
-  // Chittagong Division
   { id: 'chittagong_dist', name: 'Chittagong', divisionId: 'chittagong_div' },
   { id: 'coxsbazar_dist', name: 'Cox\'s Bazar', divisionId: 'chittagong_div' },
   { id: 'comilla_dist', name: 'Comilla', divisionId: 'chittagong_div' },
   { id: 'feni_dist', name: 'Feni', divisionId: 'chittagong_div' },
-  // Sylhet Division
   { id: 'sylhet_sadar_dist', name: 'Sylhet Sadar', divisionId: 'sylhet_div' },
   { id: 'moulvibazar_dist', name: 'Moulvibazar', divisionId: 'sylhet_div' },
   { id: 'habiganj_dist', name: 'Habiganj', divisionId: 'sylhet_div' },
-  // Rajshahi Division
   { id: 'rajshahi_sadar_dist', name: 'Rajshahi Sadar', divisionId: 'rajshahi_div' },
   { id: 'bogra_dist', name: 'Bogra', divisionId: 'rajshahi_div' },
   { id: 'pabna_dist', name: 'Pabna', divisionId: 'rajshahi_div' },
-  // Add more districts for other divisions
 ];
 
 export const THANAS_BD: StaticThana[] = [
-  // Dhaka District
   { id: 'dhanmondi_thana', name: 'Dhanmondi', districtId: 'dhaka_dist' },
   { id: 'gulshan_thana', name: 'Gulshan', districtId: 'dhaka_dist' },
   { id: 'mirpur_thana', name: 'Mirpur', districtId: 'dhaka_dist' },
   { id: 'mohammadpur_thana', name: 'Mohammadpur', districtId: 'dhaka_dist' },
   { id: 'uttara_thana', name: 'Uttara', districtId: 'dhaka_dist' },
-  // Gazipur District
   { id: 'gazipur_sadar_thana', name: 'Gazipur Sadar', districtId: 'gazipur_dist' },
   { id: 'kaliakair_thana', name: 'Kaliakair', districtId: 'gazipur_dist' },
   { id: 'kapasia_thana', name: 'Kapasia', districtId: 'gazipur_dist' },
-  // Chittagong District
   { id: 'kotwali_ctg_thana', name: 'Kotwali (Chittagong)', districtId: 'chittagong_dist' },
   { id: 'pahartali_thana', name: 'Pahartali', districtId: 'chittagong_dist' },
   { id: 'panchlaish_thana', name: 'Panchlaish', districtId: 'chittagong_dist' },
-  // Sylhet Sadar District
   { id: 'sylhet_sadar_thana', name: 'Sylhet Sadar Upazila', districtId: 'sylhet_sadar_dist' },
   { id: 'south_surma_thana', name: 'South Surma', districtId: 'sylhet_sadar_dist' },
-  // Rajshahi Sadar District
   { id: 'boalia_thana', name: 'Boalia', districtId: 'rajshahi_sadar_dist' },
   { id: 'motihar_thana', name: 'Motihar', districtId: 'rajshahi_sadar_dist' },
-  // Add more thanas for other districts
 ];
 
 export const DEFAULT_DELIVERY_CHARGES: DeliveryChargeSettings = {
