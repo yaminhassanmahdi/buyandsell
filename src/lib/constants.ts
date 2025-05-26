@@ -1,6 +1,13 @@
 
 import type { Category, Brand, OrderStatus, StaticDivision, StaticDistrict, StaticThana } from './types';
-import { Smartphone, Laptop, Shirt, Armchair, BookOpen, Tag, Package, PackageCheck, PackageX, Truck, CheckCircle2, Hourglass, Handshake, LayoutDashboard, CheckSquare, ShoppingCart, Users } from 'lucide-react';
+import { 
+  Smartphone, Laptop, Shirt, Armchair, BookOpen, Tag, 
+  Package as PackageIcon, // Renamed to avoid conflict
+  PackageCheck, PackageX, Truck, CheckCircle2, Hourglass, 
+  Handshake as HandshakeIcon, // Renamed to avoid conflict
+  LayoutDashboard, CheckSquare, ShoppingCart, Users as UsersIcon, // Renamed to avoid conflict
+  ListChecks, FolderTree, Tags, Settings2 // New icons
+} from 'lucide-react';
 
 export const APP_NAME = '2ndhandbajar.com';
 
@@ -23,9 +30,9 @@ export const BRANDS: Brand[] = [
 export const ORDER_STATUSES: { value: OrderStatus; label: string, icon?: React.ComponentType<{className?: string}> }[] = [
   { value: 'pending', label: 'Pending', icon: Hourglass },
   { value: 'accepted', label: 'Accepted', icon: CheckCircle2 },
-  { value: 'handed_over', label: 'Handed Over', icon: Handshake },
+  { value: 'handed_over', label: 'Handed Over', icon: HandshakeIcon },
   { value: 'in_shipping', label: 'In Shipping', icon: Truck },
-  { value: 'processing', label: 'Processing', icon: Package },
+  { value: 'processing', label: 'Processing', icon: PackageIcon },
   { value: 'shipped', label: 'Shipped', icon: Truck },
   { value: 'delivered', label: 'Delivered', icon: PackageCheck },
   { value: 'cancelled', label: 'Cancelled', icon: PackageX },
@@ -41,12 +48,41 @@ export const USER_NAVIGATION = [
   { name: 'Account Settings', href: '/account/settings' }, 
 ];
 
-export const ADMIN_NAVIGATION = [
+export interface AdminNavItem {
+  name: string;
+  href: string;
+  icon?: React.ComponentType<{ className?: string }>;
+  subItems?: AdminNavItem[];
+}
+
+export const ADMIN_NAVIGATION: AdminNavItem[] = [
   { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
   { name: 'Approve Products', href: '/admin/products', icon: CheckSquare },
-  { name: 'Manage Orders', href: '/admin/orders', icon: ShoppingCart },
-  { name: 'Manage Users', href: '/admin/users', icon: Users },
+  { 
+    name: 'Products', 
+    href: '/admin/products/manage', // Main link for Products section
+    icon: PackageIcon,
+    subItems: [
+      { name: 'Manage Products', href: '/admin/products/manage', icon: ListChecks },
+      { name: 'Manage Categories', href: '/admin/products/categories', icon: FolderTree },
+      { name: 'Manage Sub-Categories', href: '/admin/products/sub-categories', icon: FolderTree }, // Placeholder
+      { name: 'Manage Brands', href: '/admin/products/brands', icon: Tags }, // Placeholder
+    ]
+  },
+  { 
+    name: 'Orders', 
+    href: '/admin/orders/manage', // Main link for Orders section
+    icon: ShoppingCart,
+    subItems: [
+      { name: 'Manage Orders', href: '/admin/orders/manage', icon: Settings2 },
+      { name: 'Processing Orders', href: '/admin/orders/processing', icon: PackageIcon },
+      { name: 'Delivered Orders', href: '/admin/orders/delivered', icon: PackageCheck },
+      { name: 'Cancelled Orders', href: '/admin/orders/cancelled', icon: PackageX },
+    ]
+  },
+  { name: 'Manage Users', href: '/admin/users', icon: UsersIcon },
 ];
+
 
 // Helper function to get an icon for a status
 export const getStatusIcon = (status: OrderStatus) => {
