@@ -4,10 +4,9 @@ import Image from 'next/image';
 import Link from 'next/link';
 import type { Product } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { ShoppingCart, Minus, Plus } from 'lucide-react';
 import { useCart } from '@/contexts/cart-context';
-import { Badge } from '@/components/ui/badge';
 
 interface ProductCardProps {
   product: Product;
@@ -36,19 +35,12 @@ export function ProductCard({ product }: ProductCardProps) {
         </CardHeader>
       </Link>
       <CardContent className="p-3">
-        <div className="mb-1.5">
-          <Badge variant="secondary" className="mr-1.5 text-xs">{product.category.name}</Badge>
-          <Badge variant="outline" className="text-xs">{product.brand.name}</Badge>
-        </div>
         <Link href={`/products/${product.id}`} className="block">
-          <CardTitle className="text-md font-semibold hover:text-primary transition-colors">
+          <CardTitle className="text-md font-semibold hover:text-primary transition-colors line-clamp-2 mb-1">
             {product.name}
           </CardTitle>
         </Link>
-        <CardDescription className="mt-0.5 text-sm text-muted-foreground line-clamp-2">
-          {product.description}
-        </CardDescription>
-        <p className="mt-1.5 text-lg font-bold text-primary">
+        <p className="text-lg font-bold text-primary">
           ${product.price.toFixed(2)}
         </p>
       </CardContent>
