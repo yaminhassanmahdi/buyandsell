@@ -16,18 +16,24 @@ import { useAuth } from '@/contexts/auth-context';
 import { USER_NAVIGATION, ADMIN_NAVIGATION } from '@/lib/constants';
 import { ShoppingCart, UserCircle, LogIn, LogOut, UserPlus, CreditCard } from 'lucide-react'; // Added CreditCard for sell
 import { useCart } from '@/contexts/cart-context';
+import React, { useState, useEffect } from 'react';
 
 export function UserNav() {
   const { currentUser, logout, isAdmin } = useAuth();
   const { itemCount } = useCart();
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   if (currentUser) {
     return (
       <div className="flex items-center gap-4">
         <Link href="/cart" passHref>
-          <Button variant="ghost" size="icon" aria-label="Shopping Cart">
+          <Button variant="ghost" size="icon" aria-label="Shopping Cart" className="relative">
             <ShoppingCart className="h-5 w-5" />
-            {itemCount > 0 && (
+            {isClient && itemCount > 0 && (
               <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-red-100 transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full">
                 {itemCount}
               </span>
@@ -92,9 +98,9 @@ export function UserNav() {
   return (
     <div className="flex items-center gap-2">
        <Link href="/cart" passHref>
-          <Button variant="ghost" size="icon" aria-label="Shopping Cart">
+          <Button variant="ghost" size="icon" aria-label="Shopping Cart" className="relative">
             <ShoppingCart className="h-5 w-5" />
-             {itemCount > 0 && (
+             {isClient && itemCount > 0 && (
               <span className="absolute top-0 right-0 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-red-100 transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full">
                 {itemCount}
               </span>
