@@ -1,20 +1,23 @@
 
 "use client";
 import { useParams, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { MOCK_ORDERS, MOCK_PRODUCTS, MOCK_USERS } from '@/lib/mock-data';
-import type { Order, Product as ProductType, User as UserType, ShippingAddress, CartItem } from '@/lib/types';
+import type { Order, Product as ProductType, User as UserType, ShippingAddress, CartItem, OrderStatus, WithdrawalMethod } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from '@/components/ui/separator';
 import { OrderStatusBadge } from '@/components/order-status-badge';
 import Image from 'next/image';
 import { format } from 'date-fns';
-import { ArrowLeft, UserCircle, MapPin, CalendarDays, ShoppingBag, Briefcase, Home, Loader2 } from 'lucide-react';
+import { ArrowLeft, UserCircle, MapPin, CalendarDays, ShoppingBag, Briefcase, Home, Loader2, CreditCard, Smartphone, Banknote, Save } from 'lucide-react';
+import { ORDER_STATUSES } from '@/lib/constants';
+import { useToast } from '@/hooks/use-toast';
 
 interface EnrichedOrderItem extends CartItem {
   productDetails?: ProductType;
-  sellerDetails?: UserType;
+  sellerDetails?: UserType; // This UserType will include withdrawalMethods
 }
 
 interface EnrichedOrder extends Omit<Order, 'items'> {
@@ -30,9 +33,12 @@ export default function AdminOrderDetailPage() {
   const params = useParams();
   const router = useRouter();
   const orderId = params.orderId as string;
+  const { toast } = useToast();
 
   const [order, setOrder] = useState<EnrichedOrder | null | undefined>(undefined); // undefined for loading
   const [isLoading, setIsLoading] = useState(true);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const [selectedStatus, setSelectedStatus] = useState<OrderStatus | undefined>(undefined);
 
   useEffect(() => {
     if (orderId) {
@@ -43,10 +49,12 @@ export default function AdminOrderDetailPage() {
         if (foundOrder) {
           const enrichedItems = foundOrder.items.map(item => {
             const productDetails = MOCK_PRODUCTS.find(p => p.id === item.id);
+            // Ensure sellerDetails is the full UserType, including withdrawalMethods
             const sellerDetails = productDetails ? MOCK_USERS.find(u => u.id === productDetails.sellerId) : undefined;
             return { ...item, productDetails, sellerDetails };
           });
           setOrder({ ...foundOrder, items: enrichedItems });
+          setSelectedStatus(foundOrder.status);
         } else {
           setOrder(null); // Not found
         }
@@ -54,6 +62,35 @@ export default function AdminOrderDetailPage() {
       }, 500);
     }
   }, [orderId]);
+
+  const uniqueSellers = useMemo(() => {
+    if (!order) return [];
+    const sellerMap = new Map<string, UserType>();
+    order.items.forEach(item => {
+      if (item.sellerDetails && !sellerMap.has(item.sellerDetails.id)) {
+        sellerMap.set(item.sellerDetails.id, item.sellerDetails);
+      }
+    });
+    return Array.from(sellerMap.values());
+  }, [order]);
+
+  const handleStatusUpdate = async () => {
+    if (!order || !selectedStatus || selectedStatus === order.status) return;
+
+    setIsUpdatingStatus(true);
+    await new Promise(resolve => setTimeout(resolve, 700)); // Simulate API call
+
+    const orderIndex = MOCK_ORDERS.findIndex(o => o.id === orderId);
+    if (orderIndex !== -1) {
+      MOCK_ORDERS[orderIndex].status = selectedStatus;
+      MOCK_ORDERS[orderIndex].updatedAt = new Date();
+    }
+
+    setOrder(prevOrder => prevOrder ? { ...prevOrder, status: selectedStatus!, updatedAt: new Date() } : null);
+    toast({ title: "Order Status Updated", description: `Order #${orderId} status changed to ${selectedStatus}.` });
+    setIsUpdatingStatus(false);
+  };
+
 
   if (isLoading) {
     return (
@@ -86,8 +123,44 @@ export default function AdminOrderDetailPage() {
         </Button>
       </div>
 
+      {/* Order Status Management Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2"><ShoppingBag className="h-6 w-6 text-primary" /> Order Status</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col sm:flex-row items-center gap-4">
+          <div className="flex-shrink-0">
+            <span className="text-muted-foreground mr-2">Current Status:</span>
+            <OrderStatusBadge status={order.status} />
+          </div>
+          <div className="flex items-center gap-2 flex-grow">
+            <Select 
+              value={selectedStatus} 
+              onValueChange={(value) => setSelectedStatus(value as OrderStatus)}
+              disabled={isUpdatingStatus}
+            >
+              <SelectTrigger className="w-full sm:w-[200px] h-10">
+                 <SelectValue placeholder="Change Status" />
+              </SelectTrigger>
+              <SelectContent>
+                 {ORDER_STATUSES.map(statusOpt => (
+                  <SelectItem key={statusOpt.value} value={statusOpt.value}>{statusOpt.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button 
+              onClick={handleStatusUpdate} 
+              disabled={isUpdatingStatus || selectedStatus === order.status}
+            >
+              {isUpdatingStatus ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+              Save Status
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Column 1: Order Info & Buyer */}
         <div className="lg:col-span-2 space-y-6">
           <Card>
             <CardHeader>
@@ -106,10 +179,7 @@ export default function AdminOrderDetailPage() {
                 <span className="text-muted-foreground">Last Updated:</span>
                 <span className="font-medium">{format(new Date(order.updatedAt), 'PPpp')}</span>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-muted-foreground">Status:</span>
-                <OrderStatusBadge status={order.status} />
-              </div>
+              {/* Current status is now shown in its own card */}
               <div className="flex justify-between font-bold text-lg pt-2 border-t">
                 <span>Total Amount:</span>
                 <span>${order.totalAmount.toFixed(2)}</span>
@@ -134,9 +204,57 @@ export default function AdminOrderDetailPage() {
             </CardContent>
           </Card>
         </div>
-
-        {/* Column 2: Item Details could go here if layout needs sidebar style, or keep all in one flow */}
       </div>
+
+      {/* Seller Information Section */}
+      {uniqueSellers.map(seller => (
+        <Card key={seller.id}>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2"><Briefcase className="h-6 w-6 text-primary" /> Seller: {seller.name}</CardTitle>
+                <CardDescription>ID: {seller.id} &bull; Email: {seller.email}</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                <div>
+                    <h4 className="font-medium flex items-center gap-1 mb-1"><Home className="h-4 w-4 text-muted-foreground"/> Shipping Address:</h4>
+                    <address className="text-sm text-muted-foreground not-italic pl-5">
+                        {formatFullAddress(seller.defaultShippingAddress)}
+                    </address>
+                </div>
+                <div>
+                    <h4 className="font-medium flex items-center gap-1 mb-2"><CreditCard className="h-4 w-4 text-muted-foreground"/> Withdrawal Methods:</h4>
+                    {seller.withdrawalMethods && seller.withdrawalMethods.length > 0 ? (
+                        <div className="space-y-3 pl-5">
+                        {seller.withdrawalMethods.map((method: WithdrawalMethod) => (
+                            <div key={method.id} className="p-3 border rounded-md bg-muted/50 text-sm">
+                                <div className="flex items-center gap-2 mb-1">
+                                    {method.type === 'bkash' ? <Smartphone className="h-5 w-5 text-pink-500" /> : <Banknote className="h-5 w-5 text-blue-500" />}
+                                    <span className="font-semibold capitalize">{method.type}</span>
+                                    {method.isDefault && <span className="text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full">Default</span>}
+                                </div>
+                                {method.type === 'bkash' && (
+                                    <p>Account Number: {method.details.accountNumber}</p>
+                                )}
+                                {method.type === 'bank' && (
+                                    <>
+                                    <p>Bank: {method.details.bankName}</p>
+                                    <p>Holder: {method.details.accountHolderName}</p>
+                                    <p>Account No: {method.details.accountNumber}</p>
+                                    {method.details.routingNumber && <p>Routing: {method.details.routingNumber}</p>}
+                                    {method.details.branchName && <p>Branch: {method.details.branchName}</p>}
+                                    </>
+                                )}
+                                <p className="text-xs text-muted-foreground mt-1">Added: {format(new Date(method.createdAt), 'PP')}</p>
+                            </div>
+                        ))}
+                        </div>
+                    ) : (
+                        <p className="text-sm text-muted-foreground pl-5">No withdrawal methods on file for this seller.</p>
+                    )}
+                </div>
+            </CardContent>
+        </Card>
+      ))}
+
 
       <Card>
         <CardHeader>
@@ -162,20 +280,14 @@ export default function AdminOrderDetailPage() {
                   <p className="text-md font-semibold">Subtotal: ${(item.price * item.quantity).toFixed(2)}</p>
                 </div>
               </div>
+              {/* Minimal seller info here since detailed block is separate */}
               {item.sellerDetails && (
                 <div className="mt-3 pt-3 border-t">
-                  <p className="font-medium text-sm flex items-center gap-1 mb-1"><Briefcase className="h-4 w-4 text-muted-foreground"/> Seller: {item.sellerDetails.name} (ID: {item.sellerDetails.id})</p>
-                  {item.sellerDetails.defaultShippingAddress ? (
-                    <address className="text-xs text-muted-foreground not-italic pl-5 flex items-start gap-1">
-                     <Home className="h-3 w-3 mt-0.5 shrink-0"/> {formatFullAddress(item.sellerDetails.defaultShippingAddress)}
-                    </address>
-                  ) : (
-                    <p className="text-xs text-muted-foreground pl-5">Seller address not on file.</p>
-                  )}
+                  <p className="font-medium text-sm">Seller: {item.sellerDetails.name} (ID: {item.sellerDetails.id})</p>
                 </div>
               )}
-              {!item.sellerDetails && item.productDetails?.sellerId && (
-                 <p className="text-xs text-muted-foreground mt-2 pt-2 border-t">Seller ID: {item.productDetails.sellerId} (Details not found)</p>
+               {!item.sellerDetails && item.productDetails?.sellerId && (
+                 <p className="text-xs text-muted-foreground mt-2 pt-2 border-t">Seller ID: {item.productDetails.sellerId} (Basic details not found)</p>
               )}
             </div>
           ))}
@@ -184,3 +296,4 @@ export default function AdminOrderDetailPage() {
     </div>
   );
 }
+
