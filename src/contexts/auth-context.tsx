@@ -1,6 +1,6 @@
 
 "use client";
-import type { User } from '@/lib/types';
+import type { User, ShippingAddress, WithdrawalMethod } from '@/lib/types';
 import { MOCK_USERS } from '@/lib/mock-data';
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import useLocalStorage from '@/hooks/use-local-storage';
@@ -11,6 +11,7 @@ interface AuthContextType {
   login: (email: string, pass: string) => Promise<User | null>; // pass is unused for mock
   logout: () => void;
   register: (name: string, email: string, pass: string) => Promise<User | null>; // pass is unused for mock
+  updateCurrentUserData: (updatedData: Partial<Pick<User, 'defaultShippingAddress' | 'withdrawalMethods'>>) => void;
   loading: boolean;
   isAuthenticated: boolean;
   isAdmin: boolean;
@@ -24,13 +25,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const router = useRouter();
 
   useEffect(() => {
-    // Simulate loading user from storage or API
     setLoading(false);
   }, []);
 
   const login = async (email: string, _pass: string): Promise<User | null> => {
     setLoading(true);
-    // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 500));
     const user = MOCK_USERS.find(u => u.email === email);
     if (user) {
@@ -48,10 +47,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const existingUser = MOCK_USERS.find(u => u.email === email);
     if (existingUser) {
       setLoading(false);
-      return null; // User already exists
+      return null; 
     }
-    const newUser: User = { id: `user${MOCK_USERS.length + 1}`, email, name, isAdmin: false };
-    MOCK_USERS.push(newUser); // In a real app, this would be an API call
+    const newUser: User = { 
+      id: `user${MOCK_USERS.length + 1}`, 
+      email, 
+      name, 
+      isAdmin: false, 
+      defaultShippingAddress: null, 
+      withdrawalMethods: [] 
+    };
+    MOCK_USERS.push(newUser); 
     setCurrentUser(newUser);
     setLoading(false);
     return newUser;
@@ -59,14 +65,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const logout = () => {
     setCurrentUser(null);
-    router.push('/'); // Redirect to home after logout
+    router.push('/'); 
+  };
+
+  const updateCurrentUserData = (updatedData: Partial<Pick<User, 'defaultShippingAddress' | 'withdrawalMethods'>>) => {
+    if (currentUser) {
+      const userIndex = MOCK_USERS.findIndex(u => u.id === currentUser.id);
+      if (userIndex !== -1) {
+        const updatedUser = { ...MOCK_USERS[userIndex], ...updatedData };
+        MOCK_USERS[userIndex] = updatedUser;
+        setCurrentUser(updatedUser); // Update local storage and context state
+      }
+    }
   };
   
   const isAuthenticated = !!currentUser;
   const isAdmin = !!currentUser?.isAdmin;
 
   return (
-    <AuthContext.Provider value={{ currentUser, login, logout, register, loading, isAuthenticated, isAdmin }}>
+    <AuthContext.Provider value={{ currentUser, login, logout, register, updateCurrentUserData, loading, isAuthenticated, isAdmin }}>
       {children}
     </AuthContext.Provider>
   );

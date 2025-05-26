@@ -1,6 +1,6 @@
 
 import type { Category, Brand, OrderStatus, StaticDivision, StaticDistrict, StaticThana } from './types';
-import { Smartphone, Laptop, Shirt, Armchair, BookOpen, Tag, Package, PackageCheck, PackageX, Truck, CheckCircle2, Hourglass, Handshake, LayoutDashboard, CheckSquare, ShoppingCart } from 'lucide-react';
+import { Smartphone, Laptop, Shirt, Armchair, BookOpen, Tag, Package, PackageCheck, PackageX, Truck, CheckCircle2, Hourglass, Handshake, LayoutDashboard, CheckSquare, ShoppingCart, Users } from 'lucide-react';
 
 export const APP_NAME = '2ndhandbajar.com';
 
@@ -38,13 +38,14 @@ export const SITE_NAVIGATION = [
 
 export const USER_NAVIGATION = [
   { name: 'My Orders', href: '/account/orders' },
-  { name: 'Account Settings', href: '/account/settings' }, // Example, not implemented
+  { name: 'Account Settings', href: '/account/settings' }, 
 ];
 
 export const ADMIN_NAVIGATION = [
   { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
   { name: 'Approve Products', href: '/admin/products', icon: CheckSquare },
   { name: 'Manage Orders', href: '/admin/orders', icon: ShoppingCart },
+  { name: 'Manage Users', href: '/admin/users', icon: Users },
 ];
 
 // Helper function to get an icon for a status

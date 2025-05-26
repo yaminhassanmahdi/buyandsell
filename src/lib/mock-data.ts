@@ -10,9 +10,54 @@ const createPastDate = (daysAgo: number): Date => {
 };
 
 export const MOCK_USERS: User[] = [
-  { id: 'user1', email: 'buyer@example.com', name: 'John Doe' },
-  { id: 'user2', email: 'seller@example.com', name: 'Jane Smith' },
-  { id: 'admin1', email: 'admin@example.com', name: 'Admin User', isAdmin: true },
+  { 
+    id: 'user1', 
+    email: 'buyer@example.com', 
+    name: 'John Doe',
+    defaultShippingAddress: {
+      fullName: 'John Doe',
+      phoneNumber: '01711111111',
+      country: 'Bangladesh',
+      division: 'Dhaka',
+      district: 'Dhaka',
+      thana: 'Gulshan',
+      houseAddress: '123 Gulshan Ave',
+      roadNumber: 'Road 10',
+    },
+    withdrawalMethods: [],
+  },
+  { 
+    id: 'user2', 
+    email: 'seller@example.com', 
+    name: 'Jane Smith',
+    defaultShippingAddress: null,
+    withdrawalMethods: [
+      {
+        id: 'wm1',
+        type: 'bkash',
+        details: { accountNumber: '01812345678' },
+        isDefault: true,
+        createdAt: createPastDate(10),
+      }
+    ],
+  },
+  { 
+    id: 'admin1', 
+    email: 'admin@example.com', 
+    name: 'Admin User', 
+    isAdmin: true,
+    defaultShippingAddress: {
+      fullName: 'Admin B. Admin',
+      phoneNumber: '01999999999',
+      country: 'Bangladesh',
+      division: 'Chittagong',
+      district: 'Chittagong',
+      thana: 'Kotwali (Chittagong)',
+      houseAddress: 'Admin Building, CTG',
+      roadNumber: 'Main St',
+    },
+    withdrawalMethods: [],
+  },
 ];
 
 export const MOCK_PRODUCTS: Product[] = [
@@ -121,7 +166,7 @@ export const MOCK_ORDERS: Order[] = [
       { id: 'prod1', name: 'Vintage Leather Jacket', price: 75, imageUrl: 'https://placehold.co/100x100.png', quantity: 1 },
     ],
     totalAmount: 75,
-    shippingAddress: MOCK_SHIPPING_ADDRESS_BANGLADESH,
+    shippingAddress: MOCK_USERS.find(u => u.id === 'user1')?.defaultShippingAddress || MOCK_SHIPPING_ADDRESS_BANGLADESH,
     status: 'delivered',
     createdAt: createPastDate(7),
     updatedAt: createPastDate(3),
@@ -134,7 +179,7 @@ export const MOCK_ORDERS: Order[] = [
       { id: 'prod5', name: 'Running Shoes Size 9', price: 40, imageUrl: 'https://placehold.co/100x100.png', quantity: 1 },
     ],
     totalAmount: 290,
-    shippingAddress: { ...MOCK_SHIPPING_ADDRESS_BANGLADESH, fullName: 'John Doe Updated', district: 'Gazipur', thana: 'Gazipur Sadar' },
+    shippingAddress: { ...(MOCK_USERS.find(u => u.id === 'user1')?.defaultShippingAddress || MOCK_SHIPPING_ADDRESS_BANGLADESH), fullName: 'John Doe Updated', district: 'Gazipur', thana: 'Gazipur Sadar' },
     status: 'shipped',
     createdAt: createPastDate(3),
     updatedAt: createPastDate(1),

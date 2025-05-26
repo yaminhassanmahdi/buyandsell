@@ -57,11 +57,35 @@ export type Order = {
   updatedAt: Date;
 };
 
+export type WithdrawalMethodType = 'bkash' | 'bank';
+
+export type BKashDetails = {
+  accountNumber: string; // 11 digits
+};
+
+export type BankDetails = {
+  bankName: string;
+  accountHolderName: string;
+  accountNumber: string;
+  routingNumber?: string;
+  branchName?: string;
+};
+
+export type WithdrawalMethod = {
+  id: string;
+  type: WithdrawalMethodType;
+  details: BKashDetails | BankDetails;
+  isDefault?: boolean;
+  createdAt: Date;
+};
+
 export type User = {
   id: string;
   email: string;
   name: string;
   isAdmin?: boolean;
+  defaultShippingAddress?: ShippingAddress | null;
+  withdrawalMethods?: WithdrawalMethod[];
   // Other profile info can be added here
 };
 
