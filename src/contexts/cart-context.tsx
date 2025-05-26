@@ -43,12 +43,17 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
           </Button>
         </div>
       ),
+      duration: 4000, // Auto-dismiss after 4 seconds
     });
   };
 
   const removeFromCart = (productId: string) => {
     setCartItems(prevItems => prevItems.filter(item => item.id !== productId));
-    toast({ title: "Removed from cart", description: `Item was removed from your cart.` });
+    toast({ 
+      title: "Removed from cart", 
+      description: `Item was removed from your cart.`,
+      duration: 4000, // Auto-dismiss after 4 seconds
+    });
   };
 
   const updateQuantity = (productId: string, quantity: number) => {
@@ -85,3 +90,4 @@ export const useCart = (): CartContextType => {
   }
   return context;
 };
+
