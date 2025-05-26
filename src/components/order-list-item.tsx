@@ -13,7 +13,7 @@ interface OrderListItemProps {
 
 export function OrderListItem({ order }: OrderListItemProps) {
   const { shippingAddress } = order;
-  const displayAddress = `${shippingAddress.houseAddress}${shippingAddress.roadNumber ? `, ${shippingAddress.roadNumber}` : ''}, ${shippingAddress.unionName}, ${shippingAddress.upazillaName}, ${shippingAddress.districtName}, ${shippingAddress.divisionName}`;
+  const displayAddress = `${shippingAddress.houseAddress}${shippingAddress.roadNumber ? `, ${shippingAddress.roadNumber}` : ''}, ${shippingAddress.thana}, ${shippingAddress.district}, ${shippingAddress.division}`;
 
   return (
     <Card className="mb-6 shadow-lg hover:shadow-xl transition-shadow duration-300">

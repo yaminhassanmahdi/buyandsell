@@ -106,16 +106,11 @@ const MOCK_SHIPPING_ADDRESS_BANGLADESH: ShippingAddress = {
   fullName: 'Kazi Nazrul Islam',
   phoneNumber: '01700000000',
   country: 'Bangladesh',
-  divisionId: '3', // Dhaka Division (example _id)
-  divisionName: 'Dhaka Division',
-  districtId: '47', // Dhaka District (example _id)
-  districtName: 'Dhaka',
-  upazillaId: '322', // Dhanmondi (example _id)
-  upazillaName: 'Dhanmondi',
-  unionId: '3143', // Dhanmondi Union (example _id)
-  unionName: 'Dhanmondi Union', // Or a specific Ward name
-  houseAddress: 'House 123, Road 7A',
-  roadNumber: '7A', // Can be part of houseAddress or separate
+  division: 'Dhaka', 
+  district: 'Dhaka', 
+  thana: 'Dhanmondi', 
+  houseAddress: 'House 123',
+  roadNumber: 'Road 7A',
 };
 
 export const MOCK_ORDERS: Order[] = [
@@ -139,7 +134,7 @@ export const MOCK_ORDERS: Order[] = [
       { id: 'prod5', name: 'Running Shoes Size 9', price: 40, imageUrl: 'https://placehold.co/100x100.png', quantity: 1 },
     ],
     totalAmount: 290,
-    shippingAddress: { ...MOCK_SHIPPING_ADDRESS_BANGLADESH, fullName: 'John Doe Updated' },
+    shippingAddress: { ...MOCK_SHIPPING_ADDRESS_BANGLADESH, fullName: 'John Doe Updated', district: 'Gazipur', thana: 'Gazipur Sadar' },
     status: 'shipped',
     createdAt: createPastDate(3),
     updatedAt: createPastDate(1),
@@ -151,7 +146,7 @@ export const MOCK_ORDERS: Order[] = [
       { id: 'prod4', name: 'Samsung Galaxy S20', price: 300, imageUrl: 'https://placehold.co/100x100.png', quantity: 1 },
     ],
     totalAmount: 300,
-    shippingAddress: { ...MOCK_SHIPPING_ADDRESS_BANGLADESH, fullName: 'Jane Smith BD' },
+    shippingAddress: { ...MOCK_SHIPPING_ADDRESS_BANGLADESH, fullName: 'Jane Smith BD', division: 'Chittagong', district: 'Chittagong', thana: 'Kotwali (Chittagong)' },
     status: 'processing',
     createdAt: createPastDate(1),
     updatedAt: createPastDate(0), 

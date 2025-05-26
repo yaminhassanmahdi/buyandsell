@@ -8,7 +8,8 @@ import { AddressForm } from '@/components/address-form';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import type { ShippingAddress, Order } from '@/lib/types';
-import { MOCK_ORDERS } from '@/lib/mock-data'; 
+import { MOCK_ORDERS } // MOCK_USERS no longer needed here for initial address
+from '@/lib/mock-data'; 
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
 import { Loader2, ShieldCheck } from 'lucide-react';
@@ -30,19 +31,18 @@ export default function CheckoutPage() {
     }
   }, [isAuthenticated, authLoading, router, itemCount]);
 
-  // Attempt to find a previous shipping address for the user to pre-fill some details
-  // This will only pre-fill top-level fields. Dropdowns will need user selection.
   const initialAddressData = (): Partial<ShippingAddress> => {
     if (currentUser?.id) {
       const userLastOrder = MOCK_ORDERS.find(o => o.userId === currentUser.id && o.shippingAddress);
       if (userLastOrder?.shippingAddress) {
-        return {
+        return { // Return only names, IDs are not part of the new static model for initialData
             fullName: userLastOrder.shippingAddress.fullName,
             phoneNumber: userLastOrder.shippingAddress.phoneNumber,
+            division: userLastOrder.shippingAddress.division,
+            district: userLastOrder.shippingAddress.district,
+            thana: userLastOrder.shippingAddress.thana,
             houseAddress: userLastOrder.shippingAddress.houseAddress,
             roadNumber: userLastOrder.shippingAddress.roadNumber,
-            // IDs for dropdowns could be pre-filled if available and desired,
-            // but that would require more complex logic to also fetch and set dependent dropdowns
         };
       }
     }
@@ -51,7 +51,7 @@ export default function CheckoutPage() {
 
 
   const handleAddressSubmit = (data: ShippingAddress) => {
-    setShippingAddress(data);
+    setShippingAddress(data); // Data is already in the correct ShippingAddress format
     toast({ title: "Address Saved", description: "Shipping address has been saved." });
   };
 
@@ -66,7 +66,7 @@ export default function CheckoutPage() {
       userId: currentUser.id,
       items: cartItems.map(item => ({ ...item })), 
       totalAmount: getCartTotal(),
-      shippingAddress: shippingAddress, // Use the full new address object
+      shippingAddress: shippingAddress, 
       status: 'pending', 
       createdAt: new Date(),
       updatedAt: new Date(),

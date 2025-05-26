@@ -1,5 +1,6 @@
-import type { Category, Brand, OrderStatus } from './types';
-import { Smartphone, Laptop, Shirt, Armchair, BookOpen, Tag, Package, PackageCheck, PackageX, Truck, CheckCircle2, Hourglass, Handshake } from 'lucide-react';
+
+import type { Category, Brand, OrderStatus, StaticDivision, StaticDistrict, StaticThana } from './types';
+import { Smartphone, Laptop, Shirt, Armchair, BookOpen, Tag, Package, PackageCheck, PackageX, Truck, CheckCircle2, Hourglass, Handshake, LayoutDashboard, CheckSquare, ShoppingCart } from 'lucide-react';
 
 export const APP_NAME = '2ndhandbajar.com';
 
@@ -52,5 +53,37 @@ export const getStatusIcon = (status: OrderStatus) => {
   return statusObj?.icon;
 };
 
-// Icons for admin navigation (import if not already imported)
-import { LayoutDashboard, CheckSquare, ShoppingCart } from 'lucide-react';
+// --- Static Address Data for Bangladesh ---
+export const DIVISIONS_BD: StaticDivision[] = [
+  { id: 'dhaka_div', name: 'Dhaka' },
+  { id: 'chittagong_div', name: 'Chittagong' },
+  { id: 'sylhet_div', name: 'Sylhet' },
+  { id: 'rajshahi_div', name: 'Rajshahi' },
+];
+
+export const DISTRICTS_BD: StaticDistrict[] = [
+  { id: 'dhaka_dist', name: 'Dhaka', divisionId: 'dhaka_div' },
+  { id: 'gazipur_dist', name: 'Gazipur', divisionId: 'dhaka_div' },
+  { id: 'narayanganj_dist', name: 'Narayanganj', divisionId: 'dhaka_div' },
+  { id: 'chittagong_dist', name: 'Chittagong', divisionId: 'chittagong_div' },
+  { id: 'coxsbazar_dist', name: 'Cox\'s Bazar', divisionId: 'chittagong_div' },
+  { id: 'sylhet_sadar_dist', name: 'Sylhet Sadar', divisionId: 'sylhet_div' },
+  { id: 'rajshahi_sadar_dist', name: 'Rajshahi Sadar', divisionId: 'rajshahi_div' },
+];
+
+export const THANAS_BD: StaticThana[] = [
+  // Dhaka Division > Dhaka District
+  { id: 'dhanmondi_thana', name: 'Dhanmondi', districtId: 'dhaka_dist' },
+  { id: 'gulshan_thana', name: 'Gulshan', districtId: 'dhaka_dist' },
+  { id: 'mirpur_thana', name: 'Mirpur', districtId: 'dhaka_dist' },
+  // Dhaka Division > Gazipur District
+  { id: 'gazipur_sadar_thana', name: 'Gazipur Sadar', districtId: 'gazipur_dist' },
+  { id: 'kaliakair_thana', name: 'Kaliakair', districtId: 'gazipur_dist' },
+  // Chittagong Division > Chittagong District
+  { id: 'kotwali_ctg_thana', name: 'Kotwali (Chittagong)', districtId: 'chittagong_dist' },
+  { id: 'pahartali_thana', name: 'Pahartali', districtId: 'chittagong_dist' },
+  // Sylhet Division > Sylhet Sadar District
+  { id: 'sylhet_sadar_thana', name: 'Sylhet Sadar Upazila', districtId: 'sylhet_sadar_dist' },
+  // Rajshahi Division > Rajshahi Sadar District
+  { id: 'boalia_thana', name: 'Boalia', districtId: 'rajshahi_sadar_dist' },
+];

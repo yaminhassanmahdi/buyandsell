@@ -37,14 +37,9 @@ export type ShippingAddress = {
   fullName: string;
   phoneNumber?: string;
   country: string; // Will be fixed to "Bangladesh"
-  divisionId: string;
-  divisionName: string;
-  districtId: string;
-  districtName: string;
-  upazillaId: string;
-  upazillaName: string;
-  unionId: string;
-  unionName: string;
+  division: string; // e.g., "Dhaka"
+  district: string; // e.g., "Dhaka City"
+  thana: string;    // e.g., "Gulshan"
   houseAddress: string;
   roadNumber?: string;
 };
@@ -79,7 +74,25 @@ export type FilterValues = {
   sortBy?: 'price_asc' | 'price_desc' | 'date_newest' | 'date_oldest';
 };
 
-// API response types for Bangladeshi address components
+// Simplified types for static address data
+export type StaticDivision = {
+  id: string;
+  name: string;
+};
+
+export type StaticDistrict = {
+  id: string;
+  name: string;
+  divisionId: string; // To link to a StaticDivision
+};
+
+export type StaticThana = {
+  id: string;
+  name: string;
+  districtId: string; // To link to a StaticDistrict
+};
+
+// API response types for Bangladeshi address components (no longer used in form, kept for reference if needed elsewhere)
 export type Division = {
   _id: string;
   name: string;

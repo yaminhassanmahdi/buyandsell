@@ -31,7 +31,7 @@ export function OrderManagementCard({ order, onUpdateStatus, isProcessing }: Ord
   };
   
   const { shippingAddress } = order;
-  const displayAddress = `${shippingAddress.houseAddress}${shippingAddress.roadNumber ? `, ${shippingAddress.roadNumber}` : ''}, ${shippingAddress.unionName}, ${shippingAddress.upazillaName}, ${shippingAddress.districtName}, ${shippingAddress.divisionName}, Bangladesh`;
+  const displayAddress = `${shippingAddress.houseAddress}${shippingAddress.roadNumber ? `, ${shippingAddress.roadNumber}` : ''}, ${shippingAddress.thana}, ${shippingAddress.district}, ${shippingAddress.division}, Bangladesh`;
 
   return (
     <Card className="shadow-lg">
