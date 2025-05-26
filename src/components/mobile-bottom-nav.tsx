@@ -43,8 +43,8 @@ export function MobileBottomNav() {
       <div className="container mx-auto flex h-16 items-center px-2 gap-1 sm:gap-2">
         {/* Checkout Button Section - Appears only if cart has items */}
         {itemCount > 0 && isClient && (
-          <div className="w-3/5 flex"> {/* Takes up ~60% width */}
-            <Button asChild variant="default" className="w-full h-10 sm:h-11 p-0 overflow-hidden shadow-md rounded-lg">
+          <div className="w-3/5 flex items-center"> {/* Takes up ~60% width */}
+            <Button asChild variant="default" className="w-full h-12 p-0 overflow-hidden shadow-md rounded-lg">
               <Link href="/checkout" className="flex items-stretch w-full h-full">
                 <span className="flex items-center justify-center flex-grow px-2 text-sm font-medium text-primary-foreground whitespace-nowrap">
                   Checkout
