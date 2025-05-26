@@ -1,7 +1,13 @@
+
 import type { Product, User, Order, ShippingAddress } from './types';
 import { CATEGORIES, BRANDS } from './constants';
 
-const today = new Date();
+// Helper function to create a date in the past
+const createPastDate = (daysAgo: number): Date => {
+  const date = new Date();
+  date.setDate(date.getDate() - daysAgo);
+  return date;
+};
 
 export const MOCK_USERS: User[] = [
   { id: 'user1', email: 'buyer@example.com', name: 'John Doe' },
@@ -15,84 +21,84 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Vintage Leather Jacket',
     description: 'A stylish vintage leather jacket, barely used. Size M.',
     price: 75,
-    imageUrl: 'https://placehold.co/300x200.png',
+    imageUrl: 'https://placehold.co/600x400.png',
     imageHint: 'leather jacket',
     category: CATEGORIES.find(c => c.id === 'fashion')!,
     brand: BRANDS.find(b => b.id === 'generic')!,
     sellerId: 'user2',
     sellerName: 'Jane Smith',
     status: 'approved',
-    createdAt: new Date(today.setDate(today.getDate() - 5)),
+    createdAt: createPastDate(5),
   },
   {
     id: 'prod2',
     name: 'Used iPhone X',
     description: 'Good condition iPhone X, 64GB, unlocked. Minor scratches on the back.',
     price: 250,
-    imageUrl: 'https://placehold.co/300x200.png',
+    imageUrl: 'https://placehold.co/600x400.png',
     imageHint: 'smartphone electronics',
     category: CATEGORIES.find(c => c.id === 'electronics')!,
     brand: BRANDS.find(b => b.id === 'apple')!,
     sellerId: 'user2',
     sellerName: 'Jane Smith',
     status: 'approved',
-    createdAt: new Date(today.setDate(today.getDate() - 10)),
+    createdAt: createPastDate(10),
   },
   {
     id: 'prod3',
     name: 'Bookshelf, Wooden',
     description: 'Solid wood bookshelf, 5 shelves. Excellent condition.',
     price: 50,
-    imageUrl: 'https://placehold.co/300x200.png',
+    imageUrl: 'https://placehold.co/600x400.png',
     imageHint: 'bookshelf furniture',
     category: CATEGORIES.find(c => c.id === 'home-garden')!,
     brand: BRANDS.find(b => b.id === 'ikea')!,
     sellerId: 'user1',
     sellerName: 'John Doe',
     status: 'pending',
-    createdAt: new Date(today.setDate(today.getDate() - 2)),
+    createdAt: createPastDate(2),
   },
   {
     id: 'prod4',
     name: 'Samsung Galaxy S20',
     description: 'Used Samsung Galaxy S20, 128GB. Works perfectly.',
     price: 300,
-    imageUrl: 'https://placehold.co/300x200.png',
+    imageUrl: 'https://placehold.co/600x400.png',
     imageHint: 'android smartphone',
     category: CATEGORIES.find(c => c.id === 'electronics')!,
     brand: BRANDS.find(b => b.id === 'samsung')!,
     sellerId: 'user2',
     sellerName: 'Jane Smith',
     status: 'approved',
-    createdAt: new Date(today.setDate(today.getDate() - 15)),
+    createdAt: createPastDate(15),
   },
   {
     id: 'prod5',
     name: 'Running Shoes Size 9',
     description: 'Nike running shoes, size 9. Worn a few times.',
     price: 40,
-    imageUrl: 'https://placehold.co/300x200.png',
+    imageUrl: 'https://placehold.co/600x400.png',
     imageHint: 'running shoes',
     category: CATEGORIES.find(c => c.id === 'fashion')!,
     brand: BRANDS.find(b => b.id === 'nike')!,
     sellerId: 'user1',
     sellerName: 'John Doe',
     status: 'approved',
-    createdAt: new Date(today.setDate(today.getDate() - 20)),
+    createdAt: createPastDate(20),
   },
   {
     id: 'prod6',
     name: 'Classic Novels Collection',
     description: 'Set of 5 classic novels. Paperback editions.',
     price: 20,
-    imageUrl: 'https://placehold.co/300x200.png',
+    imageUrl: 'https://placehold.co/600x400.png',
     imageHint: 'books literature',
     category: CATEGORIES.find(c => c.id === 'books')!,
     brand: BRANDS.find(b => b.id === 'generic')!,
     sellerId: 'user2',
     sellerName: 'Jane Smith',
     status: 'rejected',
-    createdAt: new Date(today.setDate(today.getDate() - 1)),
+    createdAt: createPastDate(1),
   },
 ];
 
@@ -116,8 +122,8 @@ export const MOCK_ORDERS: Order[] = [
     totalAmount: 75,
     shippingAddress: MOCK_SHIPPING_ADDRESS,
     status: 'delivered',
-    createdAt: new Date(today.setDate(today.getDate() - 7)),
-    updatedAt: new Date(today.setDate(today.getDate() - 3)),
+    createdAt: createPastDate(7),
+    updatedAt: createPastDate(3),
   },
   {
     id: 'order2',
@@ -129,8 +135,8 @@ export const MOCK_ORDERS: Order[] = [
     totalAmount: 290,
     shippingAddress: MOCK_SHIPPING_ADDRESS,
     status: 'shipped',
-    createdAt: new Date(today.setDate(today.getDate() - 3)),
-    updatedAt: new Date(today.setDate(today.getDate() - 1)),
+    createdAt: createPastDate(3),
+    updatedAt: createPastDate(1),
   },
   {
     id: 'order3',
@@ -141,7 +147,7 @@ export const MOCK_ORDERS: Order[] = [
     totalAmount: 300,
     shippingAddress: { ...MOCK_SHIPPING_ADDRESS, fullName: 'Jane Smith'},
     status: 'processing',
-    createdAt: new Date(today.setDate(today.getDate() - 1)),
-    updatedAt: new Date(today.setDate(today.getDate() - 0)),
+    createdAt: createPastDate(1),
+    updatedAt: createPastDate(0), // today
   },
 ];
