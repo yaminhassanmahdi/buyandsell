@@ -6,6 +6,7 @@ import { AuthProvider } from '@/contexts/auth-context';
 import { CartProvider } from '@/contexts/cart-context';
 import { SiteHeader } from '@/components/site-header';
 import { SiteFooter } from '@/components/site-footer';
+import { MobileBottomNav } from '@/components/mobile-bottom-nav'; // Import new component
 import { usePathname } from 'next/navigation';
 
 export function ClientLayout({ children }: { children: React.ReactNode }) {
@@ -13,24 +14,23 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
   const isAdminRoute = pathname.startsWith('/admin');
   const isHomePage = pathname === '/';
 
-  // Determine container class based on route
-  // Homepage will manage its own container for full-width sections
-  // Admin routes have their own layout structure
-  // Other routes get the default container
   let mainContainerClass = 'container';
   if (isHomePage || isAdminRoute) {
     mainContainerClass = ''; 
   }
 
-
   return (
     <AuthProvider>
       <CartProvider>
         {!isAdminRoute && <SiteHeader />}
-        <main className={`flex-grow ${isAdminRoute ? '' : `py-0 md:py-0 ${mainContainerClass}`}`}> {/* Adjusted padding for homepage */}
+        {/* Add padding-bottom for mobile nav, remove for md and up */}
+        <main className={`flex-grow ${isAdminRoute ? '' : `py-0 md:py-0 ${mainContainerClass}`} pb-16 md:pb-0`}> 
           {children}
         </main>
-        {!isAdminRoute && <SiteFooter />}
+        {/* Hide SiteFooter on mobile (md:block) */}
+        {!isAdminRoute && <SiteFooter className="hidden md:block print:hidden" />} 
+        {/* Add MobileBottomNav, it will be hidden on md+ via its own classes */}
+        {!isAdminRoute && <MobileBottomNav />}
       </CartProvider>
     </AuthProvider>
   );
