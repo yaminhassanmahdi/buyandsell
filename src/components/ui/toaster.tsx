@@ -1,4 +1,8 @@
+
 "use client"
+
+import { usePathname } from "next/navigation" // Added
+import React, { useEffect } from "react" // Added
 
 import { useToast } from "@/hooks/use-toast"
 import {
@@ -11,7 +15,14 @@ import {
 } from "@/components/ui/toast"
 
 export function Toaster() {
-  const { toasts } = useToast()
+  const { toasts, dismiss } = useToast()
+  const pathname = usePathname()
+
+  useEffect(() => {
+    // Dismiss all toasts when the route changes
+    dismiss()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]) // Dependency array includes pathname
 
   return (
     <ToastProvider>
