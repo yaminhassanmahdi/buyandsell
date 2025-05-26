@@ -5,8 +5,9 @@ import type { Product } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle, XCircle, User, Tag, DollarSign, Calendar } from 'lucide-react';
+import { CheckCircle, XCircle, User, Tag, DollarSign, Calendar, Layers } from 'lucide-react'; // Added Layers
 import { format } from 'date-fns';
+import { MOCK_CATEGORIES, MOCK_SUBCATEGORIES, MOCK_BRANDS } from '@/lib/mock-data';
 
 interface ProductApprovalCardProps {
   product: Product;
@@ -16,6 +17,10 @@ interface ProductApprovalCardProps {
 }
 
 export function ProductApprovalCard({ product, onApprove, onReject, isProcessing }: ProductApprovalCardProps) {
+  const categoryName = MOCK_CATEGORIES.find(c => c.id === product.categoryId)?.name || 'N/A';
+  const subCategoryName = product.subCategoryId ? MOCK_SUBCATEGORIES.find(sc => sc.id === product.subCategoryId)?.name : null;
+  const brandName = MOCK_BRANDS.find(b => b.id === product.brandId)?.name || 'N/A';
+
   return (
     <Card className="overflow-hidden shadow-lg">
       <div className="grid md:grid-cols-3 gap-0">
@@ -33,8 +38,15 @@ export function ProductApprovalCard({ product, onApprove, onReject, isProcessing
           <CardHeader>
             <CardTitle className="text-xl">{product.name}</CardTitle>
             <div className="flex flex-wrap gap-2 mt-1">
-              <Badge variant="secondary">{product.category.name}</Badge>
-              <Badge variant="outline">{product.brand.name}</Badge>
+              <Badge variant="secondary" className="flex items-center gap-1">
+                <Layers className="h-3 w-3" /> {categoryName}
+              </Badge>
+              {subCategoryName && (
+                <Badge variant="outline">{subCategoryName}</Badge>
+              )}
+              <Badge variant="outline" className="flex items-center gap-1">
+                <Tag className="h-3 w-3" /> {brandName}
+              </Badge>
             </div>
           </CardHeader>
           <CardContent>

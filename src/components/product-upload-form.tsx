@@ -16,22 +16,21 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CATEGORIES, BRANDS } from "@/lib/constants";
-import type { Product } from "@/lib/types";
-import { MOCK_PRODUCTS } from "@/lib/mock-data"; // For adding the new product
+import { MOCK_PRODUCTS, MOCK_CATEGORIES, MOCK_SUBCATEGORIES, MOCK_BRANDS } from "@/lib/mock-data";
+import type { Product, Category, SubCategory, Brand as BrandType } from "@/lib/types";
 import { useAuth } from "@/contexts/auth-context";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Loader2, UploadCloud } from "lucide-react";
 
 const productSchema = z.object({
   name: z.string().min(3, "Product name must be at least 3 characters.").max(100),
   description: z.string().min(10, "Description must be at least 10 characters.").max(1000),
   price: z.coerce.number().min(0.01, "Price must be a positive number."),
-  categoryId: z.string().min(1, "Please select a category."),
+  categoryId: z.string().min(1, "Please select a parent category."),
+  subCategoryId: z.string().optional(),
   brandId: z.string().min(1, "Please select a brand."),
-  // imageUrl: z.string().url("Please enter a valid image URL.").optional(), // For simplicity, we'll auto-generate placeholder
 });
 
 type ProductFormData = z.infer<typeof productSchema>;
@@ -42,6 +41,11 @@ export function ProductUploadForm() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
 
+  const [parentCategories, setParentCategories] = useState<Category[]>([]);
+  const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
+  const [availableSubCategories, setAvailableSubCategories] = useState<SubCategory[]>([]);
+  const [brands, setBrands] = useState<BrandType[]>([]);
+
   const form = useForm<ProductFormData>({
     resolver: zodResolver(productSchema),
     defaultValues: {
@@ -49,9 +53,34 @@ export function ProductUploadForm() {
       description: "",
       price: 0,
       categoryId: "",
+      subCategoryId: "",
       brandId: "",
     },
   });
+
+  useEffect(() => {
+    // Load initial data for dropdowns
+    setParentCategories([...MOCK_CATEGORIES]);
+    setSubCategories([...MOCK_SUBCATEGORIES]);
+    setBrands([...MOCK_BRANDS]);
+  }, []);
+
+  const watchedCategoryId = form.watch("categoryId");
+
+  useEffect(() => {
+    if (watchedCategoryId) {
+      setAvailableSubCategories(subCategories.filter(sc => sc.parentCategoryId === watchedCategoryId));
+      // Reset subCategoryId if parent changes and current subCategory is not valid for new parent
+      const currentSubCategoryId = form.getValues("subCategoryId");
+      if (currentSubCategoryId && !subCategories.some(sc => sc.id === currentSubCategoryId && sc.parentCategoryId === watchedCategoryId)) {
+        form.setValue("subCategoryId", "");
+      }
+    } else {
+      setAvailableSubCategories([]);
+      form.setValue("subCategoryId", "");
+    }
+  }, [watchedCategoryId, subCategories, form]);
+
 
   async function onSubmit(values: ProductFormData) {
     if (!currentUser) {
@@ -60,42 +89,34 @@ export function ProductUploadForm() {
     }
     setIsLoading(true);
 
-    // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1000));
 
-    const category = CATEGORIES.find(c => c.id === values.categoryId);
-    const brand = BRANDS.find(b => b.id === values.brandId);
-
-    if (!category || !brand) {
-      toast({ title: "Error", description: "Invalid category or brand selected.", variant: "destructive" });
-      setIsLoading(false);
-      return;
-    }
-    
     const newProduct: Product = {
-      id: `prod${MOCK_PRODUCTS.length + 1}`,
+      id: `prod-${Date.now()}`,
       name: values.name,
       description: values.description,
       price: values.price,
-      // Use a placeholder image, in a real app this would be an upload
       imageUrl: `https://placehold.co/600x400.png`, 
-      imageHint: `${values.name.substring(0,15)} product`, // Simple hint from name
-      category,
-      brand,
+      imageHint: `${values.name.substring(0,15)} product`,
+      categoryId: values.categoryId,
+      subCategoryId: values.subCategoryId || undefined, // Ensure it's undefined if empty string
+      brandId: values.brandId,
       sellerId: currentUser.id,
       sellerName: currentUser.name,
-      status: 'pending', // Products go into pending status for admin approval
+      status: 'pending',
       createdAt: new Date(),
     };
 
-    MOCK_PRODUCTS.push(newProduct); // Add to mock data store
+    MOCK_PRODUCTS.push(newProduct);
     
     toast({
       title: "Product Submitted!",
       description: `${newProduct.name} has been submitted for approval.`,
     });
     setIsLoading(false);
-    router.push('/'); // Redirect to home or a "my products" page
+    form.reset();
+    setAvailableSubCategories([]); // Reset subcategories dropdown after submission
+    // router.push('/'); // Or redirect to a "my products" page
   }
 
   return (
@@ -140,54 +161,82 @@ export function ProductUploadForm() {
             </FormItem>
           )}
         />
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <FormField
-            control={form.control}
-            name="categoryId"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Category</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a category" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {CATEGORIES.map(cat => (
-                      <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="brandId"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Brand</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a brand" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {BRANDS.map(brand => (
-                      <SelectItem key={brand.id} value={brand.id}>{brand.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
         
-        {/* Image upload can be added here. For now, placeholder is used. */}
+        <FormField
+          control={form.control}
+          name="categoryId"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Parent Category</FormLabel>
+              <Select onValueChange={field.onChange} value={field.value} defaultValue="">
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a parent category" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {parentCategories.map(cat => (
+                    <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="subCategoryId"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Sub-Category (Optional)</FormLabel>
+              <Select 
+                onValueChange={field.onChange} 
+                value={field.value} 
+                defaultValue=""
+                disabled={!watchedCategoryId || availableSubCategories.length === 0}
+              >
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder={!watchedCategoryId ? "Select parent category first" : "Select a sub-category (optional)"} />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="">-- No Sub-Category --</SelectItem>
+                  {availableSubCategories.map(subCat => (
+                    <SelectItem key={subCat.id} value={subCat.id}>{subCat.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        
+        <FormField
+          control={form.control}
+          name="brandId"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Brand</FormLabel>
+              <Select onValueChange={field.onChange} value={field.value} defaultValue="">
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a brand" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {brands.map(brand => (
+                    <SelectItem key={brand.id} value={brand.id}>{brand.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        
         <FormItem>
             <FormLabel>Product Image</FormLabel>
             <div className="flex items-center justify-center w-full">

@@ -2,13 +2,13 @@
 "use client";
 import React, { useState, useMemo, useEffect } from 'react';
 import { ProductCard } from '@/components/product-card';
-import { MOCK_PRODUCTS } from '@/lib/mock-data';
+import { MOCK_PRODUCTS, MOCK_CATEGORIES } from '@/lib/mock-data'; // Updated import
 import type { Product, Category as CategoryType } from '@/lib/types';
-import { CATEGORIES } from '@/lib/constants';
+// import { CATEGORIES } from '@/lib/constants'; // Old import removed
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { SearchX, ArrowRight } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Card, CardContent, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardFooter } from '@/components/ui/card'; // Card import was missing here too
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { CategoryBar } from '@/components/category-bar';
@@ -38,19 +38,19 @@ export default function HomePage() {
 
   const productsByCategory = useMemo(() => {
     if (selectedCategoryId) {
-      const category = CATEGORIES.find(c => c.id === selectedCategoryId);
+      const category = MOCK_CATEGORIES.find(c => c.id === selectedCategoryId); // Use MOCK_CATEGORIES
       if (category) {
         return [{
           category,
-          products: allApprovedProducts.filter(p => p.category.id === selectedCategoryId)
+          products: allApprovedProducts.filter(p => p.categoryId === selectedCategoryId) // Use p.categoryId
         }];
       }
     }
     // Group products by category for display
-    return CATEGORIES.map(category => ({
+    return MOCK_CATEGORIES.map(category => ({ // Use MOCK_CATEGORIES
       category,
       products: allApprovedProducts
-        .filter(product => product.category.id === category.id)
+        .filter(product => product.categoryId === category.id) // Use product.categoryId
         .slice(0, PRODUCTS_PER_CATEGORY_HOME), // Take limited products per category
     })).filter(group => group.products.length > 0); // Only show categories that have products
   }, [allApprovedProducts, selectedCategoryId]);
@@ -62,10 +62,10 @@ export default function HomePage() {
       
       <div className="container mx-auto px-4 mt-6 md:mt-8">
         {loading ? (
-          CATEGORIES.map(category => (
+          MOCK_CATEGORIES.map(category => ( // Use MOCK_CATEGORIES
             <div key={category.id} className="mb-12">
               <Skeleton className="h-8 w-1/2 md:w-1/4 mb-6" />
-              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-6"> {/* Adjusted for mobile */}
+              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 {[...Array(PRODUCTS_PER_CATEGORY_HOME)].map((_, i) => (
                   <Card key={i} className="flex flex-col overflow-hidden rounded-lg">
                     <Skeleton className="aspect-[4/3] w-full" />
@@ -97,7 +97,7 @@ export default function HomePage() {
                 )}
               </div>
               {products.length > 0 ? (
-                <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6"> {/* Adjusted for mobile */}
+                <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
                   {products.map(product => (
                     <ProductCard key={product.id} product={product} />
                   ))}

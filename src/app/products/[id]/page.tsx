@@ -2,13 +2,13 @@
 "use client";
 import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
-import { MOCK_PRODUCTS } from '@/lib/mock-data';
+import { MOCK_PRODUCTS, MOCK_CATEGORIES, MOCK_SUBCATEGORIES, MOCK_BRANDS } from '@/lib/mock-data';
 import type { Product } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useCart } from '@/contexts/cart-context';
-import { ArrowLeft, ShoppingCart, UserCircle, CalendarDays } from 'lucide-react';
+import { ArrowLeft, ShoppingCart, UserCircle, CalendarDays, Tag, Layers } from 'lucide-react'; // Added Tag, Layers
 import { QuantitySelector } from '@/components/quantity-selector';
 import React, { useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -19,20 +19,32 @@ export default function ProductDetailPage() {
   const params = useParams();
   const router = useRouter();
   const { addToCart } = useCart();
-  const [product, setProduct] = useState<Product | null | undefined>(undefined); // undefined for loading state
+  const [product, setProduct] = useState<Product | null | undefined>(undefined);
   const [quantity, setQuantity] = useState(1);
+
+  const [categoryName, setCategoryName] = useState<string>('');
+  const [subCategoryName, setSubCategoryName] = useState<string | null>(null);
+  const [brandName, setBrandName] = useState<string>('');
 
   useEffect(() => {
     if (params.id) {
-      // Simulate API call
       setTimeout(() => {
         const foundProduct = MOCK_PRODUCTS.find(p => p.id === params.id);
-        setProduct(foundProduct || null); // null if not found
+        setProduct(foundProduct || null);
+        if (foundProduct) {
+          setCategoryName(MOCK_CATEGORIES.find(c => c.id === foundProduct.categoryId)?.name || 'N/A');
+          if (foundProduct.subCategoryId) {
+            setSubCategoryName(MOCK_SUBCATEGORIES.find(sc => sc.id === foundProduct.subCategoryId)?.name || 'N/A');
+          } else {
+            setSubCategoryName(null);
+          }
+          setBrandName(MOCK_BRANDS.find(b => b.id === foundProduct.brandId)?.name || 'N/A');
+        }
       }, 300);
     }
   }, [params.id]);
 
-  if (product === undefined) { // Loading state
+  if (product === undefined) { 
     return (
       <div className="container mx-auto px-4 py-8">
         <Skeleton className="h-8 w-32 mb-6" />
@@ -86,9 +98,18 @@ export default function ProductDetailPage() {
           </div>
           <div className="p-6 md:p-8 flex flex-col h-full">
             <CardHeader className="p-0 mb-4">
-              <div className="flex items-center gap-2 mb-2">
-                <Badge variant="secondary">{product.category.name}</Badge>
-                <Badge variant="outline">{product.brand.name}</Badge>
+              <div className="flex flex-wrap items-center gap-2 mb-2">
+                <Badge variant="secondary" className="flex items-center gap-1">
+                    <Layers className="h-3 w-3" /> {categoryName}
+                </Badge>
+                {subCategoryName && (
+                  <Badge variant="outline" className="flex items-center gap-1">
+                    {subCategoryName}
+                  </Badge>
+                )}
+                <Badge variant="outline" className="flex items-center gap-1">
+                    <Tag className="h-3 w-3" /> {brandName}
+                </Badge>
               </div>
               <CardTitle className="text-3xl font-bold">{product.name}</CardTitle>
             </CardHeader>

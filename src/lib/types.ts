@@ -2,7 +2,13 @@
 export type Category = {
   id: string;
   name: string;
-  icon?: React.ComponentType<{ className?: string }>;
+  // icon field removed for dynamic management simplicity
+};
+
+export type SubCategory = {
+  id: string;
+  name: string;
+  parentCategoryId: string;
 };
 
 export type Brand = {
@@ -17,10 +23,11 @@ export type Product = {
   price: number;
   imageUrl: string;
   imageHint?: string;
-  category: Category;
-  brand: Brand;
+  categoryId: string; // ID of the parent category
+  subCategoryId?: string; // Optional ID of the sub-category
+  brandId: string; // ID of the brand
   sellerId: string;
-  sellerName?: string; // Added for convenience
+  sellerName?: string;
   status: 'pending' | 'approved' | 'rejected' | 'sold';
   createdAt: Date;
 };
@@ -36,10 +43,10 @@ export type CartItem = {
 export type ShippingAddress = {
   fullName: string;
   phoneNumber?: string;
-  country: string; // Will be fixed to "Bangladesh"
-  division: string; // e.g., "Dhaka"
-  district: string; // e.g., "Dhaka City"
-  thana: string;    // e.g., "Gulshan"
+  country: string; 
+  division: string; 
+  district: string; 
+  thana: string;    
   houseAddress: string;
   roadNumber?: string;
 };
@@ -60,7 +67,7 @@ export type Order = {
 export type WithdrawalMethodType = 'bkash' | 'bank';
 
 export type BKashDetails = {
-  accountNumber: string; // 11 digits
+  accountNumber: string; 
 };
 
 export type BankDetails = {
@@ -86,7 +93,6 @@ export type User = {
   isAdmin?: boolean;
   defaultShippingAddress?: ShippingAddress | null;
   withdrawalMethods?: WithdrawalMethod[];
-  // Other profile info can be added here
 };
 
 export type FilterValues = {
@@ -98,7 +104,7 @@ export type FilterValues = {
   sortBy?: 'price_asc' | 'price_desc' | 'date_newest' | 'date_oldest';
 };
 
-// Simplified types for static address data
+// Simplified types for static address data (used in constants.ts for address form)
 export type StaticDivision = {
   id: string;
   name: string;
@@ -107,40 +113,11 @@ export type StaticDivision = {
 export type StaticDistrict = {
   id: string;
   name: string;
-  divisionId: string; // To link to a StaticDivision
+  divisionId: string; 
 };
 
 export type StaticThana = {
   id: string;
   name: string;
-  districtId: string; // To link to a StaticDistrict
-};
-
-// API response types for Bangladeshi address components (no longer used in form, kept for reference if needed elsewhere)
-export type Division = {
-  _id: string;
-  name: string;
-};
-
-export type District = {
-  _id: string;
-  division_id: string;
-  name: string;
-  bn_name: string;
-  lat: string;
-  long: string;
-};
-
-export type Upazilla = {
-  _id: string;
-  district_id: string;
-  name: string;
-  bn_name: string;
-};
-
-export type Union = {
-  _id: string;
-  upazilla_id: string; // Note: API might use 'upazila_id' (with one l)
-  name: string;
-  bn_name: string;
+  districtId: string; 
 };

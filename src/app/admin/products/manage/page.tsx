@@ -1,8 +1,8 @@
 
 "use client";
 import { useEffect, useState } from 'react';
-import { MOCK_PRODUCTS } from '@/lib/mock-data';
-import type { Product, Category, Brand } from '@/lib/types';
+import { MOCK_PRODUCTS, MOCK_CATEGORIES, MOCK_SUBCATEGORIES, MOCK_BRANDS } from '@/lib/mock-data';
+import type { Product } from '@/lib/types'; // Category and Brand types are not directly used here
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -11,8 +11,9 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Loader2, ListChecks, PlusCircle, Search, Filter, Edit3, Trash2 } from 'lucide-react';
 import Image from 'next/image';
-import { CATEGORIES, BRANDS } from '@/lib/constants'; // For filter dropdowns
+// Removed CATEGORIES, BRANDS import from constants, will use MOCK_ from mock-data
 import { format } from 'date-fns';
+import { useToast } from '@/hooks/use-toast'; // Added for future Add Product button
 
 type ProductStatus = Product['status'] | 'all';
 
@@ -20,15 +21,15 @@ export default function AdminManageProductsPage() {
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
   
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<ProductStatus>('all');
-  const [categoryFilter, setCategoryFilter] = useState<string>('all');
-  const [brandFilter, setBrandFilter] = useState<string>('all');
+  const [categoryFilter, setCategoryFilter] = useState<string>('all'); // Stores category ID
+  const [brandFilter, setBrandFilter] = useState<string>('all'); // Stores brand ID
 
   useEffect(() => {
     setIsLoading(true);
-    // Simulate fetching products
     setTimeout(() => {
       const sortedProducts = [...MOCK_PRODUCTS].sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
       setAllProducts(sortedProducts);
@@ -50,25 +51,27 @@ export default function AdminManageProductsPage() {
       tempProducts = tempProducts.filter(product => product.status === statusFilter);
     }
     if (categoryFilter !== 'all') {
-      tempProducts = tempProducts.filter(product => product.category.id === categoryFilter);
+      tempProducts = tempProducts.filter(product => product.categoryId === categoryFilter);
     }
     if (brandFilter !== 'all') {
-      tempProducts = tempProducts.filter(product => product.brand.id === brandFilter);
+      tempProducts = tempProducts.filter(product => product.brandId === brandFilter);
     }
     setFilteredProducts(tempProducts);
   }, [searchTerm, statusFilter, categoryFilter, brandFilter, allProducts]);
 
-  // Placeholder functions for edit/delete
   const handleEditProduct = (productId: string) => {
-    console.log("Edit product:", productId);
-    // alert("Edit functionality to be implemented.");
+    toast({ title: "Edit Product", description: `Functionality to edit product #${productId} is not yet implemented.` });
   };
 
   const handleDeleteProduct = (productId: string) => {
-    console.log("Delete product:", productId);
-    // Simulate deletion
-    // setAllProducts(prev => prev.filter(p => p.id !== productId));
-    // alert("Delete functionality to be implemented (mock).");
+    if (window.confirm("Are you sure you want to delete this product? This cannot be undone.")) {
+      const productIndex = MOCK_PRODUCTS.findIndex(p => p.id === productId);
+      if (productIndex !== -1) {
+        MOCK_PRODUCTS.splice(productIndex, 1);
+        setAllProducts([...MOCK_PRODUCTS]); // Update allProducts to trigger re-filter
+        toast({ title: "Product Deleted", description: `Product ID ${productId} has been deleted.`, variant: "destructive" });
+      }
+    }
   };
   
   if (isLoading) {
@@ -86,7 +89,7 @@ export default function AdminManageProductsPage() {
           <ListChecks className="h-8 w-8 text-primary"/>
           Manage All Products
         </h1>
-        <Button>
+        <Button onClick={() => toast({ title: "Add Product", description: "Product creation via Admin Panel not implemented. Please use 'Sell Your Item' page."})}>
           <PlusCircle className="mr-2 h-4 w-4" /> Add New Product
         </Button>
       </div>
@@ -125,7 +128,7 @@ export default function AdminManageProductsPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Categories</SelectItem>
-              {CATEGORIES.map(cat => <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>)}
+              {MOCK_CATEGORIES.map(cat => <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
@@ -137,7 +140,7 @@ export default function AdminManageProductsPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Brands</SelectItem>
-              {BRANDS.map(brand => <SelectItem key={brand.id} value={brand.id}>{brand.name}</SelectItem>)}
+              {MOCK_BRANDS.map(brand => <SelectItem key={brand.id} value={brand.id}>{brand.name}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
@@ -161,6 +164,7 @@ export default function AdminManageProductsPage() {
                 <TableHead>Seller</TableHead>
                 <TableHead>Price</TableHead>
                 <TableHead>Category</TableHead>
+                <TableHead>Sub-Category</TableHead>
                 <TableHead>Brand</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Listed On</TableHead>
@@ -168,7 +172,11 @@ export default function AdminManageProductsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredProducts.map((product) => (
+              {filteredProducts.map((product) => {
+                const categoryName = MOCK_CATEGORIES.find(c => c.id === product.categoryId)?.name || 'N/A';
+                const subCategoryName = product.subCategoryId ? MOCK_SUBCATEGORIES.find(sc => sc.id === product.subCategoryId)?.name : 'N/A';
+                const brandName = MOCK_BRANDS.find(b => b.id === product.brandId)?.name || 'N/A';
+                return (
                 <TableRow key={product.id}>
                   <TableCell>
                     <Image src={product.imageUrl} alt={product.name} width={50} height={50} className="rounded aspect-square object-cover" data-ai-hint={product.imageHint || "product photo"} />
@@ -179,8 +187,9 @@ export default function AdminManageProductsPage() {
                   </TableCell>
                   <TableCell>{product.sellerName || product.sellerId}</TableCell>
                   <TableCell>${product.price.toFixed(2)}</TableCell>
-                  <TableCell>{product.category.name}</TableCell>
-                  <TableCell>{product.brand.name}</TableCell>
+                  <TableCell>{categoryName}</TableCell>
+                  <TableCell>{subCategoryName}</TableCell>
+                  <TableCell>{brandName}</TableCell>
                   <TableCell><Badge variant={product.status === 'approved' ? 'default' : product.status === 'pending' ? 'secondary' : 'destructive'}>{product.status}</Badge></TableCell>
                   <TableCell>{format(new Date(product.createdAt), 'dd MMM yyyy')}</TableCell>
                   <TableCell className="text-right">
@@ -192,7 +201,8 @@ export default function AdminManageProductsPage() {
                     </Button>
                   </TableCell>
                 </TableRow>
-              ))}
+              );
+            })}
             </TableBody>
           </Table>
         </div>

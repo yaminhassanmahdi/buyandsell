@@ -1,6 +1,6 @@
 
-import type { Product, User, Order, ShippingAddress } from './types';
-import { CATEGORIES, BRANDS } from './constants';
+import type { Product, User, Order, ShippingAddress, Category, SubCategory, Brand } from './types';
+import { INITIAL_CATEGORIES, INITIAL_BRANDS } from './constants'; // Assuming constants now export these initial arrays
 
 // Helper function to create a date in the past
 const createPastDate = (daysAgo: number): Date => {
@@ -8,6 +8,21 @@ const createPastDate = (daysAgo: number): Date => {
   date.setDate(date.getDate() - daysAgo);
   return date;
 };
+
+// --- Mutable Mock Data for Admin Management ---
+export let MOCK_CATEGORIES: Category[] = INITIAL_CATEGORIES.map(cat => ({ id: cat.id, name: cat.name }));
+
+export let MOCK_SUBCATEGORIES: SubCategory[] = [
+  { id: 'sc1', name: 'Smartphones', parentCategoryId: 'electronics' },
+  { id: 'sc2', name: 'Laptops', parentCategoryId: 'electronics' },
+  { id: 'sc3', name: 'Mens Apparel', parentCategoryId: 'fashion' },
+  { id: 'sc4', name: 'Womens Apparel', parentCategoryId: 'fashion' },
+  { id: 'sc5', name: 'Living Room Furniture', parentCategoryId: 'home-garden' },
+];
+
+export let MOCK_BRANDS: Brand[] = INITIAL_BRANDS.map(brand => ({ ...brand }));
+// --- End Mutable Mock Data ---
+
 
 export const MOCK_USERS: User[] = [
   { 
@@ -68,8 +83,9 @@ export const MOCK_PRODUCTS: Product[] = [
     price: 75,
     imageUrl: 'https://placehold.co/600x400.png',
     imageHint: 'leather jacket',
-    category: CATEGORIES.find(c => c.id === 'fashion')!,
-    brand: BRANDS.find(b => b.id === 'generic')!,
+    categoryId: 'fashion',
+    subCategoryId: 'sc3', // Mens Apparel
+    brandId: 'generic',
     sellerId: 'user2',
     sellerName: 'Jane Smith',
     status: 'approved',
@@ -82,8 +98,9 @@ export const MOCK_PRODUCTS: Product[] = [
     price: 250,
     imageUrl: 'https://placehold.co/600x400.png',
     imageHint: 'smartphone electronics',
-    category: CATEGORIES.find(c => c.id === 'electronics')!,
-    brand: BRANDS.find(b => b.id === 'apple')!,
+    categoryId: 'electronics',
+    subCategoryId: 'sc1', // Smartphones
+    brandId: 'apple',
     sellerId: 'user2',
     sellerName: 'Jane Smith',
     status: 'approved',
@@ -96,8 +113,9 @@ export const MOCK_PRODUCTS: Product[] = [
     price: 50,
     imageUrl: 'https://placehold.co/600x400.png',
     imageHint: 'bookshelf furniture',
-    category: CATEGORIES.find(c => c.id === 'home-garden')!,
-    brand: BRANDS.find(b => b.id === 'ikea')!,
+    categoryId: 'home-garden',
+    subCategoryId: 'sc5', // Living Room Furniture
+    brandId: 'ikea',
     sellerId: 'user1',
     sellerName: 'John Doe',
     status: 'pending',
@@ -110,8 +128,9 @@ export const MOCK_PRODUCTS: Product[] = [
     price: 300,
     imageUrl: 'https://placehold.co/600x400.png',
     imageHint: 'android smartphone',
-    category: CATEGORIES.find(c => c.id === 'electronics')!,
-    brand: BRANDS.find(b => b.id === 'samsung')!,
+    categoryId: 'electronics',
+    subCategoryId: 'sc1', // Smartphones
+    brandId: 'samsung',
     sellerId: 'user2',
     sellerName: 'Jane Smith',
     status: 'approved',
@@ -124,8 +143,9 @@ export const MOCK_PRODUCTS: Product[] = [
     price: 40,
     imageUrl: 'https://placehold.co/600x400.png',
     imageHint: 'running shoes',
-    category: CATEGORIES.find(c => c.id === 'fashion')!,
-    brand: BRANDS.find(b => b.id === 'nike')!,
+    categoryId: 'fashion', // Belongs to Fashion main category
+    // subCategoryId: undefined, // No specific sub-category
+    brandId: 'nike',
     sellerId: 'user1',
     sellerName: 'John Doe',
     status: 'approved',
@@ -138,8 +158,8 @@ export const MOCK_PRODUCTS: Product[] = [
     price: 20,
     imageUrl: 'https://placehold.co/600x400.png',
     imageHint: 'books literature',
-    category: CATEGORIES.find(c => c.id === 'books')!,
-    brand: BRANDS.find(b => b.id === 'generic')!,
+    categoryId: 'books', // Belongs to Books main category
+    brandId: 'generic',
     sellerId: 'user2',
     sellerName: 'Jane Smith',
     status: 'rejected',

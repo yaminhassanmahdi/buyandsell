@@ -8,7 +8,7 @@ import { PlusCircle, Search, Menu } from 'lucide-react';
 import { Input } from './ui/input';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { MainNav } from './main-nav'; // Keep for mobile drawer
-import { CATEGORIES } from '@/lib/constants'; // For mobile drawer categories
+import { MOCK_CATEGORIES } from '@/lib/mock-data'; // For mobile drawer categories - UPDATED
 import { useAuth } from '@/contexts/auth-context'; // For mobile drawer sell link
 
 export function SiteHeader() {
@@ -38,7 +38,7 @@ export function SiteHeader() {
                   )}
                   <div className="pt-4">
                     <h3 className="mb-2 px-0 text-lg font-semibold tracking-tight">Categories</h3>
-                    {CATEGORIES.map((category) => (
+                    {MOCK_CATEGORIES.map((category) => ( // UPDATED
                        <Link key={category.id} href={`/?category=${category.id}`} className="block py-2 text-muted-foreground hover:text-primary">
                         {category.name}
                       </Link>

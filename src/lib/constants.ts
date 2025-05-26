@@ -1,25 +1,26 @@
 
-import type { Category, Brand, OrderStatus, StaticDivision, StaticDistrict, StaticThana } from './types';
+import type { OrderStatus, StaticDivision, StaticDistrict, StaticThana, Category, Brand } from './types'; // Added Category, Brand
 import { 
   Smartphone, Laptop, Shirt, Armchair, BookOpen, Tag, 
-  Package as PackageIcon, // Renamed to avoid conflict
+  Package as PackageIcon, 
   PackageCheck, PackageX, Truck, CheckCircle2, Hourglass, 
-  Handshake as HandshakeIcon, // Renamed to avoid conflict
-  LayoutDashboard, CheckSquare, ShoppingCart, Users as UsersIcon, // Renamed to avoid conflict
-  ListChecks, FolderTree, Tags, Settings2 // New icons
+  Handshake as HandshakeIcon, 
+  LayoutDashboard, CheckSquare, ShoppingCart, Users as UsersIcon, 
+  ListChecks, FolderTree, Tags as TagsIcon, Settings2 // Renamed Tags to TagsIcon
 } from 'lucide-react';
 
 export const APP_NAME = '2ndhandbajar.com';
 
-export const CATEGORIES: Category[] = [
-  { id: 'electronics', name: 'Electronics', icon: Smartphone },
-  { id: 'fashion', name: 'Fashion', icon: Shirt },
-  { id: 'home-garden', name: 'Home & Garden', icon: Armchair },
-  { id: 'books', name: 'Books', icon: BookOpen },
-  { id: 'others', name: 'Others', icon: Tag },
+// These are now initial values for the mutable MOCK_CATEGORIES and MOCK_BRANDS in mock-data.ts
+export const INITIAL_CATEGORIES: Category[] = [
+  { id: 'electronics', name: 'Electronics' /* icon: Smartphone */ }, // Icons removed for dynamic management for now
+  { id: 'fashion', name: 'Fashion' /* icon: Shirt */ },
+  { id: 'home-garden', name: 'Home & Garden' /* icon: Armchair */ },
+  { id: 'books', name: 'Books' /* icon: BookOpen */ },
+  { id: 'others', name: 'Others' /* icon: Tag */ },
 ];
 
-export const BRANDS: Brand[] = [
+export const INITIAL_BRANDS: Brand[] = [
   { id: 'apple', name: 'Apple' },
   { id: 'samsung', name: 'Samsung' },
   { id: 'nike', name: 'Nike' },
@@ -60,18 +61,18 @@ export const ADMIN_NAVIGATION: AdminNavItem[] = [
   { name: 'Approve Products', href: '/admin/products', icon: CheckSquare },
   { 
     name: 'Products', 
-    href: '/admin/products/manage', // Main link for Products section
+    href: '/admin/products/manage', 
     icon: PackageIcon,
     subItems: [
       { name: 'Manage Products', href: '/admin/products/manage', icon: ListChecks },
       { name: 'Manage Categories', href: '/admin/products/categories', icon: FolderTree },
-      { name: 'Manage Sub-Categories', href: '/admin/products/sub-categories', icon: FolderTree }, // Placeholder
-      { name: 'Manage Brands', href: '/admin/products/brands', icon: Tags }, // Placeholder
+      { name: 'Manage Sub-Categories', href: '/admin/products/sub-categories', icon: FolderTree }, 
+      { name: 'Manage Brands', href: '/admin/products/brands', icon: TagsIcon }, 
     ]
   },
   { 
     name: 'Orders', 
-    href: '/admin/orders/manage', // Main link for Orders section
+    href: '/admin/orders/manage', 
     icon: ShoppingCart,
     subItems: [
       { name: 'Manage Orders', href: '/admin/orders/manage', icon: Settings2 },
@@ -84,13 +85,11 @@ export const ADMIN_NAVIGATION: AdminNavItem[] = [
 ];
 
 
-// Helper function to get an icon for a status
 export const getStatusIcon = (status: OrderStatus) => {
   const statusObj = ORDER_STATUSES.find(s => s.value === status);
   return statusObj?.icon;
 };
 
-// --- Static Address Data for Bangladesh ---
 export const DIVISIONS_BD: StaticDivision[] = [
   { id: 'dhaka_div', name: 'Dhaka' },
   { id: 'chittagong_div', name: 'Chittagong' },
@@ -109,18 +108,13 @@ export const DISTRICTS_BD: StaticDistrict[] = [
 ];
 
 export const THANAS_BD: StaticThana[] = [
-  // Dhaka Division > Dhaka District
   { id: 'dhanmondi_thana', name: 'Dhanmondi', districtId: 'dhaka_dist' },
   { id: 'gulshan_thana', name: 'Gulshan', districtId: 'dhaka_dist' },
   { id: 'mirpur_thana', name: 'Mirpur', districtId: 'dhaka_dist' },
-  // Dhaka Division > Gazipur District
   { id: 'gazipur_sadar_thana', name: 'Gazipur Sadar', districtId: 'gazipur_dist' },
   { id: 'kaliakair_thana', name: 'Kaliakair', districtId: 'gazipur_dist' },
-  // Chittagong Division > Chittagong District
   { id: 'kotwali_ctg_thana', name: 'Kotwali (Chittagong)', districtId: 'chittagong_dist' },
   { id: 'pahartali_thana', name: 'Pahartali', districtId: 'chittagong_dist' },
-  // Sylhet Division > Sylhet Sadar District
   { id: 'sylhet_sadar_thana', name: 'Sylhet Sadar Upazila', districtId: 'sylhet_sadar_dist' },
-  // Rajshahi Division > Rajshahi Sadar District
   { id: 'boalia_thana', name: 'Boalia', districtId: 'rajshahi_sadar_dist' },
 ];
