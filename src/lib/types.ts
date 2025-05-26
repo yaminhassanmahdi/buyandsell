@@ -57,7 +57,8 @@ export type Order = {
   id: string;
   userId: string;
   items: CartItem[];
-  totalAmount: number;
+  totalAmount: number; // This will now be items subtotal + delivery charge
+  deliveryChargeAmount?: number; // The calculated delivery charge
   shippingAddress: ShippingAddress;
   status: OrderStatus;
   createdAt: Date;

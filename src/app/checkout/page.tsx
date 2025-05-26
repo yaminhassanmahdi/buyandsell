@@ -7,15 +7,13 @@ import { useCart } from '@/contexts/cart-context';
 import { AddressForm } from '@/components/address-form';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import type { ShippingAddress, Order } from '@/lib/types';
-import { MOCK_ORDERS } from '@/lib/mock-data'; 
+import type { ShippingAddress, Order, DeliveryChargeSettings, Product as ProductType, User as UserType } from '@/lib/types';
+import { MOCK_ORDERS, MOCK_PRODUCTS, MOCK_USERS } from '@/lib/mock-data'; 
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
-import { Loader2, ShieldCheck, Edit3, Home } from 'lucide-react';
-
-const formatAddressCompact = (address: ShippingAddress): string => {
-  return `${address.fullName}, ${address.houseAddress}${address.roadNumber ? `, ${address.roadNumber}` : ''}, ${address.thana}, ${address.district}, ${address.division}`;
-};
+import { Loader2, ShieldCheck, Edit3, Home, Truck } from 'lucide-react';
+import useLocalStorage from '@/hooks/use-local-storage';
+import { DELIVERY_CHARGES_STORAGE_KEY, DEFAULT_DELIVERY_CHARGES } from '@/lib/constants';
 
 export default function CheckoutPage() {
   const { currentUser, isAuthenticated, loading: authLoading, updateCurrentUserData } = useAuth();
@@ -23,50 +21,82 @@ export default function CheckoutPage() {
   const router = useRouter();
   const { toast } = useToast();
   
-  // This state holds the address confirmed for *this specific order*
   const [orderShippingAddress, setOrderShippingAddress] = useState<ShippingAddress | null>(null);
   const [isEditingAddress, setIsEditingAddress] = useState(false);
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
+  const [deliveryCharge, setDeliveryCharge] = useState<number>(0);
+
+  const [deliverySettings] = useLocalStorage<DeliveryChargeSettings>(
+    DELIVERY_CHARGES_STORAGE_KEY,
+    DEFAULT_DELIVERY_CHARGES
+  );
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
       router.push('/login?redirect=/checkout');
-      return; // Early return
+      return;
     }
     if (!authLoading && itemCount === 0) {
       router.push('/cart'); 
-      return; // Early return
+      return;
     }
 
-    // Initialize address editing state and orderShippingAddress
     if (currentUser) {
       if (currentUser.defaultShippingAddress) {
         setOrderShippingAddress(currentUser.defaultShippingAddress);
-        setIsEditingAddress(false); // Collapse form if default address exists
+        setIsEditingAddress(false);
       } else {
-        setIsEditingAddress(true); // Open form if no default address
+        setIsEditingAddress(true);
       }
     }
   }, [isAuthenticated, authLoading, router, itemCount, currentUser]);
 
+  useEffect(() => {
+    if (!orderShippingAddress || cartItems.length === 0 || !deliverySettings) {
+      setDeliveryCharge(0); // Default to 0 if no address, no items, or no settings
+      return;
+    }
+
+    const firstItem = cartItems[0];
+    const product = MOCK_PRODUCTS.find(p => p.id === firstItem.id);
+    if (!product || !product.sellerId) {
+      setDeliveryCharge(deliverySettings.interDistrict); // Fallback if seller not found
+      return;
+    }
+
+    const seller = MOCK_USERS.find(u => u.id === product.sellerId);
+    if (!seller || !seller.defaultShippingAddress) {
+      setDeliveryCharge(deliverySettings.interDistrict); // Fallback if seller or address not found
+      return;
+    }
+
+    const buyerAddr = orderShippingAddress;
+    const sellerAddr = seller.defaultShippingAddress;
+
+    if (buyerAddr.thana === sellerAddr.thana && buyerAddr.district === sellerAddr.district) {
+      setDeliveryCharge(deliverySettings.intraThana);
+    } else if (buyerAddr.district === sellerAddr.district) {
+      setDeliveryCharge(deliverySettings.intraDistrict);
+    } else {
+      setDeliveryCharge(deliverySettings.interDistrict);
+    }
+  }, [cartItems, orderShippingAddress, deliverySettings]);
+
 
   const initialAddressFormData = (): Partial<ShippingAddress> => {
-    // Prefill form with orderShippingAddress if available, otherwise current user's default, or empty
-    if (orderShippingAddress) return orderShippingAddress;
     if (currentUser?.defaultShippingAddress) {
       return currentUser.defaultShippingAddress;
     }
     return {};
   };
 
-
   const handleAddressSubmit = (data: ShippingAddress) => {
-    setOrderShippingAddress(data); // Set for the current order
+    setOrderShippingAddress(data);
     if (currentUser) {
-      updateCurrentUserData({ defaultShippingAddress: data }); // Update user's default
+      updateCurrentUserData({ defaultShippingAddress: data });
     }
     toast({ title: "Address Confirmed", description: "Shipping address for this order has been updated." });
-    setIsEditingAddress(false); // Collapse the form after submission
+    setIsEditingAddress(false);
   };
 
   const handlePlaceOrder = async () => {
@@ -82,11 +112,15 @@ export default function CheckoutPage() {
 
     await new Promise(resolve => setTimeout(resolve, 1500));
 
+    const itemsSubtotal = getCartTotal();
+    const finalTotalAmount = itemsSubtotal + deliveryCharge;
+
     const newOrder: Order = {
       id: `order${MOCK_ORDERS.length + 1}`,
       userId: currentUser.id,
       items: cartItems.map(item => ({ ...item })), 
-      totalAmount: getCartTotal(),
+      totalAmount: finalTotalAmount,
+      deliveryChargeAmount: deliveryCharge,
       shippingAddress: orderShippingAddress, 
       status: 'pending', 
       createdAt: new Date(),
@@ -104,13 +138,16 @@ export default function CheckoutPage() {
     setIsPlacingOrder(false);
   };
 
-  if (authLoading || (!authLoading && !isAuthenticated) || itemCount === 0) {
+  if (authLoading || (!authLoading && !isAuthenticated) || (itemCount === 0 && !isPlacingOrder)) { // Allow viewing page briefly during order placement
     return (
       <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
       </div>
     );
   }
+
+  const itemsSubtotal = getCartTotal();
+  const finalTotalAmount = itemsSubtotal + deliveryCharge;
 
   return (
     <div className="grid md:grid-cols-3 gap-8">
@@ -151,7 +188,7 @@ export default function CheckoutPage() {
                 </Button>
               </div>
             ) : (
-                 <p className="text-muted-foreground">Please add a shipping address.</p> // Should not happen if logic is correct
+                 <p className="text-muted-foreground">Please add a shipping address.</p>
             )}
           </CardContent>
         </Card>
@@ -191,17 +228,21 @@ export default function CheckoutPage() {
                 <p className="text-sm font-semibold">${(item.price * item.quantity).toFixed(2)}</p>
               </div>
             ))}
-            <div className="flex justify-between mt-4 pt-4 border-t">
-              <span>Subtotal</span>
-              <span>${getCartTotal().toFixed(2)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Shipping</span>
-              <span className="text-green-600">Free</span>
-            </div>
-            <div className="flex justify-between font-bold text-lg mt-2 pt-2 border-t">
-              <span>Total</span>
-              <span>${getCartTotal().toFixed(2)}</span>
+            <div className="mt-4 pt-4 border-t space-y-1">
+                <div className="flex justify-between">
+                    <span>Subtotal</span>
+                    <span>${itemsSubtotal.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between">
+                    <span className="flex items-center gap-1"><Truck className="h-4 w-4 text-muted-foreground"/>Shipping</span>
+                    <span>
+                        {deliveryCharge > 0 ? `$${deliveryCharge.toFixed(2)}` : (cartItems.length > 0 ? 'Calculating...' : 'N/A')}
+                    </span>
+                </div>
+                <div className="flex justify-between font-bold text-lg mt-2 pt-2 border-t">
+                    <span>Total</span>
+                    <span>${finalTotalAmount.toFixed(2)}</span>
+                </div>
             </div>
           </CardContent>
           <CardFooter>

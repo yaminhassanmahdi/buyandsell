@@ -11,7 +11,7 @@ import { Separator } from '@/components/ui/separator';
 import { OrderStatusBadge } from '@/components/order-status-badge';
 import Image from 'next/image';
 import { format } from 'date-fns';
-import { ArrowLeft, UserCircle, MapPin, CalendarDays, ShoppingBag, Briefcase, Home, Loader2, CreditCard, Smartphone, Banknote, Save } from 'lucide-react';
+import { ArrowLeft, UserCircle, MapPin, CalendarDays, ShoppingBag, Briefcase, Home, Loader2, CreditCard, Smartphone, Banknote, Save, Truck } from 'lucide-react';
 import { ORDER_STATUSES } from '@/lib/constants';
 import { useToast } from '@/hooks/use-toast';
 
@@ -49,7 +49,6 @@ export default function AdminOrderDetailPage() {
         if (foundOrder) {
           const enrichedItems = foundOrder.items.map(item => {
             const productDetails = MOCK_PRODUCTS.find(p => p.id === item.id);
-            // Ensure sellerDetails is the full UserType, including withdrawalMethods
             const sellerDetails = productDetails ? MOCK_USERS.find(u => u.id === productDetails.sellerId) : undefined;
             return { ...item, productDetails, sellerDetails };
           });
@@ -78,7 +77,7 @@ export default function AdminOrderDetailPage() {
     if (!order || !selectedStatus || selectedStatus === order.status) return;
 
     setIsUpdatingStatus(true);
-    await new Promise(resolve => setTimeout(resolve, 700)); // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 700)); 
 
     const orderIndex = MOCK_ORDERS.findIndex(o => o.id === orderId);
     if (orderIndex !== -1) {
@@ -113,6 +112,7 @@ export default function AdminOrderDetailPage() {
   }
 
   const buyer = MOCK_USERS.find(u => u.id === order.userId);
+  const itemsSubtotal = order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
   return (
     <div className="space-y-8 py-4">
@@ -123,7 +123,6 @@ export default function AdminOrderDetailPage() {
         </Button>
       </div>
 
-      {/* Order Status Management Card */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2"><ShoppingBag className="h-6 w-6 text-primary" /> Order Status</CardTitle>
@@ -179,9 +178,19 @@ export default function AdminOrderDetailPage() {
                 <span className="text-muted-foreground">Last Updated:</span>
                 <span className="font-medium">{format(new Date(order.updatedAt), 'PPpp')}</span>
               </div>
-              {/* Current status is now shown in its own card */}
+              <Separator className="my-3"/>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Items Subtotal:</span>
+                <span className="font-medium">${itemsSubtotal.toFixed(2)}</span>
+              </div>
+              {order.deliveryChargeAmount !== undefined && order.deliveryChargeAmount > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground flex items-center gap-1"><Truck className="h-4 w-4"/>Delivery Charge:</span>
+                  <span className="font-medium">${order.deliveryChargeAmount.toFixed(2)}</span>
+                </div>
+              )}
               <div className="flex justify-between font-bold text-lg pt-2 border-t">
-                <span>Total Amount:</span>
+                <span>Order Total:</span>
                 <span>${order.totalAmount.toFixed(2)}</span>
               </div>
             </CardContent>
@@ -206,7 +215,6 @@ export default function AdminOrderDetailPage() {
         </div>
       </div>
 
-      {/* Seller Information Section */}
       {uniqueSellers.map(seller => (
         <Card key={seller.id}>
             <CardHeader>
@@ -280,7 +288,6 @@ export default function AdminOrderDetailPage() {
                   <p className="text-md font-semibold">Subtotal: ${(item.price * item.quantity).toFixed(2)}</p>
                 </div>
               </div>
-              {/* Minimal seller info here since detailed block is separate */}
               {item.sellerDetails && (
                 <div className="mt-3 pt-3 border-t">
                   <p className="font-medium text-sm">Seller: {item.sellerDetails.name} (ID: {item.sellerDetails.id})</p>
@@ -296,4 +303,3 @@ export default function AdminOrderDetailPage() {
     </div>
   );
 }
-
