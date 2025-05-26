@@ -65,6 +65,10 @@ export default function CheckoutPage() {
   useEffect(() => {
     if (availableShippingMethods.length === 1 && !selectedShippingMethodId) {
       setSelectedShippingMethodId(availableShippingMethods[0].id);
+    } else if (availableShippingMethods.length > 1 && !selectedShippingMethodId) {
+      // Optionally, you could default to the first one, or leave it empty to force selection
+      // Forcing selection if multiple exist:
+      setSelectedShippingMethodId(''); 
     }
   }, [availableShippingMethods, selectedShippingMethodId]);
 
@@ -72,7 +76,7 @@ export default function CheckoutPage() {
   useEffect(() => {
     const calculateTotalDeliveryCharge = () => {
         if (!orderShippingAddress || cartItems.length === 0 || !deliverySettings || !currentUser) {
-            setTotalDeliveryCharge(0);
+            setTotalDeliveryCharge(0); // Or null if you want to show "N/A" until all conditions are met
             setIsCalculatingDelivery(false);
             return;
         }
@@ -90,7 +94,7 @@ export default function CheckoutPage() {
                 }
                 groupedBySeller[productDetails.sellerId].items.push(cartItem);
             } else {
-                 if (!groupedBySeller['unknown_seller']) {
+                 if (!groupedBySeller['unknown_seller']) { // Group items with no seller under a generic ID
                     groupedBySeller['unknown_seller'] = { seller: undefined, items: [] };
                 }
                 groupedBySeller['unknown_seller'].items.push(cartItem);
@@ -106,7 +110,7 @@ export default function CheckoutPage() {
             let chargePerSeller: number | null = null;
 
             if (!sellerAddress) {
-                chargePerSeller = deliverySettings.interDistrict; 
+                chargePerSeller = deliverySettings.interDistrict; // Fallback if seller address is missing
             } else {
                 if (buyerAddress.thana === sellerAddress.thana && buyerAddress.district === sellerAddress.district) {
                     chargePerSeller = deliverySettings.intraThana;
@@ -120,7 +124,7 @@ export default function CheckoutPage() {
             if (chargePerSeller !== null) {
                 calculatedTotal += chargePerSeller;
             } else {
-                allChargesCalculated = false; 
+                allChargesCalculated = false; // If any charge couldn't be determined, mark as not fully calculated
             }
         }
         setTotalDeliveryCharge(allChargesCalculated ? calculatedTotal : null);
@@ -186,7 +190,7 @@ export default function CheckoutPage() {
       variant: "default", 
       duration: 4000,
     });
-    router.push(`/account/orders?orderId=${newOrder.id}`);
+    router.push(`/order-confirmation/${newOrder.id}`); // Redirect to confirmation page
     setIsPlacingOrder(false);
   };
 
