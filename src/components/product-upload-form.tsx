@@ -11,6 +11,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription, // Added FormDescription
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -127,7 +128,7 @@ export function ProductUploadForm() {
     if (values.dynamicAttributes) {
         for (const typeId in values.dynamicAttributes) {
             const valueId = values.dynamicAttributes[typeId];
-            if (valueId) { // Only add if a value was selected
+            if (valueId && valueId !== "") { // Only add if a value was selected and it's not the "-- Select --" option
                 selectedAttrs.push({ attributeTypeId: typeId, attributeValueId: valueId });
             }
         }
@@ -234,7 +235,7 @@ export function ProductUploadForm() {
             <FormItem>
               <FormLabel>Sub-Category (Optional)</FormLabel>
               <Select
-                onValueChange={(value) => field.onChange(value === VALUE_FOR_NO_SUBCATEGORY_SELECTED ? undefined : value)}
+                onValueChange={(value) => field.onChange(value === VALUE_FOR_NO_SUBCATEGORY_SELECTED ? VALUE_FOR_NO_SUBCATEGORY_SELECTED : value)}
                 value={field.value || VALUE_FOR_NO_SUBCATEGORY_SELECTED}
                 disabled={!watchedCategoryId || availableSubCategories.length === 0}
               >
@@ -265,7 +266,11 @@ export function ProductUploadForm() {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>{attrType.name}</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value || ""} disabled={relevantValues.length === 0}>
+                  <Select 
+                    onValueChange={field.onChange} 
+                    value={field.value || ""} 
+                    disabled={relevantValues.length === 0}
+                  >
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder={`Select ${attrType.name}`} />
