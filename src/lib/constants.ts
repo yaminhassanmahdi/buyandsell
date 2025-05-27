@@ -5,13 +5,12 @@ import {
   Package as PackageIcon,
   PackageCheck, PackageX, Truck, CheckCircle2, Hourglass,
   Handshake as HandshakeIcon,
-  LayoutDashboard, CheckSquare, ShoppingCart, Users as UsersIcon,
-  ListChecks, FolderTree, Tags as TagsIcon, Settings2 as SettingsIcon, 
+  LayoutDashboard, CheckSquare, ShoppingCart, Users,
+  ListChecks, FolderTree, Tags as TagsIcon, Settings2 as SettingsIcon,
   Globe, Library, MapPin, Home, DollarSign, Briefcase, Edit, Trash2, CreditCard, PieChart, FileText, TrendingUp, Percent, Image as ImageIcon, FileType, Ship, Landmark
 } from 'lucide-react';
 
-export let APP_NAME = '2ndhandbajar.com'; 
-// export const CURRENCY_SYMBOL = '৳'; // Removed, will be dynamic
+export let APP_NAME = '2ndhandbajar.com';
 
 export const INITIAL_CATEGORIES: Category[] = [
   { id: 'electronics', name: 'Electronics', imageUrl: 'https://placehold.co/80x80.png', imageHint: 'electronics gadget' },
@@ -114,7 +113,7 @@ export const ADMIN_NAVIGATION: AdminNavItem[] = [
       { name: 'Custom Pages', href: '/admin/settings/custom-pages', icon: FileType },
     ]
   },
-  { name: 'Manage Users', href: '/admin/users', icon: UsersIcon },
+  { name: 'Manage Users', href: '/admin/users', icon: Users },
 ];
 
 
@@ -192,9 +191,9 @@ export const DEFAULT_CURRENCIES: Currency[] = [
 
 export const DEFAULT_BUSINESS_SETTINGS: BusinessSettings = {
   appName: '2ndhandbajar.com',
-  logoUrl: '/logo-placeholder.png', 
-  primaryColor: '47 92% 52%',      
-  secondaryColor: '77 30% 60%',    
+  logoUrl: '/logo-placeholder.png',
+  primaryColor: '47 92% 52%',
+  secondaryColor: '77 30% 60%',
   faviconUrl: '/favicon.ico',
   availableCurrencies: DEFAULT_CURRENCIES,
   defaultCurrencyCode: 'BDT',
@@ -235,26 +234,26 @@ export const DEFAULT_HERO_BANNER_SLIDES: HeroBannerSlide[] = [
     buttonLink: '/?category=home-garden',
     bgColor: 'bg-green-500',
     textColor: 'text-white',
-    isActive: false, 
+    isActive: false,
   },
 ];
 
-export const MOCK_CUSTOM_PAGES: CustomPage[] = [ 
+export const MOCK_CUSTOM_PAGES: CustomPage[] = [
   {
     id: 'page-privacy',
     slug: 'privacy-policy',
     title: 'Privacy Policy',
     content: '## Our Privacy Policy\n\nThis is a placeholder for the privacy policy content. Please replace this with your actual policy.\n\nWe collect information to provide better services to all our users.',
-    createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), 
-    updatedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),  
+    createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+    updatedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
   },
   {
     id: 'page-terms',
     slug: 'terms-and-conditions',
     title: 'Terms and Conditions',
     content: '## Terms and Conditions\n\nWelcome to our website. If you continue to browse and use this website, you are agreeing to comply with and be bound by the following terms and conditions of use...',
-    createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), 
-    updatedAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000), 
+    createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+    updatedAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
   },
 ];
 

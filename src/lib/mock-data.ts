@@ -1,6 +1,6 @@
 
 import type { Product, User, Order, ShippingAddress, Category, SubCategory, Brand, WithdrawalRequest, PaymentStatus, HeroBannerSlide, CustomPage } from './types';
-import { INITIAL_CATEGORIES, INITIAL_BRANDS, MOCK_CUSTOM_PAGES as DEFAULT_CUSTOM_PAGES } from './constants'; // Removed DEFAULT_HERO_BANNER_SLIDES import
+import { INITIAL_CATEGORIES, INITIAL_BRANDS, MOCK_CUSTOM_PAGES as DEFAULT_CUSTOM_PAGES } from './constants';
 
 const createPastDate = (daysAgo: number): Date => {
   const date = new Date();
@@ -8,19 +8,19 @@ const createPastDate = (daysAgo: number): Date => {
   return date;
 };
 
-export let MOCK_CATEGORIES: Category[] = INITIAL_CATEGORIES.map(cat => ({ 
-  id: cat.id, 
+export let MOCK_CATEGORIES: Category[] = INITIAL_CATEGORIES.map(cat => ({
+  id: cat.id,
   name: cat.name,
-  imageUrl: cat.imageUrl, // Ensure imageUrl is mapped
-  imageHint: cat.imageHint, // Ensure imageHint is mapped
+  imageUrl: cat.imageUrl,
+  imageHint: cat.imageHint,
 }));
 
 export let MOCK_SUBCATEGORIES: SubCategory[] = [
-  { id: 'sc1', name: 'Smartphones', parentCategoryId: 'electronics' },
-  { id: 'sc2', name: 'Laptops', parentCategoryId: 'electronics' },
-  { id: 'sc3', name: 'Mens Apparel', parentCategoryId: 'fashion' },
-  { id: 'sc4', name: 'Womens Apparel', parentCategoryId: 'fashion' },
-  { id: 'sc5', name: 'Living Room Furniture', parentCategoryId: 'home-garden' },
+  { id: 'sc1', name: 'Smartphones', parentCategoryId: 'electronics', imageUrl: 'https://placehold.co/80x80.png', imageHint: 'smartphones mobile' },
+  { id: 'sc2', name: 'Laptops', parentCategoryId: 'electronics', imageUrl: 'https://placehold.co/80x80.png', imageHint: 'laptops computer' },
+  { id: 'sc3', name: 'Mens Apparel', parentCategoryId: 'fashion', imageUrl: 'https://placehold.co/80x80.png', imageHint: 'mens clothing' },
+  { id: 'sc4', name: 'Womens Apparel', parentCategoryId: 'fashion', imageUrl: 'https://placehold.co/80x80.png', imageHint: 'womens clothing' },
+  { id: 'sc5', name: 'Living Room Furniture', parentCategoryId: 'home-garden', imageUrl: 'https://placehold.co/80x80.png', imageHint: 'furniture living room' },
 ];
 
 export let MOCK_BRANDS: Brand[] = INITIAL_BRANDS.map(brand => ({ ...brand }));

@@ -1,7 +1,7 @@
 
 "use client";
 import Link from 'next/link';
-import { MOCK_CATEGORIES } from '@/lib/mock-data'; 
+import { MOCK_CATEGORIES } from '@/lib/mock-data';
 import Image from 'next/image';
 import { Tag } from 'lucide-react';
 
@@ -24,7 +24,7 @@ export function CategoryBar() {
                     fill
                     sizes="64px" // Equivalent to w-16
                     className="object-cover group-hover:scale-105 transition-transform duration-200 ease-in-out"
-                    data-ai-hint={category.imageHint || category.name.toLowerCase()}
+                    data-ai-hint={category.imageHint || category.name.toLowerCase().split(" ")[0] || "category"}
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-muted rounded-full">
