@@ -7,64 +7,40 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { MOCK_BRANDS } from '@/lib/mock-data'; // Assuming MOCK_BRANDS is mutable
-import type { Brand } from '@/lib/types';
-import { Tags, PlusCircle, Trash2, Edit3, Loader2 } from 'lucide-react';
+// import { MOCK_BRANDS } from '@/lib/mock-data'; // MOCK_BRANDS is removed
+import type { Brand } from '@/lib/types'; // Brand type might be removed or repurposed later
+import { Tags, PlusCircle, Trash2, Edit3, Loader2, Info } from 'lucide-react';
+import { Alert, AlertTitle } from '@/components/ui/alert';
 
 export default function AdminManageBrandsPage() {
-  const [brands, setBrands] = useState<Brand[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [newBrandName, setNewBrandName] = useState('');
-  const [formSubmitting, setFormSubmitting] = useState(false);
+  // const [brands, setBrands] = useState<Brand[]>([]); // No longer managing global brands here
+  const [isLoading, setIsLoading] = useState(false); // Keep for potential future use, but not for brands
+  // const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  // const [newBrandName, setNewBrandName] = useState('');
+  // const [formSubmitting, setFormSubmitting] = useState(false);
   const { toast } = useToast();
 
-  useEffect(() => {
-    setIsLoading(true);
-    setTimeout(() => {
-      setBrands([...MOCK_BRANDS]);
-      setIsLoading(false);
-    }, 300);
-  }, []);
+  // useEffect(() => {
+  //   setIsLoading(true);
+  //   setTimeout(() => {
+  //     // setBrands([...MOCK_BRANDS]); // MOCK_BRANDS removed
+  //     setIsLoading(false);
+  //   }, 300);
+  // }, []);
 
-  const handleAddBrand = async () => {
-    if (!newBrandName.trim()) {
-      toast({ title: "Error", description: "Brand name cannot be empty.", variant: "destructive" });
-      return;
-    }
-    setFormSubmitting(true);
-    await new Promise(resolve => setTimeout(resolve, 500));
+  // const handleAddBrand = async () => {
+  //   // Logic for adding global brands removed
+  // };
 
-    const newBrand: Brand = {
-      id: `brand-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-      name: newBrandName.trim(),
-    };
-    MOCK_BRANDS.push(newBrand);
-    setBrands([...MOCK_BRANDS]);
-
-    toast({ title: "Brand Added", description: `Brand "${newBrand.name}" has been added.` });
-    setNewBrandName('');
-    setIsAddDialogOpen(false);
-    setFormSubmitting(false);
-  };
-
-  const handleDeleteBrand = (brandId: string) => {
-    if (window.confirm("Are you sure you want to delete this brand?")) {
-      const brandToDelete = MOCK_BRANDS.find(b => b.id === brandId);
-      const index = MOCK_BRANDS.findIndex(b => b.id === brandId);
-      if (index > -1) {
-        MOCK_BRANDS.splice(index, 1);
-        setBrands([...MOCK_BRANDS]);
-        toast({ title: "Brand Deleted", description: `Brand "${brandToDelete?.name}" has been deleted.` });
-      }
-    }
-  };
+  // const handleDeleteBrand = (brandId: string) => {
+  //  // Logic for deleting global brands removed
+  // };
   
-  const handleEditBrand = (id: string) => {
-    toast({ title: "Edit Action", description: `Edit brand ${id} (Not implemented).` });
-  };
+  // const handleEditBrand = (id: string) => {
+  //   toast({ title: "Edit Action", description: `Edit brand ${id} (Not implemented).` });
+  // };
 
-  if (isLoading) {
+  if (isLoading) { // Kept for consistency, though not strictly needed now
     return (
       <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -77,70 +53,38 @@ export default function AdminManageBrandsPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold flex items-center gap-3">
           <Tags className="h-8 w-8 text-primary"/>
-          Manage Brands
+          Product Attributes (Formerly Brands)
         </h1>
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <PlusCircle className="mr-2 h-4 w-4" /> Add New Brand
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Add New Brand</DialogTitle>
-              <DialogDescription>Enter the name for the new brand.</DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="brand-name" className="text-right">Name</Label>
-                <Input 
-                  id="brand-name" 
-                  value={newBrandName}
-                  onChange={(e) => setNewBrandName(e.target.value)}
-                  className="col-span-3" 
-                  placeholder="e.g., Apple"
-                />
-              </div>
-            </div>
-             <DialogClose asChild>
-                <Button type="button" variant="outline" disabled={formSubmitting}>Cancel</Button>
-            </DialogClose>
-            <Button onClick={handleAddBrand} disabled={formSubmitting || !newBrandName.trim()}>
-                {formSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Add Brand
-            </Button>
-          </DialogContent>
-        </Dialog>
+        {/* Add button might be repurposed later for managing attribute types */}
       </div>
       
+      <Alert variant="default">
+        <Info className="h-5 w-5" />
+        <AlertTitle>System Update: Attribute Management</AlertTitle>
+        <CardDescription className="mt-1">
+          The global "Brands" system has been replaced by category-specific attributes.
+          You can now define attributes like "Author", "Publisher", "Color", "Material", etc., for each parent category.
+          These attributes are then selected when adding or editing products under that category.
+          <br /><br />
+          Management of these category-specific attribute types and their values will be available in a future update to the admin panel.
+          This page previously managed global brands, which are no longer used for new product listings.
+        </CardDescription>
+      </Alert>
+
       <Card>
         <CardHeader>
-          <CardTitle>Brand List</CardTitle>
-          <CardDescription>View, add, edit, or delete product brands. Brands are currently global.</CardDescription>
+          <CardTitle>Legacy Global Brands (Deprecated)</CardTitle>
+          <CardDescription>
+            The global brand system is no longer in active use for product categorization.
+            Products now use dynamic attributes defined per category.
+            This section is for reference only and will be removed or repurposed.
+          </CardDescription>
         </CardHeader>
         <CardContent>
-           {brands.length > 0 ? (
-            <div className="space-y-3">
-              {brands.map(brand => (
-                <div key={brand.id} className="flex items-center justify-between p-3 border rounded-md hover:shadow-sm transition-shadow">
-                  <div>
-                    <h3 className="font-semibold">{brand.name}</h3>
-                     <p className="text-xs text-muted-foreground">ID: {brand.id}</p>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={() => handleEditBrand(brand.id)} className="hover:text-primary">
-                        <Edit3 className="h-4 w-4"/>
-                    </Button>
-                    <Button variant="destructive" size="sm" onClick={() => handleDeleteBrand(brand.id)}>
-                        <Trash2 className="h-4 w-4"/>
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-muted-foreground">No brands found. Add a new brand to get started.</p>
-          )}
+           <p className="text-muted-foreground">
+            Please use the new category-specific attribute system when adding products.
+            The interface to manage these new attributes (e.g., define "Author" for Books, "Color" for Fashion) is under development.
+            </p>
         </CardContent>
       </Card>
     </div>

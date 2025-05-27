@@ -1,8 +1,8 @@
 
 "use client";
-import { useEffect, useState } from 'react';
-import { MOCK_PRODUCTS, MOCK_CATEGORIES, MOCK_SUBCATEGORIES, MOCK_BRANDS } from '@/lib/mock-data';
-import type { Product, BusinessSettings } from '@/lib/types'; 
+import { useEffect, useState, useMemo } from 'react';
+import { MOCK_PRODUCTS, MOCK_CATEGORIES, MOCK_SUBCATEGORIES, MOCK_CATEGORY_ATTRIBUTE_TYPES, MOCK_CATEGORY_ATTRIBUTE_VALUES } from '@/lib/mock-data';
+import type { Product, BusinessSettings, CategoryAttributeType, CategoryAttributeValue } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -12,7 +12,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Loader2, ListChecks, PlusCircle, Search, Filter, Edit3, Trash2 } from 'lucide-react';
 import Image from 'next/image';
 import { format } from 'date-fns';
-import { useToast } from '@/hooks/use-toast'; 
+import { useToast } from '@/hooks/use-toast';
 import useLocalStorage from '@/hooks/use-local-storage';
 import { BUSINESS_SETTINGS_STORAGE_KEY, DEFAULT_BUSINESS_SETTINGS } from '@/lib/constants';
 
@@ -26,11 +26,11 @@ export default function AdminManageProductsPage() {
   
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<ProductStatus>('all');
-  const [categoryFilter, setCategoryFilter] = useState<string>('all'); 
-  const [brandFilter, setBrandFilter] = useState<string>('all'); 
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  // Brand filter is removed as global brands are replaced by dynamic attributes
 
   const [settings] = useLocalStorage<BusinessSettings>(BUSINESS_SETTINGS_STORAGE_KEY, DEFAULT_BUSINESS_SETTINGS);
-  const activeCurrency = settings.availableCurrencies.find(c => c.code === settings.defaultCurrencyCode) || settings.availableCurrencies[0] || { symbol: '?' };
+  const activeCurrency = useMemo(() => settings.availableCurrencies.find(c => c.code === settings.defaultCurrencyCode) || settings.availableCurrencies[0] || { symbol: '?' }, [settings]);
   const currencySymbol = activeCurrency.symbol;
 
   useEffect(() => {
@@ -58,11 +58,9 @@ export default function AdminManageProductsPage() {
     if (categoryFilter !== 'all') {
       tempProducts = tempProducts.filter(product => product.categoryId === categoryFilter);
     }
-    if (brandFilter !== 'all') {
-      tempProducts = tempProducts.filter(product => product.brandId === brandFilter);
-    }
+    // Filtering by dynamic attributes in the table is complex and omitted for now.
     setFilteredProducts(tempProducts);
-  }, [searchTerm, statusFilter, categoryFilter, brandFilter, allProducts]);
+  }, [searchTerm, statusFilter, categoryFilter, allProducts]);
 
   const handleEditProduct = (productId: string) => {
     toast({ title: "Edit Product", description: `Functionality to edit product #${productId} is not yet implemented.` });
@@ -99,7 +97,7 @@ export default function AdminManageProductsPage() {
         </Button>
       </div>
 
-      <div className="p-4 border rounded-lg bg-card shadow grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+      <div className="p-4 border rounded-lg bg-card shadow grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-end">
         <div>
           <label htmlFor="search-product" className="text-sm font-medium">Search</label>
           <Input 
@@ -137,18 +135,7 @@ export default function AdminManageProductsPage() {
             </SelectContent>
           </Select>
         </div>
-        <div>
-          <label htmlFor="filter-brand" className="text-sm font-medium">Brand</label>
-          <Select value={brandFilter} onValueChange={setBrandFilter}>
-            <SelectTrigger className="h-10 mt-1">
-              <SelectValue placeholder="Filter by brand" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Brands</SelectItem>
-              {MOCK_BRANDS.map(brand => <SelectItem key={brand.id} value={brand.id}>{brand.name}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
+        {/* Brand filter removed */}
       </div>
 
       {filteredProducts.length === 0 ? (
@@ -170,7 +157,8 @@ export default function AdminManageProductsPage() {
                 <TableHead>Price</TableHead>
                 <TableHead>Category</TableHead>
                 <TableHead>Sub-Category</TableHead>
-                <TableHead>Brand</TableHead>
+                {/* <TableHead>Brand</TableHead> Removed Brand column */}
+                <TableHead>Attributes</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Listed On</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -180,7 +168,13 @@ export default function AdminManageProductsPage() {
               {filteredProducts.map((product) => {
                 const categoryName = MOCK_CATEGORIES.find(c => c.id === product.categoryId)?.name || 'N/A';
                 const subCategoryName = MOCK_SUBCATEGORIES.find(sc => sc.id === product.subCategoryId)?.name || 'N/A';
-                const brandName = MOCK_BRANDS.find(b => b.id === product.brandId)?.name || 'N/A';
+                
+                const productAttributes = product.selectedAttributes?.map(attr => {
+                  const type = MOCK_CATEGORY_ATTRIBUTE_TYPES.find(t => t.id === attr.attributeTypeId);
+                  const value = MOCK_CATEGORY_ATTRIBUTE_VALUES.find(v => v.id === attr.attributeValueId);
+                  return type && value ? `${type.name}: ${value.value}` : '';
+                }).filter(Boolean).join(', ');
+
                 return (
                 <TableRow key={product.id}>
                   <TableCell>
@@ -194,7 +188,8 @@ export default function AdminManageProductsPage() {
                   <TableCell>{currencySymbol}{product.price.toFixed(2)}</TableCell>
                   <TableCell>{categoryName}</TableCell>
                   <TableCell>{subCategoryName}</TableCell>
-                  <TableCell>{brandName}</TableCell>
+                  {/* <TableCell>{brandName}</TableCell> Removed Brand cell */}
+                  <TableCell className="text-xs max-w-[150px] truncate">{productAttributes || 'N/A'}</TableCell>
                   <TableCell><Badge variant={product.status === 'approved' ? 'default' : product.status === 'pending' ? 'secondary' : 'destructive'}>{product.status}</Badge></TableCell>
                   <TableCell>{format(new Date(product.createdAt), 'dd MMM yyyy')}</TableCell>
                   <TableCell className="text-right">

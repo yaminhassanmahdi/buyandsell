@@ -2,8 +2,8 @@
 "use client";
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
-import { MOCK_PRODUCTS, MOCK_CATEGORIES, MOCK_SUBCATEGORIES, MOCK_BRANDS } from '@/lib/mock-data';
-import type { Product, Category as CategoryType, SubCategory, Brand as BrandType, BusinessSettings } from '@/lib/types';
+import { MOCK_PRODUCTS, MOCK_CATEGORIES, MOCK_SUBCATEGORIES, MOCK_CATEGORY_ATTRIBUTE_TYPES, MOCK_CATEGORY_ATTRIBUTE_VALUES } from '@/lib/mock-data';
+import type { Product, Category as CategoryType, SubCategory, BusinessSettings } from '@/lib/types';
 import { ProductCard } from '@/components/product-card';
 import { HeroBanner } from '@/components/hero-banner';
 import { SubCategoryScroller } from '@/components/sub-category-scroller';
@@ -20,7 +20,7 @@ const PRODUCTS_PER_SUB_CATEGORY_ROW = 4;
 
 export default function CategoryPage() {
   const params = useParams();
-  const searchParamsHook = useSearchParams(); // For potential future sub-category filtering via URL
+  const searchParamsHook = useSearchParams(); 
   const router = useRouter();
   const categoryId = params.categoryId as string;
 
@@ -43,11 +43,10 @@ export default function CategoryPage() {
   useEffect(() => {
     setIsLoading(true);
     if (categoryId) {
-      setTimeout(() => { // Simulate data fetching
+      setTimeout(() => { 
         const foundCategory = MOCK_CATEGORIES.find(c => c.id === categoryId);
         if (!foundCategory) {
-          // Handle category not found, e.g., redirect or show 404
-          router.push('/'); // For now, redirect to home
+          router.push('/'); 
           return;
         }
         setCategory(foundCategory);
@@ -64,12 +63,10 @@ export default function CategoryPage() {
 
   const handleSubCategorySelect = (subCategoryId: string | null) => {
     setSelectedSubCategoryIdForFilter(subCategoryId);
-    // No actual navigation, just for scrolling to the section
     const elementId = subCategoryId ? `subcategory-products-${subCategoryId}` : `category-products-all`;
     const element = document.getElementById(elementId);
     if (element) {
-        // Add a slight top offset for better visibility if there's a fixed header
-        const headerOffset = 80; // Adjust as needed
+        const headerOffset = 80; 
         const elementPosition = element.getBoundingClientRect().top;
         const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
 
@@ -85,9 +82,9 @@ export default function CategoryPage() {
     return (
       <div className="container mx-auto px-4 py-8">
         <Skeleton className="h-10 w-1/3 mb-6" />
-        <Skeleton className="h-32 w-full mb-8" /> {/* SubCategoryScroller Placeholder */}
-        <Skeleton className="h-64 w-full mb-8" /> {/* HeroBanner Placeholder */}
-        <Skeleton className="h-40 w-full mb-8" /> {/* Fixed Images Placeholder */}
+        <Skeleton className="h-32 w-full mb-8" /> 
+        <Skeleton className="h-64 w-full mb-8" /> 
+        <Skeleton className="h-40 w-full mb-8" /> 
         {[1, 2].map(i => (
           <div key={i} className="mb-12">
             <Skeleton className="h-8 w-1/4 mb-6" />
@@ -132,7 +129,6 @@ export default function CategoryPage() {
 
       <HeroBanner />
 
-      {/* Fixed Square Images Section - Placeholder */}
       <section className="my-8 md:my-12">
         <h2 className="text-2xl font-semibold mb-6 text-center">Shop by Style</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 justify-items-center">
@@ -146,9 +142,8 @@ export default function CategoryPage() {
         </div>
       </section>
 
-      {/* Products by Sub-categories */}
       {subCategories.map(subCat => (
-        <section key={subCat.id} id={`subcategory-products-${subCat.id}`} className="mb-10 md:mb-12 pt-6 -mt-6"> {/* Added pt-6 and -mt-6 for scroll anchoring */}
+        <section key={subCat.id} id={`subcategory-products-${subCat.id}`} className="mb-10 md:mb-12 pt-6 -mt-6"> 
           <div className="flex items-center justify-between mb-4 md:mb-6">
             <h2 className="text-2xl md:text-3xl font-bold">
               {subCat.name}
@@ -179,7 +174,6 @@ export default function CategoryPage() {
         </section>
       ))}
 
-      {/* Section for All Products in the Category if no sub-categories or as a fallback */}
       {subCategories.length === 0 && (
          <section id={`category-products-all`} className="mb-10 md:mb-12 pt-6 -mt-6">
             <h2 className="text-2xl md:text-3xl font-bold mb-4 md:mb-6">All Products in {category.name}</h2>
@@ -201,21 +195,7 @@ export default function CategoryPage() {
          </section>
       )}
 
-
-      {/* Featured Brands Section - Placeholder */}
-      <section className="my-8 md:my-12">
-        <h2 className="text-2xl font-semibold mb-6 text-center">Shop by Brand</h2>
-        <div className="flex flex-wrap justify-center items-center gap-6 md:gap-8">
-          {MOCK_BRANDS.slice(0, 5).map(brand => (
-            <Link key={brand.id} href={`/?brand=${brand.id}`} className="group">
-              <div className="p-4 border rounded-lg shadow hover:shadow-md transition-shadow min-w-[120px] text-center">
-                <Tag className="h-8 w-8 mx-auto mb-2 text-primary group-hover:text-primary/80" />
-                <p className="font-medium text-foreground group-hover:text-primary transition-colors">{brand.name}</p>
-              </div>
-            </Link>
-          ))}
-        </div>
-      </section>
+      {/* Removed global "Shop by Brand" section */}
     </div>
   );
 }

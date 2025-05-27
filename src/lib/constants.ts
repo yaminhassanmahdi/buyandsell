@@ -1,5 +1,5 @@
 
-import type { OrderStatus, StaticDivision, StaticDistrict, StaticThana, Category, Brand, DeliveryChargeSettings, CommissionSetting, AdminNavItem, BusinessSettings, HeroBannerSlide, CustomPage, ShippingMethod, Currency } from './types';
+import type { OrderStatus, StaticDivision, StaticDistrict, StaticThana, Category, CommissionSetting, AdminNavItem, BusinessSettings, HeroBannerSlide, CustomPage, ShippingMethod, Currency } from './types';
 import {
   Smartphone, Laptop, Shirt, Armchair, BookOpen, Tag,
   Package as PackageIcon,
@@ -7,7 +7,7 @@ import {
   Handshake as HandshakeIcon,
   LayoutDashboard, CheckSquare, ShoppingCart, Users,
   ListChecks, FolderTree, Tags as TagsIcon, Settings2 as SettingsIcon,
-  Globe, Library, MapPin, Home, DollarSign, Briefcase, Edit, Trash2, CreditCard, PieChart, FileText, TrendingUp, Percent, Image as ImageIcon, FileType, Ship, Landmark
+  Globe, Library, MapPin, Home, DollarSign, Briefcase, Edit, Trash2, CreditCard, PieChart, FileText, TrendingUp, Percent, ImageIcon, FileType, Ship, Landmark
 } from 'lucide-react';
 
 export let APP_NAME = '2ndhandbajar.com';
@@ -20,13 +20,7 @@ export const INITIAL_CATEGORIES: Category[] = [
   { id: 'others', name: 'Others', imageUrl: 'https://placehold.co/80x80.png', imageHint: 'various items' },
 ];
 
-export const INITIAL_BRANDS: Brand[] = [
-  { id: 'apple', name: 'Apple' },
-  { id: 'samsung', name: 'Samsung' },
-  { id: 'nike', name: 'Nike' },
-  { id: 'ikea', name: 'IKEA' },
-  { id: 'generic', name: 'Generic' },
-];
+// Removed INITIAL_BRANDS as global brands are replaced by category-specific attributes
 
 export const ORDER_STATUSES: { value: OrderStatus; label: string, icon?: React.ComponentType<{className?: string}> }[] = [
   { value: 'pending', label: 'Pending', icon: Hourglass },
@@ -67,7 +61,7 @@ export const ADMIN_NAVIGATION: AdminNavItem[] = [
       { name: 'Manage Products', href: '/admin/products/manage', icon: ListChecks },
       { name: 'Manage Categories', href: '/admin/products/categories', icon: FolderTree },
       { name: 'Manage Sub-Categories', href: '/admin/products/sub-categories', icon: FolderTree },
-      { name: 'Manage Brands', href: '/admin/products/brands', icon: TagsIcon },
+      { name: 'Manage Brands', href: '/admin/products/brands', icon: TagsIcon }, // This page will be temporarily disconnected
     ]
   },
   {
@@ -207,7 +201,7 @@ export const DEFAULT_HERO_BANNER_SLIDES: HeroBannerSlide[] = [
     title: 'Latest Gadgets on Sale!',
     description: 'Discover amazing deals on smartphones, laptops, and more.',
     buttonText: 'Shop Electronics',
-    buttonLink: '/?category=electronics',
+    buttonLink: '/category/electronics', // Updated link
     bgColor: 'bg-blue-600',
     textColor: 'text-white',
     isActive: true,
@@ -219,7 +213,7 @@ export const DEFAULT_HERO_BANNER_SLIDES: HeroBannerSlide[] = [
     title: 'Trendy Fashion Finds',
     description: 'Upgrade your wardrobe with the latest styles.',
     buttonText: 'Explore Fashion',
-    buttonLink: '/?category=fashion',
+    buttonLink: '/category/fashion', // Updated link
     bgColor: 'bg-pink-500',
     textColor: 'text-white',
     isActive: true,
@@ -231,7 +225,7 @@ export const DEFAULT_HERO_BANNER_SLIDES: HeroBannerSlide[] = [
     title: 'Home Decor Specials',
     description: 'Beautify your space with unique second-hand treasures.',
     buttonText: 'View Home Goods',
-    buttonLink: '/?category=home-garden',
+    buttonLink: '/category/home-garden', // Updated link
     bgColor: 'bg-green-500',
     textColor: 'text-white',
     isActive: false,

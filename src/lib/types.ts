@@ -14,9 +14,17 @@ export type SubCategory = {
   imageHint?: string;
 };
 
-export type Brand = {
-  id: string;
-  name: string;
+// New types for category-specific attributes
+export type CategoryAttributeType = {
+  id: string; // e.g., 'attr_author', 'attr_color'
+  categoryId: string; // Links to parent Category.id
+  name: string; // Display name for the attribute, e.g., "Author", "Color", "Publication"
+};
+
+export type CategoryAttributeValue = {
+  id: string; // e.g., 'val_author_rahim', 'val_color_red'
+  attributeTypeId: string; // Links to CategoryAttributeType.id
+  value: string; // The actual value, e.g., "Mr. Rahim", "Red"
 };
 
 export type Product = {
@@ -28,7 +36,11 @@ export type Product = {
   imageHint?: string;
   categoryId: string;
   subCategoryId?: string;
-  brandId: string;
+  // brandId: string; // Removed global brandId
+  selectedAttributes?: Array<{ 
+    attributeTypeId: string; 
+    attributeValueId: string; 
+  }>; // Stores selected category-specific attributes
   sellerId: string;
   sellerName?: string;
   status: 'pending' | 'approved' | 'rejected' | 'sold';
@@ -47,7 +59,7 @@ export type CartItem = {
 export type ShippingAddress = {
   fullName: string;
   phoneNumber?: string;
-  country: string; // Default to Bangladesh
+  country: string;
   division: string;
   district: string;
   thana: string;
@@ -112,7 +124,7 @@ export type User = {
 
 export type FilterValues = {
   category?: string;
-  brand?: string;
+  brand?: string; // This might be deprecated or repurposed if brand filtering changes
   searchTerm?: string;
   minPrice?: number;
   maxPrice?: number;
@@ -171,9 +183,9 @@ export type AdminNavItem = {
 };
 
 export type Currency = {
-  code: string; // e.g., "BDT", "USD"
-  symbol: string; // e.g., "৳", "$"
-  name: string; // e.g., "Bangladeshi Taka", "US Dollar"
+  code: string; 
+  symbol: string; 
+  name: string; 
 };
 
 export type BusinessSettings = {
@@ -208,12 +220,7 @@ export type CustomPage = {
   updatedAt: Date;
 };
 
-// For the category page
 export type CategoryPageData = {
   category: Category;
   subCategories: SubCategory[];
-  // products: Product[]; // Or group products by subcategory
-  // featuredBrands: Brand[];
-  // sliderSlides: HeroBannerSlide[]; // Category specific slides
-  // fixedSquareImages: { imageUrl: string; link: string; imageHint: string }[];
 };

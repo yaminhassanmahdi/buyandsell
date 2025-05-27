@@ -2,19 +2,30 @@
 "use client";
 import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
-import { MOCK_PRODUCTS, MOCK_CATEGORIES, MOCK_SUBCATEGORIES, MOCK_BRANDS } from '@/lib/mock-data';
-import type { Product, BusinessSettings } from '@/lib/types';
+import { 
+    MOCK_PRODUCTS, 
+    MOCK_CATEGORIES, 
+    MOCK_SUBCATEGORIES, 
+    MOCK_CATEGORY_ATTRIBUTE_TYPES, 
+    MOCK_CATEGORY_ATTRIBUTE_VALUES 
+} from '@/lib/mock-data';
+import type { Product, BusinessSettings, CategoryAttributeType, CategoryAttributeValue } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useCart } from '@/contexts/cart-context';
-import { ArrowLeft, ShoppingCart, UserCircle, CalendarDays, Tag, Layers } from 'lucide-react'; 
+import { ArrowLeft, ShoppingCart, UserCircle, CalendarDays, Tag, Layers, Info } from 'lucide-react';
 import { QuantitySelector } from '@/components/quantity-selector';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import useLocalStorage from '@/hooks/use-local-storage';
 import { BUSINESS_SETTINGS_STORAGE_KEY, DEFAULT_BUSINESS_SETTINGS } from '@/lib/constants';
+
+interface DisplayAttribute {
+  typeName: string;
+  valueName: string;
+}
 
 export default function ProductDetailPage() {
   const params = useParams();
@@ -25,10 +36,10 @@ export default function ProductDetailPage() {
 
   const [categoryName, setCategoryName] = useState<string>('');
   const [subCategoryName, setSubCategoryName] = useState<string | null>(null);
-  const [brandName, setBrandName] = useState<string>('');
+  const [displayAttributes, setDisplayAttributes] = useState<DisplayAttribute[]>([]);
 
   const [settings] = useLocalStorage<BusinessSettings>(BUSINESS_SETTINGS_STORAGE_KEY, DEFAULT_BUSINESS_SETTINGS);
-  const activeCurrency = settings.availableCurrencies.find(c => c.code === settings.defaultCurrencyCode) || settings.availableCurrencies[0] || { symbol: '?' };
+  const activeCurrency = useMemo(() => settings.availableCurrencies.find(c => c.code === settings.defaultCurrencyCode) || settings.availableCurrencies[0] || { symbol: '?' }, [settings]);
   const currencySymbol = activeCurrency.symbol;
 
   useEffect(() => {
@@ -43,13 +54,24 @@ export default function ProductDetailPage() {
           } else {
             setSubCategoryName(null);
           }
-          setBrandName(MOCK_BRANDS.find(b => b.id === foundProduct.brandId)?.name || 'N/A');
+
+          const attributes: DisplayAttribute[] = [];
+          if (foundProduct.selectedAttributes) {
+            foundProduct.selectedAttributes.forEach(attr => {
+              const attrType = MOCK_CATEGORY_ATTRIBUTE_TYPES.find(t => t.id === attr.attributeTypeId);
+              const attrValue = MOCK_CATEGORY_ATTRIBUTE_VALUES.find(v => v.id === attr.attributeValueId);
+              if (attrType && attrValue) {
+                attributes.push({ typeName: attrType.name, valueName: attrValue.value });
+              }
+            });
+          }
+          setDisplayAttributes(attributes);
         }
       }, 300);
     }
   }, [params.id]);
 
-  if (product === undefined) { 
+  if (product === undefined) {
     return (
       <div className="container mx-auto px-4 py-8">
         <Skeleton className="h-8 w-32 mb-6" />
@@ -112,9 +134,6 @@ export default function ProductDetailPage() {
                     {subCategoryName}
                   </Badge>
                 )}
-                <Badge variant="outline" className="flex items-center gap-1">
-                    <Tag className="h-3 w-3" /> {brandName}
-                </Badge>
               </div>
               <CardTitle className="text-3xl font-bold">{product.name}</CardTitle>
             </CardHeader>
@@ -123,6 +142,18 @@ export default function ProductDetailPage() {
               <CardDescription className="text-base text-foreground/80 mb-4">
                 {product.description}
               </CardDescription>
+
+              {displayAttributes.length > 0 && (
+                <div className="mb-4 space-y-1">
+                  <h4 className="text-sm font-semibold text-muted-foreground mb-1">Specifications:</h4>
+                  {displayAttributes.map(attr => (
+                    <div key={attr.typeName} className="flex items-center text-sm">
+                      <span className="text-muted-foreground w-24 shrink-0">{attr.typeName}:</span>
+                      <span className="font-medium">{attr.valueName}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
               
               <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
                 <UserCircle className="h-4 w-4" />

@@ -1,6 +1,6 @@
 
-import type { Product, User, Order, ShippingAddress, Category, SubCategory, Brand, WithdrawalRequest, PaymentStatus, HeroBannerSlide, CustomPage } from './types';
-import { INITIAL_CATEGORIES, INITIAL_BRANDS, MOCK_CUSTOM_PAGES as DEFAULT_CUSTOM_PAGES } from './constants';
+import type { Product, User, Order, ShippingAddress, Category, SubCategory, WithdrawalRequest, CategoryAttributeType, CategoryAttributeValue } from './types';
+import { INITIAL_CATEGORIES, MOCK_CUSTOM_PAGES as DEFAULT_CUSTOM_PAGES } from './constants';
 
 const createPastDate = (daysAgo: number): Date => {
   const date = new Date();
@@ -16,14 +16,49 @@ export let MOCK_CATEGORIES: Category[] = INITIAL_CATEGORIES.map(cat => ({
 }));
 
 export let MOCK_SUBCATEGORIES: SubCategory[] = [
-  { id: 'sc1', name: 'Smartphones', parentCategoryId: 'electronics', imageUrl: 'https://placehold.co/80x80.png', imageHint: 'smartphones mobile' },
-  { id: 'sc2', name: 'Laptops', parentCategoryId: 'electronics', imageUrl: 'https://placehold.co/80x80.png', imageHint: 'laptops computer' },
-  { id: 'sc3', name: 'Mens Apparel', parentCategoryId: 'fashion', imageUrl: 'https://placehold.co/80x80.png', imageHint: 'mens clothing' },
-  { id: 'sc4', name: 'Womens Apparel', parentCategoryId: 'fashion', imageUrl: 'https://placehold.co/80x80.png', imageHint: 'womens clothing' },
-  { id: 'sc5', name: 'Living Room Furniture', parentCategoryId: 'home-garden', imageUrl: 'https://placehold.co/80x80.png', imageHint: 'furniture living room' },
+  { id: 'sc_smartphones', name: 'Smartphones', parentCategoryId: 'electronics', imageUrl: 'https://placehold.co/80x80.png', imageHint: 'smartphones mobile' },
+  { id: 'sc_laptops', name: 'Laptops', parentCategoryId: 'electronics', imageUrl: 'https://placehold.co/80x80.png', imageHint: 'laptops computer' },
+  { id: 'sc_mens_apparel', name: 'Mens Apparel', parentCategoryId: 'fashion', imageUrl: 'https://placehold.co/80x80.png', imageHint: 'mens clothing' },
+  { id: 'sc_womens_apparel', name: 'Womens Apparel', parentCategoryId: 'fashion', imageUrl: 'https://placehold.co/80x80.png', imageHint: 'womens clothing' },
+  { id: 'sc_living_room', name: 'Living Room Furniture', parentCategoryId: 'home-garden', imageUrl: 'https://placehold.co/80x80.png', imageHint: 'furniture living room' },
+  { id: 'sc_admission_books', name: 'Admission Prep', parentCategoryId: 'books', imageUrl: 'https://placehold.co/80x80.png', imageHint: 'study books' },
+  { id: 'sc_novels', name: 'Novels', parentCategoryId: 'books', imageUrl: 'https://placehold.co/80x80.png', imageHint: 'fiction books' },
 ];
 
-export let MOCK_BRANDS: Brand[] = INITIAL_BRANDS.map(brand => ({ ...brand }));
+// New Mock Data for Category-Specific Attributes
+export let MOCK_CATEGORY_ATTRIBUTE_TYPES: CategoryAttributeType[] = [
+  { id: 'attr_author', categoryId: 'books', name: 'Author' },
+  { id: 'attr_publication', categoryId: 'books', name: 'Publication' },
+  { id: 'attr_color', categoryId: 'fashion', name: 'Color' },
+  { id: 'attr_material', categoryId: 'fashion', name: 'Material' },
+  { id: 'attr_storage', categoryId: 'electronics', name: 'Storage Size' },
+  { id: 'attr_ram', categoryId: 'electronics', name: 'RAM' },
+];
+
+export let MOCK_CATEGORY_ATTRIBUTE_VALUES: CategoryAttributeValue[] = [
+  // For Books - Author
+  { id: 'val_author_rahim', attributeTypeId: 'attr_author', value: 'Mr. Rahim' },
+  { id: 'val_author_tagore', attributeTypeId: 'attr_author', value: 'Rabindranath Tagore' },
+  { id: 'val_author_humayun', attributeTypeId: 'attr_author', value: 'Humayun Ahmed' },
+  // For Books - Publication
+  { id: 'val_pub_prothom', attributeTypeId: 'attr_publication', value: 'Prothom Alo Prokashona' },
+  { id: 'val_pub_anyaprokash', attributeTypeId: 'attr_publication', value: 'Anyaprokash' },
+  // For Fashion - Color
+  { id: 'val_color_red', attributeTypeId: 'attr_color', value: 'Red' },
+  { id: 'val_color_blue', attributeTypeId: 'attr_color', value: 'Blue' },
+  { id: 'val_color_black', attributeTypeId: 'attr_color', value: 'Black' },
+  // For Fashion - Material
+  { id: 'val_material_cotton', attributeTypeId: 'attr_material', value: 'Cotton' },
+  { id: 'val_material_leather', attributeTypeId: 'attr_material', value: 'Leather' },
+  // For Electronics - Storage
+  { id: 'val_storage_64gb', attributeTypeId: 'attr_storage', value: '64GB' },
+  { id: 'val_storage_128gb', attributeTypeId: 'attr_storage', value: '128GB' },
+  { id: 'val_storage_256gb', attributeTypeId: 'attr_storage', value: '256GB' },
+  // For Electronics - RAM
+  { id: 'val_ram_4gb', attributeTypeId: 'attr_ram', value: '4GB' },
+  { id: 'val_ram_8gb', attributeTypeId: 'attr_ram', value: '8GB' },
+  { id: 'val_ram_16gb', attributeTypeId: 'attr_ram', value: '16GB' },
+];
 
 export const MOCK_USERS: User[] = [
   {
@@ -115,8 +150,11 @@ export let MOCK_PRODUCTS: Product[] = [
     imageUrl: 'https://placehold.co/600x400.png',
     imageHint: 'leather jacket',
     categoryId: 'fashion',
-    subCategoryId: 'sc3',
-    brandId: 'generic',
+    subCategoryId: 'sc_mens_apparel',
+    selectedAttributes: [
+      { attributeTypeId: 'attr_color', attributeValueId: 'val_color_black' },
+      { attributeTypeId: 'attr_material', attributeValueId: 'val_material_leather' },
+    ],
     sellerId: 'user2',
     sellerName: 'Jane Smith',
     status: 'approved',
@@ -130,8 +168,11 @@ export let MOCK_PRODUCTS: Product[] = [
     imageUrl: 'https://placehold.co/600x400.png',
     imageHint: 'smartphone electronics',
     categoryId: 'electronics',
-    subCategoryId: 'sc1',
-    brandId: 'apple',
+    subCategoryId: 'sc_smartphones',
+    selectedAttributes: [
+        { attributeTypeId: 'attr_storage', attributeValueId: 'val_storage_64gb' },
+        { attributeTypeId: 'attr_ram', attributeValueId: 'val_ram_4gb' }
+    ],
     sellerId: 'user2',
     sellerName: 'Jane Smith',
     status: 'approved',
@@ -145,8 +186,9 @@ export let MOCK_PRODUCTS: Product[] = [
     imageUrl: 'https://placehold.co/600x400.png',
     imageHint: 'bookshelf furniture',
     categoryId: 'home-garden',
-    subCategoryId: 'sc5',
-    brandId: 'ikea',
+    subCategoryId: 'sc_living_room',
+    // No specific attributes defined for home-garden yet in MOCK_CATEGORY_ATTRIBUTE_TYPES
+    selectedAttributes: [], 
     sellerId: 'user1',
     sellerName: 'John Doe',
     status: 'pending',
@@ -154,14 +196,17 @@ export let MOCK_PRODUCTS: Product[] = [
   },
   {
     id: 'prod4',
-    name: 'Samsung Galaxy S20',
-    description: 'Used Samsung Galaxy S20, 128GB. Works perfectly.',
+    name: 'Gitanjali by Tagore',
+    description: 'Collection of poems by Rabindranath Tagore.',
     price: 300,
     imageUrl: 'https://placehold.co/600x400.png',
-    imageHint: 'android smartphone',
-    categoryId: 'electronics',
-    subCategoryId: 'sc1',
-    brandId: 'samsung',
+    imageHint: 'book poetry',
+    categoryId: 'books',
+    subCategoryId: 'sc_novels',
+    selectedAttributes: [
+        { attributeTypeId: 'attr_author', attributeValueId: 'val_author_tagore' },
+        { attributeTypeId: 'attr_publication', attributeValueId: 'val_pub_anyaprokash' }
+    ],
     sellerId: 'user2',
     sellerName: 'Jane Smith',
     status: 'sold',
@@ -169,13 +214,17 @@ export let MOCK_PRODUCTS: Product[] = [
   },
   {
     id: 'prod5',
-    name: 'Running Shoes Size 9',
-    description: 'Nike running shoes, size 9. Worn a few times.',
+    name: 'Red Cotton T-Shirt',
+    description: 'Comfortable red cotton t-shirt, size L.',
     price: 40,
     imageUrl: 'https://placehold.co/600x400.png',
-    imageHint: 'running shoes',
+    imageHint: 'red t-shirt',
     categoryId: 'fashion',
-    brandId: 'nike',
+    subCategoryId: 'sc_mens_apparel',
+    selectedAttributes: [
+        { attributeTypeId: 'attr_color', attributeValueId: 'val_color_red' },
+        { attributeTypeId: 'attr_material', attributeValueId: 'val_material_cotton' }
+    ],
     sellerId: 'user1',
     sellerName: 'John Doe',
     status: 'approved',
@@ -183,13 +232,16 @@ export let MOCK_PRODUCTS: Product[] = [
   },
   {
     id: 'prod6',
-    name: 'Classic Novels Collection',
-    description: 'Set of 5 classic novels. Paperback editions.',
+    name: 'Admission Guide - Physics',
+    description: 'Comprehensive physics admission test preparation guide.',
     price: 20,
     imageUrl: 'https://placehold.co/600x400.png',
-    imageHint: 'books literature',
+    imageHint: 'physics guide book',
     categoryId: 'books',
-    brandId: 'generic',
+    subCategoryId: 'sc_admission_books',
+     selectedAttributes: [
+        { attributeTypeId: 'attr_publication', attributeValueId: 'val_pub_prothom' }
+    ],
     sellerId: 'user2',
     sellerName: 'Jane Smith',
     status: 'rejected',
@@ -208,7 +260,7 @@ const MOCK_SHIPPING_ADDRESS_BANGLADESH: ShippingAddress = {
   roadNumber: 'Road 7A',
 };
 
-export const MOCK_ORDERS: Order[] = [
+export let MOCK_ORDERS: Order[] = [
   {
     id: 'order1',
     userId: 'user1',
@@ -231,7 +283,7 @@ export const MOCK_ORDERS: Order[] = [
     userId: 'user1',
     items: [
       { id: 'prod2', name: 'Used iPhone X', price: 250, imageUrl: 'https://placehold.co/100x100.png', quantity: 1, sellerId: 'user2' },
-      { id: 'prod5', name: 'Running Shoes Size 9', price: 40, imageUrl: 'https://placehold.co/100x100.png', quantity: 1, sellerId: 'user1' },
+      { id: 'prod5', name: 'Red Cotton T-Shirt', price: 40, imageUrl: 'https://placehold.co/100x100.png', quantity: 1, sellerId: 'user1' },
     ],
     totalAmount: 290 + 130, // item prices + delivery
     deliveryChargeAmount: 130,
@@ -248,7 +300,7 @@ export const MOCK_ORDERS: Order[] = [
     id: 'order3',
     userId: 'user2',
     items: [
-      { id: 'prod4', name: 'Samsung Galaxy S20', price: 300, imageUrl: 'https://placehold.co/100x100.png', quantity: 1, sellerId: 'user2' },
+      { id: 'prod4', name: 'Gitanjali by Tagore', price: 300, imageUrl: 'https://placehold.co/100x100.png', quantity: 1, sellerId: 'user2' },
     ],
     totalAmount: 300 + 110, // item price + delivery
     deliveryChargeAmount: 110,
@@ -277,4 +329,4 @@ export let MOCK_WITHDRAWAL_REQUESTS: WithdrawalRequest[] = [
   }
 ];
 
-export let MOCK_CUSTOM_PAGES: CustomPage[] = [...DEFAULT_CUSTOM_PAGES];
+export let MOCK_CUSTOM_PAGES = [...DEFAULT_CUSTOM_PAGES];

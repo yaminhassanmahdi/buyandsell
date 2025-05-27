@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -16,8 +15,14 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { MOCK_PRODUCTS, MOCK_CATEGORIES, MOCK_SUBCATEGORIES, MOCK_BRANDS } from "@/lib/mock-data";
-import type { Product, Category, SubCategory, Brand as BrandType, BusinessSettings } from "@/lib/types";
+import { 
+    MOCK_PRODUCTS, 
+    MOCK_CATEGORIES, 
+    MOCK_SUBCATEGORIES, 
+    MOCK_CATEGORY_ATTRIBUTE_TYPES, 
+    MOCK_CATEGORY_ATTRIBUTE_VALUES 
+} from "@/lib/mock-data";
+import type { Product, Category, SubCategory, BusinessSettings, CategoryAttributeType, CategoryAttributeValue } from "@/lib/types";
 import { useAuth } from "@/contexts/auth-context";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
@@ -31,8 +36,8 @@ const productSchema = z.object({
   description: z.string().min(10, "Description must be at least 10 characters.").max(1000),
   price: z.coerce.number().min(0.01, "Price must be a positive number."),
   categoryId: z.string().min(1, "Please select a parent category."),
-  subCategoryId: z.string().optional(), 
-  brandId: z.string().min(1, "Please select a brand."),
+  subCategoryId: z.string().optional(),
+  dynamicAttributes: z.record(z.string().optional()), // Stores { attributeTypeId: attributeValueId }
 });
 
 type ProductFormData = z.infer<typeof productSchema>;
@@ -48,11 +53,14 @@ export function ProductUploadForm() {
   const [parentCategories, setParentCategories] = useState<Category[]>([]);
   const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
   const [availableSubCategories, setAvailableSubCategories] = useState<SubCategory[]>([]);
-  const [brands, setBrands] = useState<BrandType[]>([]);
   
+  const [categoryAttributeTypes, setCategoryAttributeTypes] = useState<CategoryAttributeType[]>([]);
+  const [currentAttributeFields, setCurrentAttributeFields] = useState<CategoryAttributeType[]>([]);
+  const [allAttributeValues, setAllAttributeValues] = useState<CategoryAttributeValue[]>([]);
+
+
   const [settings] = useLocalStorage<BusinessSettings>(BUSINESS_SETTINGS_STORAGE_KEY, DEFAULT_BUSINESS_SETTINGS);
   const activeCurrency = settings.availableCurrencies.find(c => c.code === settings.defaultCurrencyCode) || settings.availableCurrencies[0] || { symbol: '?' };
-  // const currencySymbol = activeCurrency.symbol; // Not directly used in form inputs, but good for consistency if needed
 
   const form = useForm<ProductFormData>({
     resolver: zodResolver(productSchema),
@@ -61,33 +69,49 @@ export function ProductUploadForm() {
       description: "",
       price: 0,
       categoryId: "",
-      subCategoryId: VALUE_FOR_NO_SUBCATEGORY_SELECTED, 
-      brandId: "",
+      subCategoryId: VALUE_FOR_NO_SUBCATEGORY_SELECTED,
+      dynamicAttributes: {},
     },
   });
 
   useEffect(() => {
     setParentCategories([...MOCK_CATEGORIES]);
     setSubCategories([...MOCK_SUBCATEGORIES]);
-    setBrands([...MOCK_BRANDS]);
+    setCategoryAttributeTypes([...MOCK_CATEGORY_ATTRIBUTE_TYPES]);
+    setAllAttributeValues([...MOCK_CATEGORY_ATTRIBUTE_VALUES]);
   }, []);
 
   const watchedCategoryId = form.watch("categoryId");
 
   useEffect(() => {
     if (watchedCategoryId) {
+      // Filter sub-categories
       const filteredSubs = subCategories.filter(sc => sc.parentCategoryId === watchedCategoryId);
       setAvailableSubCategories(filteredSubs);
-      
       const currentSubCategoryId = form.getValues("subCategoryId");
       if (currentSubCategoryId && currentSubCategoryId !== VALUE_FOR_NO_SUBCATEGORY_SELECTED && !filteredSubs.some(sc => sc.id === currentSubCategoryId)) {
-        form.setValue("subCategoryId", VALUE_FOR_NO_SUBCATEGORY_SELECTED); 
+        form.setValue("subCategoryId", VALUE_FOR_NO_SUBCATEGORY_SELECTED);
       }
+
+      // Filter and set dynamic attribute fields
+      const relevantAttrTypes = categoryAttributeTypes.filter(attrType => attrType.categoryId === watchedCategoryId);
+      setCurrentAttributeFields(relevantAttrTypes);
+      
+      // Reset dynamicAttributes in form state for newly selected category
+      const newDynamicAttributes: Record<string, string | undefined> = {};
+      relevantAttrTypes.forEach(attrType => {
+        newDynamicAttributes[attrType.id] = undefined; // Or a default value if applicable
+      });
+      form.setValue("dynamicAttributes", newDynamicAttributes);
+
     } else {
       setAvailableSubCategories([]);
-      form.setValue("subCategoryId", VALUE_FOR_NO_SUBCATEGORY_SELECTED); 
+      form.setValue("subCategoryId", VALUE_FOR_NO_SUBCATEGORY_SELECTED);
+      setCurrentAttributeFields([]);
+      form.setValue("dynamicAttributes", {});
     }
-  }, [watchedCategoryId, subCategories, form]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [watchedCategoryId, subCategories, categoryAttributeTypes, form.setValue, form.getValues]);
 
 
   async function onSubmit(values: ProductFormData) {
@@ -99,16 +123,26 @@ export function ProductUploadForm() {
 
     await new Promise(resolve => setTimeout(resolve, 1000));
 
+    const selectedAttrs: Array<{ attributeTypeId: string; attributeValueId: string; }> = [];
+    if (values.dynamicAttributes) {
+        for (const typeId in values.dynamicAttributes) {
+            const valueId = values.dynamicAttributes[typeId];
+            if (valueId) { // Only add if a value was selected
+                selectedAttrs.push({ attributeTypeId: typeId, attributeValueId: valueId });
+            }
+        }
+    }
+
     const newProduct: Product = {
       id: `prod-${Date.now()}`,
       name: values.name,
       description: values.description,
       price: values.price,
-      imageUrl: `https://placehold.co/600x400.png`, 
+      imageUrl: `https://placehold.co/600x400.png`,
       imageHint: `${values.name.substring(0,15)} product`,
       categoryId: values.categoryId,
-      subCategoryId: values.subCategoryId === VALUE_FOR_NO_SUBCATEGORY_SELECTED ? undefined : values.subCategoryId, 
-      brandId: values.brandId,
+      subCategoryId: values.subCategoryId === VALUE_FOR_NO_SUBCATEGORY_SELECTED ? undefined : values.subCategoryId,
+      selectedAttributes: selectedAttrs,
       sellerId: currentUser.id,
       sellerName: currentUser.name,
       status: 'pending',
@@ -123,7 +157,8 @@ export function ProductUploadForm() {
     });
     setIsLoading(false);
     form.reset();
-    setAvailableSubCategories([]); 
+    setAvailableSubCategories([]);
+    setCurrentAttributeFields([]);
   }
 
   return (
@@ -198,9 +233,9 @@ export function ProductUploadForm() {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Sub-Category (Optional)</FormLabel>
-              <Select 
-                onValueChange={(value) => field.onChange(value)} 
-                value={field.value || VALUE_FOR_NO_SUBCATEGORY_SELECTED} 
+              <Select
+                onValueChange={(value) => field.onChange(value === VALUE_FOR_NO_SUBCATEGORY_SELECTED ? undefined : value)}
+                value={field.value || VALUE_FOR_NO_SUBCATEGORY_SELECTED}
                 disabled={!watchedCategoryId || availableSubCategories.length === 0}
               >
                 <FormControl>
@@ -220,28 +255,35 @@ export function ProductUploadForm() {
           )}
         />
         
-        <FormField
-          control={form.control}
-          name="brandId"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Brand</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a brand" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {brands.map(brand => (
-                    <SelectItem key={brand.id} value={brand.id}>{brand.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        {currentAttributeFields.map(attrType => {
+          const relevantValues = allAttributeValues.filter(val => val.attributeTypeId === attrType.id);
+          return (
+            <FormField
+              key={attrType.id}
+              control={form.control}
+              name={`dynamicAttributes.${attrType.id}`}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{attrType.name}</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value || ""} disabled={relevantValues.length === 0}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder={`Select ${attrType.name}`} />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                        <SelectItem value="">-- Select --</SelectItem> {/* Allow unselecting */}
+                      {relevantValues.map(val => (
+                        <SelectItem key={val.id} value={val.id}>{val.value}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          );
+        })}
         
         <FormItem>
             <FormLabel>Product Image</FormLabel>
@@ -255,7 +297,7 @@ export function ProductUploadForm() {
                     </div>
                     <Input id="dropzone-file" type="file" className="hidden" disabled />
                 </label>
-            </div> 
+            </div>
             <FormDescription>
                 Upload an image of your product. For this demo, a placeholder will be used.
             </FormDescription>
