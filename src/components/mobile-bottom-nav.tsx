@@ -15,7 +15,7 @@ export function MobileBottomNav() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { itemCount, getCartTotal } = useCart();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuth(); // isAuthenticated is still needed for other logic if any, but not for Sell icon visibility
   const [isClient, setIsClient] = React.useState(false);
   const [isCategorySheetOpen, setIsCategorySheetOpen] = useState(false); // State for category sheet
 
@@ -23,15 +23,12 @@ export function MobileBottomNav() {
     setIsClient(true);
   }, []);
 
-  const navItemsBase = [
+  // Define all navigation items, including "Sell"
+  const navItems = [
     { href: '/', label: 'Home', icon: Home, id: 'home' },
     { href: '#', label: 'Categories', icon: LayoutGrid, id: 'categories' }, // href '#' as action is handled by button
+    { href: '/sell', label: 'Sell', icon: PlusCircle, id: 'sell' },
   ];
-
-  const finalNavItems = [...navItemsBase];
-  if (isAuthenticated && isClient) {
-    finalNavItems.push({ href: '/sell', label: 'Sell', icon: PlusCircle, id: 'sell' });
-  }
 
   const hiddenOnRoutes = ['/admin', '/login', '/register', '/checkout'];
   if (hiddenOnRoutes.some(routePrefix => pathname.startsWith(routePrefix))) {
@@ -61,12 +58,11 @@ export function MobileBottomNav() {
             "flex justify-around items-center h-full",
             (itemCount > 0 && isClient) ? "w-2/5" : "w-full"
           )}>
-            {finalNavItems.map((item) => {
+            {navItems.map((item) => { // Iterate over the updated navItems list
               let isActive = false;
               if (item.id === 'home') {
                 isActive = pathname === '/' && !searchParams.has('category') && !searchParams.has('subcategory');
               } else if (item.id === 'categories') {
-                // Active if a category or subcategory filter is applied via URL, or sheet is intended to be open
                 isActive = pathname === '/' && (searchParams.has('category') || searchParams.has('subcategory'));
               } else {
                 isActive = pathname === item.href;
