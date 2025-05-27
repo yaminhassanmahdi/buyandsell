@@ -59,7 +59,8 @@ export const ADMIN_NAVIGATION: AdminNavItem[] = [
       { name: 'Manage Products', href: '/admin/products/manage', icon: ListChecks },
       { name: 'Manage Categories', href: '/admin/products/categories', icon: FolderTree },
       { name: 'Manage Sub-Categories', href: '/admin/products/sub-categories', icon: FolderTree },
-      { name: 'Manage Attributes', href: '/admin/products/attributes', icon: ListFilter },
+      { name: 'Manage Attribute Types', href: '/admin/products/attributes', icon: ListFilter },
+      { name: 'Manage Attribute Values', href: '/admin/products/attribute-values', icon: TagsIcon },
       { name: 'Manage Brands (Legacy)', href: '/admin/products/brands', icon: TagsIcon },
     ]
   },
@@ -176,7 +177,8 @@ export const BUSINESS_SETTINGS_STORAGE_KEY = 'businessSettings';
 export const HERO_BANNERS_STORAGE_KEY = 'heroBannerSlides';
 export const CUSTOM_PAGES_STORAGE_KEY = 'customPages';
 export const SHIPPING_METHODS_STORAGE_KEY = 'shippingMethods';
-export const CATEGORY_ATTRIBUTES_TYPES_STORAGE_KEY = 'categoryAttributeTypes'; // New key
+export const CATEGORY_ATTRIBUTES_TYPES_STORAGE_KEY = 'categoryAttributeTypes';
+export const CATEGORY_ATTRIBUTE_VALUES_STORAGE_KEY = 'categoryAttributeValues'; // New key
 
 export const DEFAULT_CURRENCIES: Currency[] = [
   { code: 'BDT', symbol: '৳', name: 'Bangladeshi Taka' },
@@ -186,8 +188,8 @@ export const DEFAULT_CURRENCIES: Currency[] = [
 export const DEFAULT_BUSINESS_SETTINGS: BusinessSettings = {
   appName: '2ndhandbajar.com',
   logoUrl: '/logo-placeholder.png',
-  primaryColor: '47 92% 52%', // Example: Tailwind orange-500 HSL
-  secondaryColor: '77 30% 60%', // Example: Custom green HSL
+  primaryColor: '47 92% 52%', 
+  secondaryColor: '77 30% 60%', 
   faviconUrl: '/favicon.ico',
   availableCurrencies: DEFAULT_CURRENCIES,
   defaultCurrencyCode: 'BDT',
@@ -255,5 +257,3 @@ export const DEFAULT_SHIPPING_METHODS: ShippingMethod[] = [
   { id: 'standard-delivery', name: 'Standard Delivery' },
   { id: 'express-delivery', name: 'Express Delivery (Next Day)' },
 ];
-
-    
