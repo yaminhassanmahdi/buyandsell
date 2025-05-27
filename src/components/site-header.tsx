@@ -4,17 +4,17 @@ import { Logo } from '@/components/logo';
 import { UserNav } from '@/components/user-nav';
 import { Button } from './ui/button';
 import Link from 'next/link';
-import { PlusCircle, Search, Menu, Handshake } from 'lucide-react'; // Added Handshake
+import { PlusCircle, Search, Menu, Handshake } from 'lucide-react'; 
 import { Input } from './ui/input';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { MOCK_CATEGORIES } from '@/lib/mock-data';
 import { useAuth } from '@/contexts/auth-context';
-import React, { useState, useEffect } from 'react'; // Added useEffect
+import React, { useState, useEffect } from 'react'; 
 import { useRouter } from 'next/navigation';
-import Image from 'next/image'; // Added Image
-import useLocalStorage from '@/hooks/use-local-storage'; // Added useLocalStorage
-import type { BusinessSettings } from '@/lib/types'; // Added BusinessSettings
-import { BUSINESS_SETTINGS_STORAGE_KEY, DEFAULT_BUSINESS_SETTINGS, APP_NAME } from '@/lib/constants'; // Added constants
+import Image from 'next/image'; 
+import useLocalStorage from '@/hooks/use-local-storage'; 
+import type { BusinessSettings } from '@/lib/types'; 
+import { BUSINESS_SETTINGS_STORAGE_KEY, DEFAULT_BUSINESS_SETTINGS, APP_NAME, USER_NAVIGATION } from '@/lib/constants'; // Added USER_NAVIGATION
 
 export function SiteHeader() {
   const { isAuthenticated } = useAuth();
@@ -98,7 +98,7 @@ export function SiteHeader() {
           </div>
           {/* Mobile: Render Favicon */}
           <div className="block md:hidden h-8 w-8 flex items-center justify-center">
-            {isClient && faviconUrl ? (
+            {isClient && faviconUrl && faviconUrl !== DEFAULT_BUSINESS_SETTINGS.faviconUrl ? (
               <Image
                 src={faviconUrl}
                 alt={`${appNameToUse} Favicon`}
@@ -113,7 +113,7 @@ export function SiteHeader() {
         </Link>
 
         {/* Search Bar Wrapper - Takes available space and centers the form */}
-        <div className="flex-1 flex justify-center items-center mx-1 sm:mx-2">
+        <div className="flex-1 flex justify-center items-center mx-1 sm:mx-2 px-1 sm:px-2">
           <form onSubmit={handleSearchSubmit} className="relative w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />
             <Input
