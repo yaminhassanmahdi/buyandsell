@@ -69,12 +69,12 @@ export default function AdminDivisionsPage() {
   };
 
   const handleDelete = (divisionId: string) => {
-    if (window.confirm("Are you sure you want to delete this division?")) {
+    if (window.confirm("Are you sure you want to delete this division? This might affect districts and thanas that depend on it.")) {
       console.log("Attempting to delete division with ID:", divisionId);
       setDivisions(prevDivisions => {
         const updatedDivisions = prevDivisions.filter(d => d.id !== divisionId);
         if (prevDivisions.length === updatedDivisions.length) {
-            console.warn(`Division with ID ${divisionId} not found. No changes made.`);
+            console.warn(`Division with ID ${divisionId} not found for deletion. No changes made.`);
         } else {
             console.log(`Division deleted. Old count: ${prevDivisions.length}, New count: ${updatedDivisions.length}.`);
         }

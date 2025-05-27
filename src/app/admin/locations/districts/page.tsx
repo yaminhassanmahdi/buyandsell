@@ -80,12 +80,12 @@ export default function AdminDistrictsPage() {
   };
 
   const handleDelete = (districtId: string) => {
-    if (window.confirm("Are you sure you want to delete this district?")) {
+    if (window.confirm("Are you sure you want to delete this district? This might affect thanas that depend on it.")) {
       console.log("Attempting to delete district with ID:", districtId);
       setDistricts(prevDistricts => {
         const updatedDistricts = prevDistricts.filter(d => d.id !== districtId);
          if (prevDistricts.length === updatedDistricts.length) {
-            console.warn(`District with ID ${districtId} not found. No changes made.`);
+            console.warn(`District with ID ${districtId} not found for deletion. No changes made.`);
         } else {
             console.log(`District deleted. Old count: ${prevDistricts.length}, New count: ${updatedDistricts.length}.`);
         }

@@ -104,7 +104,7 @@ export default function AdminThanasPage() {
       setThanas(prevThanas => {
         const updatedThanas = prevThanas.filter(t => t.id !== thanaId);
         if (prevThanas.length === updatedThanas.length) {
-            console.warn(`Thana with ID ${thanaId} not found. No changes made.`);
+            console.warn(`Thana with ID ${thanaId} not found for deletion. No changes made.`);
         } else {
             console.log(`Thana deleted. Old count: ${prevThanas.length}, New count: ${updatedThanas.length}.`);
         }
