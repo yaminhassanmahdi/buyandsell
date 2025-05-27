@@ -7,40 +7,16 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-// import { MOCK_BRANDS } from '@/lib/mock-data'; // MOCK_BRANDS is removed
-import type { Brand } from '@/lib/types'; // Brand type might be removed or repurposed later
-import { Tags, PlusCircle, Trash2, Edit3, Loader2, Info } from 'lucide-react';
+// import type { Brand } from '@/lib/types'; // Brand type might be removed or repurposed later
+import { Tags, PlusCircle, Trash2, Edit3, Loader2, Info, ListFilter } from 'lucide-react';
 import { Alert, AlertTitle } from '@/components/ui/alert';
+import Link from 'next/link';
 
 export default function AdminManageBrandsPage() {
-  // const [brands, setBrands] = useState<Brand[]>([]); // No longer managing global brands here
-  const [isLoading, setIsLoading] = useState(false); // Keep for potential future use, but not for brands
-  // const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  // const [newBrandName, setNewBrandName] = useState('');
-  // const [formSubmitting, setFormSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(false); 
   const { toast } = useToast();
 
-  // useEffect(() => {
-  //   setIsLoading(true);
-  //   setTimeout(() => {
-  //     // setBrands([...MOCK_BRANDS]); // MOCK_BRANDS removed
-  //     setIsLoading(false);
-  //   }, 300);
-  // }, []);
-
-  // const handleAddBrand = async () => {
-  //   // Logic for adding global brands removed
-  // };
-
-  // const handleDeleteBrand = (brandId: string) => {
-  //  // Logic for deleting global brands removed
-  // };
-  
-  // const handleEditBrand = (id: string) => {
-  //   toast({ title: "Edit Action", description: `Edit brand ${id} (Not implemented).` });
-  // };
-
-  if (isLoading) { // Kept for consistency, though not strictly needed now
+  if (isLoading) { 
     return (
       <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -53,9 +29,8 @@ export default function AdminManageBrandsPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold flex items-center gap-3">
           <Tags className="h-8 w-8 text-primary"/>
-          Product Attributes (Formerly Brands)
+          Legacy Global Brands (Deprecated)
         </h1>
-        {/* Add button might be repurposed later for managing attribute types */}
       </div>
       
       <Alert variant="default">
@@ -63,30 +38,33 @@ export default function AdminManageBrandsPage() {
         <AlertTitle>System Update: Attribute Management</AlertTitle>
         <CardDescription className="mt-1">
           The global "Brands" system has been replaced by category-specific attributes.
-          You can now define attributes like "Author", "Publisher", "Color", "Material", etc., for each parent category.
+          You can now define attribute <span className="font-semibold">types</span> (like "Author", "Publisher", "Color", "Material") for each parent category.
           These attributes are then selected when adding or editing products under that category.
           <br /><br />
-          Management of these category-specific attribute types and their values will be available in a future update to the admin panel.
+          Management of these category-specific attribute <span className="font-semibold">types</span> is available on the <Link href="/admin/products/attributes" className="underline text-primary hover:text-primary/80">Manage Attributes page</Link>.
+          <br />
+          Management of attribute <span className="font-semibold">values</span> (e.g., adding "Mr. Rahim" as an Author) will be available in a future update.
+          <br /><br />
           This page previously managed global brands, which are no longer used for new product listings.
         </CardDescription>
       </Alert>
 
       <Card>
         <CardHeader>
-          <CardTitle>Legacy Global Brands (Deprecated)</CardTitle>
+          <CardTitle>About Legacy Global Brands</CardTitle>
           <CardDescription>
-            The global brand system is no longer in active use for product categorization.
-            Products now use dynamic attributes defined per category.
             This section is for reference only and will be removed or repurposed.
+            All new product characterization should use the new category-specific attribute system.
           </CardDescription>
         </CardHeader>
         <CardContent>
            <p className="text-muted-foreground">
             Please use the new category-specific attribute system when adding products.
-            The interface to manage these new attributes (e.g., define "Author" for Books, "Color" for Fashion) is under development.
-            </p>
+           </p>
         </CardContent>
       </Card>
     </div>
   );
 }
+
+    

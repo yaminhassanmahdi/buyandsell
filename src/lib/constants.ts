@@ -7,7 +7,7 @@ import {
   Handshake as HandshakeIcon,
   LayoutDashboard, CheckSquare, ShoppingCart, Users,
   ListChecks, FolderTree, Tags as TagsIcon, Settings2 as SettingsIcon,
-  Globe, Library, MapPin, Home, DollarSign, Briefcase, Edit, Trash2, CreditCard, PieChart, FileText, TrendingUp, Percent, ImageIcon, FileType, Ship, Landmark
+  Globe, Library, MapPin, Home, DollarSign, Briefcase, Edit, Trash2, CreditCard, PieChart, FileText, TrendingUp, Percent, ImageIcon, FileType, Ship, Landmark, ListFilter
 } from 'lucide-react';
 
 export let APP_NAME = '2ndhandbajar.com';
@@ -19,8 +19,6 @@ export const INITIAL_CATEGORIES: Category[] = [
   { id: 'books', name: 'Books', imageUrl: 'https://placehold.co/80x80.png', imageHint: 'books literature' },
   { id: 'others', name: 'Others', imageUrl: 'https://placehold.co/80x80.png', imageHint: 'various items' },
 ];
-
-// Removed INITIAL_BRANDS as global brands are replaced by category-specific attributes
 
 export const ORDER_STATUSES: { value: OrderStatus; label: string, icon?: React.ComponentType<{className?: string}> }[] = [
   { value: 'pending', label: 'Pending', icon: Hourglass },
@@ -61,7 +59,8 @@ export const ADMIN_NAVIGATION: AdminNavItem[] = [
       { name: 'Manage Products', href: '/admin/products/manage', icon: ListChecks },
       { name: 'Manage Categories', href: '/admin/products/categories', icon: FolderTree },
       { name: 'Manage Sub-Categories', href: '/admin/products/sub-categories', icon: FolderTree },
-      { name: 'Manage Brands', href: '/admin/products/brands', icon: TagsIcon }, // This page will be temporarily disconnected
+      { name: 'Manage Attributes', href: '/admin/products/attributes', icon: ListFilter },
+      { name: 'Manage Brands (Legacy)', href: '/admin/products/brands', icon: TagsIcon },
     ]
   },
   {
@@ -163,12 +162,12 @@ export const THANAS_BD: StaticThana[] = [
   { id: 'motihar_thana', name: 'Motihar', districtId: 'rajshahi_sadar_dist' },
 ];
 
+export const DELIVERY_CHARGES_STORAGE_KEY = 'deliveryChargeSettings';
 export const DEFAULT_DELIVERY_CHARGES: DeliveryChargeSettings = {
   intraThana: 70,
   intraDistrict: 110,
   interDistrict: 130,
 };
-export const DELIVERY_CHARGES_STORAGE_KEY = 'deliveryChargeSettings';
 
 export const COMMISSION_SETTINGS_STORAGE_KEY = 'commissionSettings';
 export const DEFAULT_COMMISSION_SETTINGS: CommissionSetting[] = [];
@@ -177,6 +176,7 @@ export const BUSINESS_SETTINGS_STORAGE_KEY = 'businessSettings';
 export const HERO_BANNERS_STORAGE_KEY = 'heroBannerSlides';
 export const CUSTOM_PAGES_STORAGE_KEY = 'customPages';
 export const SHIPPING_METHODS_STORAGE_KEY = 'shippingMethods';
+export const CATEGORY_ATTRIBUTES_TYPES_STORAGE_KEY = 'categoryAttributeTypes'; // New key
 
 export const DEFAULT_CURRENCIES: Currency[] = [
   { code: 'BDT', symbol: '৳', name: 'Bangladeshi Taka' },
@@ -186,8 +186,8 @@ export const DEFAULT_CURRENCIES: Currency[] = [
 export const DEFAULT_BUSINESS_SETTINGS: BusinessSettings = {
   appName: '2ndhandbajar.com',
   logoUrl: '/logo-placeholder.png',
-  primaryColor: '47 92% 52%',
-  secondaryColor: '77 30% 60%',
+  primaryColor: '47 92% 52%', // Example: Tailwind orange-500 HSL
+  secondaryColor: '77 30% 60%', // Example: Custom green HSL
   faviconUrl: '/favicon.ico',
   availableCurrencies: DEFAULT_CURRENCIES,
   defaultCurrencyCode: 'BDT',
@@ -201,7 +201,7 @@ export const DEFAULT_HERO_BANNER_SLIDES: HeroBannerSlide[] = [
     title: 'Latest Gadgets on Sale!',
     description: 'Discover amazing deals on smartphones, laptops, and more.',
     buttonText: 'Shop Electronics',
-    buttonLink: '/category/electronics', // Updated link
+    buttonLink: '/category/electronics',
     bgColor: 'bg-blue-600',
     textColor: 'text-white',
     isActive: true,
@@ -213,7 +213,7 @@ export const DEFAULT_HERO_BANNER_SLIDES: HeroBannerSlide[] = [
     title: 'Trendy Fashion Finds',
     description: 'Upgrade your wardrobe with the latest styles.',
     buttonText: 'Explore Fashion',
-    buttonLink: '/category/fashion', // Updated link
+    buttonLink: '/category/fashion',
     bgColor: 'bg-pink-500',
     textColor: 'text-white',
     isActive: true,
@@ -225,7 +225,7 @@ export const DEFAULT_HERO_BANNER_SLIDES: HeroBannerSlide[] = [
     title: 'Home Decor Specials',
     description: 'Beautify your space with unique second-hand treasures.',
     buttonText: 'View Home Goods',
-    buttonLink: '/category/home-garden', // Updated link
+    buttonLink: '/category/home-garden',
     bgColor: 'bg-green-500',
     textColor: 'text-white',
     isActive: false,
@@ -255,3 +255,5 @@ export const DEFAULT_SHIPPING_METHODS: ShippingMethod[] = [
   { id: 'standard-delivery', name: 'Standard Delivery' },
   { id: 'express-delivery', name: 'Express Delivery (Next Day)' },
 ];
+
+    
