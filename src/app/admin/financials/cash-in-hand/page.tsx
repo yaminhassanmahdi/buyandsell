@@ -15,6 +15,7 @@ import { Label } from '@/components/ui/label';
 import useLocalStorage from '@/hooks/use-local-storage';
 import { COMMISSION_SETTINGS_STORAGE_KEY, DEFAULT_COMMISSION_SETTINGS, BUSINESS_SETTINGS_STORAGE_KEY, DEFAULT_BUSINESS_SETTINGS } from '@/lib/constants';
 import { format } from 'date-fns';
+import { Badge } from '@/components/ui/badge'; // Added import
 
 interface UserWithEarnings extends User {
   pendingEarnings: number;
@@ -304,5 +305,7 @@ export default function AdminCashInHandPage() {
     </div>
   );
 }
+
+    
 
     
