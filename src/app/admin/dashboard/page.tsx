@@ -1,10 +1,10 @@
 
-"use client"; 
+"use client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { MOCK_ORDERS, MOCK_PRODUCTS, MOCK_USERS } from "@/lib/mock-data";
 import { DollarSign, ShoppingCart, Users, CheckSquare, Percent, Truck } from "lucide-react";
 import useLocalStorage from "@/hooks/use-local-storage";
-import type { CommissionSetting, BusinessSettings } from "@/lib/types";
+import type { CommissionSetting, BusinessSettings, Currency } from "@/lib/types";
 import { COMMISSION_SETTINGS_STORAGE_KEY, DEFAULT_COMMISSION_SETTINGS, BUSINESS_SETTINGS_STORAGE_KEY, DEFAULT_BUSINESS_SETTINGS } from "@/lib/constants";
 import { useMemo } from "react";
 
@@ -14,7 +14,21 @@ export default function AdminDashboardPage() {
     DEFAULT_COMMISSION_SETTINGS
   );
   const [settings] = useLocalStorage<BusinessSettings>(BUSINESS_SETTINGS_STORAGE_KEY, DEFAULT_BUSINESS_SETTINGS);
-  const activeCurrency = settings.availableCurrencies.find(c => c.code === settings.defaultCurrencyCode) || settings.availableCurrencies[0] || { symbol: '?' };
+
+  // Safely determine active currency and symbol
+  const safeAvailableCurrencies: Currency[] = settings?.availableCurrencies && Array.isArray(settings.availableCurrencies) && settings.availableCurrencies.length > 0
+    ? settings.availableCurrencies
+    : DEFAULT_BUSINESS_SETTINGS.availableCurrencies;
+
+  const safeDefaultCurrencyCode: string = settings?.defaultCurrencyCode
+    ? settings.defaultCurrencyCode
+    : DEFAULT_BUSINESS_SETTINGS.defaultCurrencyCode;
+
+  const activeCurrency: Currency =
+    safeAvailableCurrencies.find(c => c.code === safeDefaultCurrencyCode) ||
+    safeAvailableCurrencies[0] ||
+    { code: 'BDT', symbol: '৳', name: 'Bangladeshi Taka' }; // Absolute fallback
+
   const currencySymbol = activeCurrency.symbol;
 
   const dashboardStats = useMemo(() => {
@@ -25,7 +39,7 @@ export default function AdminDashboardPage() {
     MOCK_ORDERS.forEach(order => {
       if (order.status === 'delivered' && order.paymentStatus === 'paid') {
         const orderItemSubtotal = order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-        totalPlatformSales += orderItemSubtotal; 
+        totalPlatformSales += orderItemSubtotal;
 
         if (order.deliveryChargeAmount) {
           totalDeliveryChargesCollected += order.deliveryChargeAmount;
@@ -41,17 +55,17 @@ export default function AdminDashboardPage() {
           }
         });
         totalPlatformCommission += orderCommission;
-        
+
         const orderInMock = MOCK_ORDERS.find(mo => mo.id === order.id);
         if(orderInMock && orderInMock.platformCommission !== orderCommission) {
-            // orderInMock.platformCommission = parseFloat(orderCommission.toFixed(2)); 
+            // orderInMock.platformCommission = parseFloat(orderCommission.toFixed(2));
         }
       }
     });
 
     const pendingProducts = MOCK_PRODUCTS.filter(p => p.status === 'pending').length;
     const totalUsers = MOCK_USERS.length;
-    const totalOrders = MOCK_ORDERS.length; 
+    const totalOrders = MOCK_ORDERS.length;
 
     return {
       totalPlatformCommission: parseFloat(totalPlatformCommission.toFixed(2)),
@@ -61,7 +75,7 @@ export default function AdminDashboardPage() {
       totalUsers,
       totalOrders,
     };
-  }, [commissionSettings]);
+  }, [commissionSettings, settings.defaultCurrencyCode, settings.availableCurrencies]);
 
 
   return (
