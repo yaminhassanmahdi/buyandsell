@@ -1,8 +1,8 @@
 
 "use client";
 import { useEffect, useState } from 'react';
-import { MOCK_WITHDRAWAL_REQUESTS } from '@/lib/mock-data';
-import type { WithdrawalRequest, WithdrawalRequestStatus, BusinessSettings, Currency } from '@/lib/types';
+import { MOCK_WITHDRAWAL_REQUESTS, MOCK_USERS } from '@/lib/mock-data';
+import type { WithdrawalRequest, WithdrawalRequestStatus, BusinessSettings, Currency, User, WithdrawalMethod } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogClose, DialogFooter } from '@/components/ui/dialog';
@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, CheckCircle, XCircle, Edit, CreditCard, FileText } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, Edit, CreditCard, FileText, Info, Banknote, Smartphone } from 'lucide-react';
 import { format } from 'date-fns';
 import { Label } from '@/components/ui/label';
 import useLocalStorage from '@/hooks/use-local-storage';
@@ -23,6 +23,7 @@ export default function AdminWithdrawalRequestsPage() {
 
   const [isProcessingModalOpen, setIsProcessingModalOpen] = useState(false);
   const [currentRequest, setCurrentRequest] = useState<WithdrawalRequest | null>(null);
+  const [selectedWithdrawalMethodDetails, setSelectedWithdrawalMethodDetails] = useState<WithdrawalMethod | null>(null);
   const [adminNote, setAdminNote] = useState('');
   const [actionType, setActionType] = useState<'approve' | 'reject' | null>(null);
   const [formSubmitting, setFormSubmitting] = useState(false);
@@ -32,7 +33,6 @@ export default function AdminWithdrawalRequestsPage() {
     DEFAULT_BUSINESS_SETTINGS
   );
 
-  // Safely determine active currency and symbol
   const safeAvailableCurrencies: Currency[] = settings?.availableCurrencies && Array.isArray(settings.availableCurrencies) && settings.availableCurrencies.length > 0
     ? settings.availableCurrencies
     : DEFAULT_BUSINESS_SETTINGS.availableCurrencies;
@@ -43,8 +43,8 @@ export default function AdminWithdrawalRequestsPage() {
 
   const activeCurrency: Currency =
     safeAvailableCurrencies.find(c => c.code === safeDefaultCurrencyCode) ||
-    safeAvailableCurrencies[0] || // Fallback to the first currency in the safe list
-    { code: 'BDT', symbol: '৳', name: 'Bangladeshi Taka' }; // Absolute fallback
+    safeAvailableCurrencies[0] ||
+    { code: 'BDT', symbol: '৳', name: 'Bangladeshi Taka' };
 
   const currencySymbol = activeCurrency.symbol;
 
@@ -66,6 +66,16 @@ export default function AdminWithdrawalRequestsPage() {
     setCurrentRequest(request);
     setActionType(type);
     setAdminNote(request.adminNote || '');
+
+    // Find and set full withdrawal method details
+    const user = MOCK_USERS.find(u => u.id === request.userId);
+    if (user && user.withdrawalMethods) {
+      const method = user.withdrawalMethods.find(m => m.id === request.withdrawalMethodId);
+      setSelectedWithdrawalMethodDetails(method || null);
+    } else {
+      setSelectedWithdrawalMethodDetails(null);
+    }
+
     setIsProcessingModalOpen(true);
   };
 
@@ -99,6 +109,7 @@ export default function AdminWithdrawalRequestsPage() {
     setFormSubmitting(false);
     setIsProcessingModalOpen(false);
     setCurrentRequest(null);
+    setSelectedWithdrawalMethodDetails(null);
     setAdminNote('');
     setActionType(null);
   };
@@ -138,7 +149,7 @@ export default function AdminWithdrawalRequestsPage() {
                 <TableHead>Req. ID</TableHead>
                 <TableHead>User</TableHead>
                 <TableHead>Amount</TableHead>
-                <TableHead>Method</TableHead>
+                <TableHead>Method (Summary)</TableHead>
                 <TableHead>Requested At</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -176,7 +187,7 @@ export default function AdminWithdrawalRequestsPage() {
                       </div>
                     ) : (
                       <Button variant="ghost" size="sm" onClick={() => openProcessingModal(req, req.status === 'approved' ? 'approve' : 'reject')}>
-                        <FileText className="mr-2 h-4 w-4" /> View Note
+                        <FileText className="mr-2 h-4 w-4" /> View Details
                       </Button>
                     )}
                   </TableCell>
@@ -195,12 +206,48 @@ export default function AdminWithdrawalRequestsPage() {
                 {actionType === 'approve' ? 'Approve' : actionType === 'reject' ? 'Reject' : 'View'} Withdrawal Request: {currentRequest.id}
               </DialogTitle>
               <DialogDescription>
-                User: {currentRequest.userName} ({currentRequest.userId})<br/>
-                Amount: {currencySymbol}{currentRequest.amount.toFixed(2)} to {currentRequest.withdrawalMethodDetails}
+                User: {currentRequest.userName} (ID: {currentRequest.userId})<br/>
+                Amount: {currencySymbol}{currentRequest.amount.toFixed(2)}
               </DialogDescription>
             </DialogHeader>
-            <div className="py-4 space-y-2">
-                <Label htmlFor="admin-note">Admin Note (Optional)</Label>
+            
+            <div className="py-4 space-y-4">
+              <div>
+                <Label className="font-semibold text-base">Payment Details:</Label>
+                {selectedWithdrawalMethodDetails ? (
+                  <Card className="mt-2 p-3 bg-muted/50">
+                    <CardContent className="text-sm space-y-1 p-0">
+                       <div className="flex items-center gap-2 mb-1">
+                          {selectedWithdrawalMethodDetails.type === 'bkash' ? <Smartphone className="h-5 w-5 text-pink-500" /> : <Banknote className="h-5 w-5 text-blue-500" />}
+                          <span className="font-medium capitalize">{selectedWithdrawalMethodDetails.type}</span>
+                          {selectedWithdrawalMethodDetails.isDefault && <Badge variant="outline" size="sm" className="text-xs">Default</Badge>}
+                        </div>
+                      {selectedWithdrawalMethodDetails.type === 'bkash' && (
+                        <p><strong>bKash Number:</strong> {selectedWithdrawalMethodDetails.details.accountNumber}</p>
+                      )}
+                      {selectedWithdrawalMethodDetails.type === 'bank' && (
+                        <>
+                          <p><strong>Bank Name:</strong> {selectedWithdrawalMethodDetails.details.bankName}</p>
+                          <p><strong>Account Holder:</strong> {selectedWithdrawalMethodDetails.details.accountHolderName}</p>
+                          <p><strong>Account Number:</strong> {selectedWithdrawalMethodDetails.details.accountNumber}</p>
+                          {selectedWithdrawalMethodDetails.details.routingNumber && (
+                            <p><strong>Routing Number:</strong> {selectedWithdrawalMethodDetails.details.routingNumber}</p>
+                          )}
+                          {selectedWithdrawalMethodDetails.details.branchName && (
+                            <p><strong>Branch Name:</strong> {selectedWithdrawalMethodDetails.details.branchName}</p>
+                          )}
+                        </>
+                      )}
+                       <p className="text-xs text-muted-foreground mt-1">Method Added: {format(new Date(selectedWithdrawalMethodDetails.createdAt), 'PP')}</p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <p className="text-sm text-destructive mt-2">Could not load payment details for this request.</p>
+                )}
+              </div>
+
+              <div>
+                <Label htmlFor="admin-note" className="font-semibold text-base">Admin Note (Optional):</Label>
                 <Textarea 
                     id="admin-note"
                     value={adminNote}
@@ -208,8 +255,11 @@ export default function AdminWithdrawalRequestsPage() {
                     placeholder={currentRequest.status === 'pending' ? "Add a note for the user..." : "Note for this transaction..."}
                     rows={3}
                     disabled={currentRequest.status !== 'pending' || formSubmitting}
+                    className="mt-1"
                 />
+              </div>
             </div>
+
             <DialogFooter className="sm:justify-between">
               <DialogClose asChild>
                 <Button type="button" variant="outline" disabled={formSubmitting}>Close</Button>
@@ -231,3 +281,6 @@ export default function AdminWithdrawalRequestsPage() {
     </div>
   );
 }
+
+
+    
