@@ -12,7 +12,7 @@ import { OrderStatusBadge } from '@/components/order-status-badge';
 import Image from 'next/image';
 import { format } from 'date-fns';
 import { ArrowLeft, UserCircle, MapPin, CalendarDays, ShoppingBag, Briefcase, Home, Loader2, CreditCard, Smartphone, Banknote, Save, Truck, AlertTriangle, Percent, Ship } from 'lucide-react';
-import { ORDER_STATUSES, PAYMENT_STATUSES, COMMISSION_SETTINGS_STORAGE_KEY, DEFAULT_COMMISSION_SETTINGS } from '@/lib/constants';
+import { ORDER_STATUSES, PAYMENT_STATUSES, COMMISSION_SETTINGS_STORAGE_KEY, DEFAULT_COMMISSION_SETTINGS, CURRENCY_SYMBOL } from '@/lib/constants';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import useLocalStorage from '@/hooks/use-local-storage';
@@ -251,22 +251,22 @@ export default function AdminOrderDetailPage() {
               <Separator className="my-3"/>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Items Subtotal:</span>
-                <span className="font-medium">${itemsSubtotal.toFixed(2)}</span>
+                <span className="font-medium">{CURRENCY_SYMBOL}{itemsSubtotal.toFixed(2)}</span>
               </div>
               {order.deliveryChargeAmount !== undefined && order.deliveryChargeAmount >= 0 && (
                 <div className="flex justify-between">
                   <span className="text-muted-foreground flex items-center gap-1"><Truck className="h-4 w-4"/>Delivery Charge:</span>
-                  <span className="font-medium">${order.deliveryChargeAmount.toFixed(2)}</span>
+                  <span className="font-medium">{CURRENCY_SYMBOL}{order.deliveryChargeAmount.toFixed(2)}</span>
                 </div>
               )}
                <div className="flex justify-between font-bold text-lg pt-2 border-t">
                 <span>Order Total (Paid by Buyer):</span>
-                <span>${order.totalAmount.toFixed(2)}</span>
+                <span>{CURRENCY_SYMBOL}{order.totalAmount.toFixed(2)}</span>
               </div>
               {order.platformCommission !== undefined && order.platformCommission > 0 && (
                 <div className="flex justify-between mt-2 pt-2 border-t text-blue-600">
                   <span className="font-medium flex items-center gap-1"><Percent className="h-4 w-4"/>Platform Commission:</span>
-                  <span className="font-semibold">${order.platformCommission.toFixed(2)}</span>
+                  <span className="font-semibold">{CURRENCY_SYMBOL}{order.platformCommission.toFixed(2)}</span>
                 </div>
               )}
             </CardContent>
@@ -366,8 +366,8 @@ export default function AdminOrderDetailPage() {
                   <h3 className="text-lg font-semibold">{item.name}</h3>
                   <p className="text-sm text-muted-foreground">Product ID: {item.id}</p>
                   <p className="text-sm">Quantity: {item.quantity}</p>
-                  <p className="text-sm">Price per item: ${item.price.toFixed(2)}</p>
-                  <p className="text-md font-semibold">Subtotal: ${(item.price * item.quantity).toFixed(2)}</p>
+                  <p className="text-sm">Price per item: {CURRENCY_SYMBOL}{item.price.toFixed(2)}</p>
+                  <p className="text-md font-semibold">Subtotal: {CURRENCY_SYMBOL}{(item.price * item.quantity).toFixed(2)}</p>
                 </div>
               </div>
               {item.sellerDetails && (
@@ -385,3 +385,5 @@ export default function AdminOrderDetailPage() {
     </div>
   );
 }
+
+    

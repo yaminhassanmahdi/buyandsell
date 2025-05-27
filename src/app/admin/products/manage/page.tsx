@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { MOCK_PRODUCTS, MOCK_CATEGORIES, MOCK_SUBCATEGORIES, MOCK_BRANDS } from '@/lib/mock-data';
 import type { Product } from '@/lib/types'; // Category and Brand types are not directly used here
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from '@/components/ui/badge';
@@ -14,6 +14,7 @@ import Image from 'next/image';
 // Removed CATEGORIES, BRANDS import from constants, will use MOCK_ from mock-data
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast'; // Added for future Add Product button
+import { CURRENCY_SYMBOL } from '@/lib/constants';
 
 type ProductStatus = Product['status'] | 'all';
 
@@ -174,7 +175,7 @@ export default function AdminManageProductsPage() {
             <TableBody>
               {filteredProducts.map((product) => {
                 const categoryName = MOCK_CATEGORIES.find(c => c.id === product.categoryId)?.name || 'N/A';
-                const subCategoryName = product.subCategoryId ? MOCK_SUBCATEGORIES.find(sc => sc.id === product.subCategoryId)?.name : 'N/A';
+                const subCategoryName = MOCK_SUBCATEGORIES.find(sc => sc.id === product.subCategoryId)?.name || 'N/A';
                 const brandName = MOCK_BRANDS.find(b => b.id === product.brandId)?.name || 'N/A';
                 return (
                 <TableRow key={product.id}>
@@ -186,7 +187,7 @@ export default function AdminManageProductsPage() {
                     <div className="text-xs text-muted-foreground">ID: {product.id}</div>
                   </TableCell>
                   <TableCell>{product.sellerName || product.sellerId}</TableCell>
-                  <TableCell>${product.price.toFixed(2)}</TableCell>
+                  <TableCell>{CURRENCY_SYMBOL}{product.price.toFixed(2)}</TableCell>
                   <TableCell>{categoryName}</TableCell>
                   <TableCell>{subCategoryName}</TableCell>
                   <TableCell>{brandName}</TableCell>
@@ -210,3 +211,5 @@ export default function AdminManageProductsPage() {
     </div>
   );
 }
+
+    

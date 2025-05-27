@@ -7,6 +7,7 @@ import { useCart } from '@/contexts/cart-context';
 import { X, Minus, Plus } from 'lucide-react';
 import Link from 'next/link';
 import { QuantitySelector } from './quantity-selector';
+import { CURRENCY_SYMBOL } from '@/lib/constants';
 
 interface CartItemProps {
   item: CartItemType;
@@ -31,7 +32,7 @@ export function CartItem({ item }: CartItemProps) {
         <Link href={`/products/${item.id}`}>
           <h3 className="font-semibold hover:text-primary transition-colors">{item.name}</h3>
         </Link>
-        <p className="text-sm text-muted-foreground">Price: ${item.price.toFixed(2)}</p>
+        <p className="text-sm text-muted-foreground">Price: {CURRENCY_SYMBOL}{item.price.toFixed(2)}</p>
          <div className="mt-2">
           <QuantitySelector 
             quantity={item.quantity} 
@@ -40,7 +41,7 @@ export function CartItem({ item }: CartItemProps) {
         </div>
       </div>
       <div className="text-right">
-        <p className="font-semibold">${(item.price * item.quantity).toFixed(2)}</p>
+        <p className="font-semibold">{CURRENCY_SYMBOL}{(item.price * item.quantity).toFixed(2)}</p>
         <Button
           variant="ghost"
           size="icon"
@@ -54,3 +55,5 @@ export function CartItem({ item }: CartItemProps) {
     </div>
   );
 }
+
+    

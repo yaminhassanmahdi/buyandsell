@@ -23,6 +23,7 @@ import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
 import { Loader2, UploadCloud } from "lucide-react";
+import { CURRENCY_SYMBOL } from "@/lib/constants";
 
 const productSchema = z.object({
   name: z.string().min(3, "Product name must be at least 3 characters.").max(100),
@@ -35,7 +36,7 @@ const productSchema = z.object({
 
 type ProductFormData = z.infer<typeof productSchema>;
 
-const VALUE_FOR_NO_SUBCATEGORY_SELECTED = "__NONE_SUBCATEGORY__";
+const VALUE_FOR_NO_SUBCATEGORY_SELECTED = "__NONE__";
 
 export function ProductUploadForm() {
   const { currentUser } = useAuth();
@@ -55,7 +56,7 @@ export function ProductUploadForm() {
       description: "",
       price: 0,
       categoryId: "",
-      subCategoryId: "", // Initialize as empty string for placeholder to work
+      subCategoryId: VALUE_FOR_NO_SUBCATEGORY_SELECTED, 
       brandId: "",
     },
   });
@@ -75,12 +76,12 @@ export function ProductUploadForm() {
       setAvailableSubCategories(filteredSubs);
       
       const currentSubCategoryId = form.getValues("subCategoryId");
-      if (currentSubCategoryId && !filteredSubs.some(sc => sc.id === currentSubCategoryId)) {
-        form.setValue("subCategoryId", ""); // Reset if current sub-category is no longer valid
+      if (currentSubCategoryId && currentSubCategoryId !== VALUE_FOR_NO_SUBCATEGORY_SELECTED && !filteredSubs.some(sc => sc.id === currentSubCategoryId)) {
+        form.setValue("subCategoryId", VALUE_FOR_NO_SUBCATEGORY_SELECTED); // Reset if current sub-category is no longer valid
       }
     } else {
       setAvailableSubCategories([]);
-      form.setValue("subCategoryId", ""); // Reset if no parent category
+      form.setValue("subCategoryId", VALUE_FOR_NO_SUBCATEGORY_SELECTED); // Reset if no parent category
     }
   }, [watchedCategoryId, subCategories, form]);
 
@@ -102,7 +103,7 @@ export function ProductUploadForm() {
       imageUrl: `https://placehold.co/600x400.png`, 
       imageHint: `${values.name.substring(0,15)} product`,
       categoryId: values.categoryId,
-      subCategoryId: values.subCategoryId === "" ? undefined : values.subCategoryId, // Convert empty string to undefined
+      subCategoryId: values.subCategoryId === VALUE_FOR_NO_SUBCATEGORY_SELECTED ? undefined : values.subCategoryId, 
       brandId: values.brandId,
       sellerId: currentUser.id,
       sellerName: currentUser.name,
@@ -155,7 +156,7 @@ export function ProductUploadForm() {
           name="price"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Price ($)</FormLabel>
+              <FormLabel>Price (BDT)</FormLabel>
               <FormControl>
                 <Input type="number" step="0.01" placeholder="29.99" {...field} />
               </FormControl>
@@ -194,8 +195,8 @@ export function ProductUploadForm() {
             <FormItem>
               <FormLabel>Sub-Category (Optional)</FormLabel>
               <Select 
-                onValueChange={(value) => field.onChange(value === VALUE_FOR_NO_SUBCATEGORY_SELECTED ? "" : value)} 
-                value={field.value} 
+                onValueChange={(value) => field.onChange(value)} 
+                value={field.value || VALUE_FOR_NO_SUBCATEGORY_SELECTED} 
                 disabled={!watchedCategoryId || availableSubCategories.length === 0}
               >
                 <FormControl>
@@ -264,3 +265,5 @@ export function ProductUploadForm() {
     </Form>
   );
 }
+
+    

@@ -8,11 +8,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useCart } from '@/contexts/cart-context';
-import { ArrowLeft, ShoppingCart, UserCircle, CalendarDays, Tag, Layers } from 'lucide-react'; // Added Tag, Layers
+import { ArrowLeft, ShoppingCart, UserCircle, CalendarDays, Tag, Layers } from 'lucide-react'; 
 import { QuantitySelector } from '@/components/quantity-selector';
 import React, { useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
+import { CURRENCY_SYMBOL } from '@/lib/constants';
 
 
 export default function ProductDetailPage() {
@@ -129,7 +130,7 @@ export default function ProductDetailPage() {
               </div>
 
               <p className="text-4xl font-extrabold text-primary mb-6">
-                ${product.price.toFixed(2)}
+                {CURRENCY_SYMBOL}{product.price.toFixed(2)}
               </p>
             </CardContent>
 
@@ -147,3 +148,5 @@ export default function ProductDetailPage() {
     </div>
   );
 }
+
+    

@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { CheckCircle, XCircle, User, Tag, DollarSign, Calendar, Layers } from 'lucide-react'; // Added Layers
 import { format } from 'date-fns';
 import { MOCK_CATEGORIES, MOCK_SUBCATEGORIES, MOCK_BRANDS } from '@/lib/mock-data';
+import { CURRENCY_SYMBOL } from '@/lib/constants';
 
 interface ProductApprovalCardProps {
   product: Product;
@@ -53,7 +54,7 @@ export function ProductApprovalCard({ product, onApprove, onReject, isProcessing
             <CardDescription className="mb-3 text-sm text-foreground/80">{product.description}</CardDescription>
             <div className="space-y-1 text-sm text-muted-foreground">
               <p className="flex items-center"><User className="h-4 w-4 mr-2" /> Seller: {product.sellerName || product.sellerId}</p>
-              <p className="flex items-center"><DollarSign className="h-4 w-4 mr-2" /> Price: ${product.price.toFixed(2)}</p>
+              <p className="flex items-center"><DollarSign className="h-4 w-4 mr-2" /> Price: {CURRENCY_SYMBOL}{product.price.toFixed(2)}</p>
               <p className="flex items-center"><Calendar className="h-4 w-4 mr-2" /> Listed: {format(new Date(product.createdAt), 'PPpp')}</p>
             </div>
           </CardContent>
@@ -81,3 +82,5 @@ export function ProductApprovalCard({ product, onApprove, onReject, isProcessing
     </Card>
   );
 }
+
+    

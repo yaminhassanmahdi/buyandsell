@@ -15,7 +15,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { OrderStatusBadge } from '@/components/order-status-badge';
 import { Settings2, Loader2, SearchX, Filter, Edit, Trash2, MoreHorizontal, Eye, CreditCard } from 'lucide-react'; // Added CreditCard
 import { format } from 'date-fns';
-import { ORDER_STATUSES, PAYMENT_STATUSES } from '@/lib/constants'; // Added PAYMENT_STATUSES
+import { ORDER_STATUSES, PAYMENT_STATUSES, CURRENCY_SYMBOL } from '@/lib/constants'; // Added PAYMENT_STATUSES
 import { Badge } from '@/components/ui/badge'; // Added Badge for payment status
 
 export default function AdminManageOrdersPage() {
@@ -196,7 +196,7 @@ export default function AdminManageOrdersPage() {
                     </TableCell>
                     <TableCell>{format(new Date(order.createdAt), 'dd MMM yyyy')}</TableCell>
                     <TableCell>{buyer?.name || order.shippingAddress.fullName}</TableCell>
-                    <TableCell>${order.totalAmount.toFixed(2)}</TableCell>
+                    <TableCell>{CURRENCY_SYMBOL}{order.totalAmount.toFixed(2)}</TableCell>
                     <TableCell>
                       <Select
                         value={order.status}
@@ -262,3 +262,5 @@ export default function AdminManageOrdersPage() {
     </div>
   );
 }
+
+    

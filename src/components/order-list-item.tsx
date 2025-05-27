@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { format } from 'date-fns';
 import { OrderStatusBadge } from './order-status-badge';
 import { CreditCard, CalendarDays } from 'lucide-react';
+import { CURRENCY_SYMBOL } from '@/lib/constants';
 
 interface OrderListItemProps {
   order: Order;
@@ -40,7 +41,7 @@ export function OrderListItem({ order }: OrderListItemProps) {
               />
               <div>
                 <p className="font-medium">{item.name}</p>
-                <p className="text-sm text-muted-foreground">Qty: {item.quantity} &bull; Price: ${item.price.toFixed(2)}</p>
+                <p className="text-sm text-muted-foreground">Qty: {item.quantity} &bull; Price: {CURRENCY_SYMBOL}{item.price.toFixed(2)}</p>
               </div>
             </div>
           ))}
@@ -55,9 +56,11 @@ export function OrderListItem({ order }: OrderListItemProps) {
       </CardContent>
       <CardFooter className="flex justify-between items-center">
         <div className="flex items-center font-semibold text-lg">
-            <CreditCard className="mr-2 h-5 w-5 text-primary" /> Total: ${order.totalAmount.toFixed(2)}
+            <CreditCard className="mr-2 h-5 w-5 text-primary" /> Total: {CURRENCY_SYMBOL}{order.totalAmount.toFixed(2)}
         </div>
       </CardFooter>
     </Card>
   );
 }
+
+    

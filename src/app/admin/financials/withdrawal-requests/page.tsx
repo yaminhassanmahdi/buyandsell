@@ -12,8 +12,9 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, CheckCircle, XCircle, Edit, CreditCard, FileText } from 'lucide-react';
 import { format } from 'date-fns';
-import { Label } from '@/components/ui/label'; // Added missing import
-import { DialogFooter } from '@/components/ui/dialog'; // Added missing import
+import { Label } from '@/components/ui/label'; 
+import { DialogFooter } from '@/components/ui/dialog'; 
+import { CURRENCY_SYMBOL } from '@/lib/constants';
 
 export default function AdminWithdrawalRequestsPage() {
   const [requests, setRequests] = useState<WithdrawalRequest[]>([]);
@@ -127,7 +128,7 @@ export default function AdminWithdrawalRequestsPage() {
                 <TableRow key={req.id}>
                   <TableCell className="font-medium">{req.id}</TableCell>
                   <TableCell>{req.userName} <span className="text-xs text-muted-foreground">({req.userId})</span></TableCell>
-                  <TableCell>${req.amount.toFixed(2)}</TableCell>
+                  <TableCell>{CURRENCY_SYMBOL}{req.amount.toFixed(2)}</TableCell>
                   <TableCell className="text-xs">{req.withdrawalMethodDetails}</TableCell>
                   <TableCell>{format(new Date(req.requestedAt), 'dd MMM yyyy, hh:mm a')}</TableCell>
                   <TableCell>
@@ -174,7 +175,7 @@ export default function AdminWithdrawalRequestsPage() {
               </DialogTitle>
               <DialogDescription>
                 User: {currentRequest.userName} ({currentRequest.userId})<br/>
-                Amount: ${currentRequest.amount.toFixed(2)} to {currentRequest.withdrawalMethodDetails}
+                Amount: {CURRENCY_SYMBOL}{currentRequest.amount.toFixed(2)} to {currentRequest.withdrawalMethodDetails}
               </DialogDescription>
             </DialogHeader>
             <div className="py-4 space-y-2">
@@ -210,3 +211,4 @@ export default function AdminWithdrawalRequestsPage() {
   );
 }
 
+    

@@ -17,7 +17,7 @@ import { Loader2, DollarSign, TrendingUp, History, CheckCircle2, XCircle, AlertT
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import useLocalStorage from '@/hooks/use-local-storage';
-import { COMMISSION_SETTINGS_STORAGE_KEY, DEFAULT_COMMISSION_SETTINGS } from '@/lib/constants';
+import { COMMISSION_SETTINGS_STORAGE_KEY, DEFAULT_COMMISSION_SETTINGS, CURRENCY_SYMBOL } from '@/lib/constants';
 
 const getWithdrawalMethodSummary = (method: WithdrawalMethod | undefined): string => {
     if (!method) return "Unknown Method";
@@ -57,7 +57,7 @@ export default function MyEarningsPage() {
         setUserWithdrawalRequests(requests);
         setPageLoading(false);
       } else {
-        setPageLoading(false);
+         setPageLoading(false); // Should not happen if isAuthenticated is true
       }
     }
   }, [isAuthenticated, authLoading, router, currentUser]);
@@ -133,7 +133,7 @@ export default function MyEarningsPage() {
     // Optimistically update UI or re-fetch/re-calculate pendingEarnings
     setUserWithdrawalRequests(prev => [newRequest, ...prev].sort((a, b) => new Date(b.requestedAt).getTime() - new Date(a.requestedAt).getTime()));
 
-    toast({ title: "Withdrawal Requested", description: `Your request for $${amount.toFixed(2)} has been submitted.` });
+    toast({ title: "Withdrawal Requested", description: `Your request for ${CURRENCY_SYMBOL}${amount.toFixed(2)} has been submitted.` });
     setIsWithdrawDialogOpen(false);
     setWithdrawAmount('');
     setSelectedWithdrawalMethodId('');
@@ -148,7 +148,7 @@ export default function MyEarningsPage() {
       </div>
     );
   }
-  if (!currentUser) { // Should be caught by isAuthenticated check earlier
+  if (!currentUser) { 
     return (
       <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
         <AlertTriangle className="h-12 w-12 text-destructive" />
@@ -174,7 +174,7 @@ export default function MyEarningsPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-4xl font-bold text-green-600">${pendingEarnings.toFixed(2)}</p>
+            <p className="text-4xl font-bold text-green-600">{CURRENCY_SYMBOL}{pendingEarnings.toFixed(2)}</p>
             <CardDescription className="text-green-500 mt-1">Available for withdrawal after platform commission. Earnings are credited after orders are delivered & paid.</CardDescription>
           </CardContent>
           <CardFooter>
@@ -190,7 +190,7 @@ export default function MyEarningsPage() {
               <DialogContent className="sm:max-w-md">
                 <DialogHeader>
                   <DialogTitle>Request Withdrawal</DialogTitle>
-                  <DialogDescription>Select method and enter amount. Max: ${pendingEarnings.toFixed(2)}</DialogDescription>
+                  <DialogDescription>Select method and enter amount. Max: {CURRENCY_SYMBOL}{pendingEarnings.toFixed(2)}</DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
                   <div className="space-y-2">
@@ -209,14 +209,14 @@ export default function MyEarningsPage() {
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="withdraw-amount">Amount ($)</Label>
+                    <Label htmlFor="withdraw-amount">Amount (BDT)</Label>
                     <Input
                       id="withdraw-amount"
                       type="number"
                       step="0.01"
                       value={withdrawAmount}
                       onChange={(e) => setWithdrawAmount(e.target.value)}
-                      placeholder={`Max $${pendingEarnings.toFixed(2)}`}
+                      placeholder={`Max ${CURRENCY_SYMBOL}${pendingEarnings.toFixed(2)}`}
                     />
                   </div>
                 </div>
@@ -249,7 +249,7 @@ export default function MyEarningsPage() {
             <CardTitle className="flex items-center gap-2"><CheckCircle2 className="h-6 w-6 text-primary" /> Total Withdrawn</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-4xl font-bold text-primary">${totalWithdrawn.toFixed(2)}</p>
+            <p className="text-4xl font-bold text-primary">{CURRENCY_SYMBOL}{totalWithdrawn.toFixed(2)}</p>
             <CardDescription className="mt-1">Total amount successfully withdrawn to your accounts.</CardDescription>
           </CardContent>
         </Card>
@@ -268,7 +268,7 @@ export default function MyEarningsPage() {
               {userWithdrawalRequests.map(req => (
                 <div key={req.id} className="p-4 border rounded-lg hover:shadow-sm">
                   <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2 mb-2">
-                    <p className="font-semibold text-lg">${req.amount.toFixed(2)}</p>
+                    <p className="font-semibold text-lg">{CURRENCY_SYMBOL}{req.amount.toFixed(2)}</p>
                     <Badge
                         variant={
                             req.status === 'approved' ? 'default' :
@@ -297,3 +297,5 @@ export default function MyEarningsPage() {
     </div>
   );
 }
+
+    

@@ -5,7 +5,7 @@ import { MOCK_ORDERS, MOCK_PRODUCTS, MOCK_USERS, MOCK_CATEGORIES } from "@/lib/m
 import { DollarSign, ShoppingCart, Users, CheckSquare, Percent, Truck } from "lucide-react";
 import useLocalStorage from "@/hooks/use-local-storage";
 import type { CommissionSetting } from "@/lib/types";
-import { COMMISSION_SETTINGS_STORAGE_KEY, DEFAULT_COMMISSION_SETTINGS } from "@/lib/constants";
+import { COMMISSION_SETTINGS_STORAGE_KEY, DEFAULT_COMMISSION_SETTINGS, CURRENCY_SYMBOL } from "@/lib/constants";
 import { useMemo } from "react";
 
 export default function AdminDashboardPage() {
@@ -76,7 +76,7 @@ export default function AdminDashboardPage() {
             <Percent className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${dashboardStats.totalPlatformCommission.toFixed(2)}</div>
+            <div className="text-2xl font-bold">{CURRENCY_SYMBOL}{dashboardStats.totalPlatformCommission.toFixed(2)}</div>
             <p className="text-xs text-muted-foreground">From delivered & paid orders</p>
           </CardContent>
         </Card>
@@ -86,7 +86,7 @@ export default function AdminDashboardPage() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${dashboardStats.totalPlatformSales.toFixed(2)}</div>
+            <div className="text-2xl font-bold">{CURRENCY_SYMBOL}{dashboardStats.totalPlatformSales.toFixed(2)}</div>
             <p className="text-xs text-muted-foreground">Subtotal of items in delivered & paid orders</p>
           </CardContent>
         </Card>
@@ -96,7 +96,7 @@ export default function AdminDashboardPage() {
             <Truck className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${dashboardStats.totalDeliveryChargesCollected.toFixed(2)}</div>
+            <div className="text-2xl font-bold">{CURRENCY_SYMBOL}{dashboardStats.totalDeliveryChargesCollected.toFixed(2)}</div>
             <p className="text-xs text-muted-foreground">Collected from delivered & paid orders</p>
           </CardContent>
         </Card>
@@ -143,3 +143,5 @@ export default function AdminDashboardPage() {
     </div>
   );
 }
+
+    

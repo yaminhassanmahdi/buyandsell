@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 
 export let APP_NAME = '2ndhandbajar.com'; // Made it mutable
+export const CURRENCY_SYMBOL = '৳'; // Added currency symbol
 
 export const INITIAL_CATEGORIES: Category[] = [
   { id: 'electronics', name: 'Electronics', imageUrl: 'https://placehold.co/80x80.png', imageHint: 'electronics gadget' },
@@ -255,3 +256,5 @@ export const DEFAULT_SHIPPING_METHODS: ShippingMethod[] = [
   { id: 'standard-delivery', name: 'Standard Delivery' },
   { id: 'express-delivery', name: 'Express Delivery (Next Day)' },
 ];
+
+    

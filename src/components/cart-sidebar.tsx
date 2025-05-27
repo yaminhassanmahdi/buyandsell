@@ -9,6 +9,7 @@ import { useCart } from '@/contexts/cart-context';
 import { CartItem as CartItemComponent } from './cart-item'; // Renamed import to avoid conflict
 import { ShoppingCart, X as CloseIcon } from 'lucide-react';
 import React from 'react';
+import { CURRENCY_SYMBOL } from '@/lib/constants';
 
 interface CartSidebarProps {
   onClose: () => void; // Callback to close the sidebar, passed from UserNav
@@ -60,7 +61,7 @@ export function CartSidebar({ onClose }: CartSidebarProps) {
             <div className="w-full space-y-3">
               <div className="flex justify-between text-md font-medium">
                 <span>Subtotal</span>
-                <span>${subTotal.toFixed(2)}</span>
+                <span>{CURRENCY_SYMBOL}{subTotal.toFixed(2)}</span>
               </div>
               <SheetClose asChild>
                 <Button asChild size="lg" className="w-full" onClick={onClose}>
@@ -76,3 +77,5 @@ export function CartSidebar({ onClose }: CartSidebarProps) {
     </>
   );
 }
+
+    

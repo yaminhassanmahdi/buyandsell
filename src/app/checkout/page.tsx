@@ -13,7 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
 import { Loader2, ShieldCheck, Edit3, Home, Truck, Ship } from 'lucide-react';
 import useLocalStorage from '@/hooks/use-local-storage';
-import { DELIVERY_CHARGES_STORAGE_KEY, DEFAULT_DELIVERY_CHARGES, SHIPPING_METHODS_STORAGE_KEY, DEFAULT_SHIPPING_METHODS } from '@/lib/constants';
+import { DELIVERY_CHARGES_STORAGE_KEY, DEFAULT_DELIVERY_CHARGES, SHIPPING_METHODS_STORAGE_KEY, DEFAULT_SHIPPING_METHODS, CURRENCY_SYMBOL } from '@/lib/constants';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from '@/components/ui/label';
 
@@ -190,10 +190,10 @@ export default function CheckoutPage() {
       duration: 4000,
     });
     router.push(`/order-confirmation/${newOrder.id}`);
-    // setIsPlacingOrder(false); // Removed: Let component unmount handle state reset
+    // setIsPlacingOrder(false); // Let component unmount handle state reset
   };
 
-  if (authLoading || (!authLoading && !isAuthenticated) || (itemCount === 0 && !isPlacingOrder && !authLoading)) {
+  if (authLoading || (!authLoading && !isAuthenticated && !isPlacingOrder) || (itemCount === 0 && !isPlacingOrder && !authLoading)) {
     return (
       <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -315,27 +315,27 @@ export default function CheckoutPage() {
                   <Image src={item.imageUrl} alt={item.name} width={40} height={40} className="rounded" data-ai-hint="product item" />
                   <div>
                     <p className="text-sm font-medium">{item.name} (x{item.quantity})</p>
-                    <p className="text-xs text-muted-foreground">${item.price.toFixed(2)} each</p>
+                    <p className="text-xs text-muted-foreground">{CURRENCY_SYMBOL}{item.price.toFixed(2)} each</p>
                   </div>
                 </div>
-                <p className="text-sm font-semibold">${(item.price * item.quantity).toFixed(2)}</p>
+                <p className="text-sm font-semibold">{CURRENCY_SYMBOL}{(item.price * item.quantity).toFixed(2)}</p>
               </div>
             ))}
             <div className="mt-4 pt-4 border-t space-y-1">
                 <div className="flex justify-between">
                     <span>Subtotal</span>
-                    <span>${itemsSubtotal.toFixed(2)}</span>
+                    <span>{CURRENCY_SYMBOL}{itemsSubtotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
                     <span className="flex items-center gap-1"><Truck className="h-4 w-4 text-muted-foreground"/>Shipping</span>
                     <span>
                         {isCalculatingDelivery ? 'Calculating...' :
-                         (totalDeliveryCharge !== null ? `$${totalDeliveryCharge.toFixed(2)}` : 'N/A')}
+                         (totalDeliveryCharge !== null ? `${CURRENCY_SYMBOL}${totalDeliveryCharge.toFixed(2)}` : 'N/A')}
                     </span>
                 </div>
                 <div className="flex justify-between font-bold text-lg mt-2 pt-2 border-t">
                     <span>Total</span>
-                    <span>${finalTotalAmount.toFixed(2)}</span>
+                    <span>{CURRENCY_SYMBOL}{finalTotalAmount.toFixed(2)}</span>
                 </div>
             </div>
           </CardContent>
@@ -362,3 +362,5 @@ export default function CheckoutPage() {
     </div>
   );
 }
+
+    

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { ShoppingCart, Minus, Plus } from 'lucide-react';
 import { useCart } from '@/contexts/cart-context';
+import { CURRENCY_SYMBOL } from '@/lib/constants';
 
 interface ProductCardProps {
   product: Product;
@@ -41,7 +42,7 @@ export function ProductCard({ product }: ProductCardProps) {
           </CardTitle>
         </Link>
         <p className="text-lg font-bold text-primary">
-          ${product.price.toFixed(2)}
+          {CURRENCY_SYMBOL}{product.price.toFixed(2)}
         </p>
       </CardContent>
       <CardFooter className="p-3 border-t mt-auto">
@@ -81,3 +82,5 @@ export function ProductCard({ product }: ProductCardProps) {
     </Card>
   );
 }
+
+    

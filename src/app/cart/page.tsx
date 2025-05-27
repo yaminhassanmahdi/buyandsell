@@ -10,7 +10,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { useAuth } from '@/contexts/auth-context';
 import useLocalStorage from '@/hooks/use-local-storage';
 import type { DeliveryChargeSettings, ShippingAddress, Product as ProductType, User as UserType, CartItem } from '@/lib/types';
-import { DELIVERY_CHARGES_STORAGE_KEY, DEFAULT_DELIVERY_CHARGES } from '@/lib/constants';
+import { DELIVERY_CHARGES_STORAGE_KEY, DEFAULT_DELIVERY_CHARGES, CURRENCY_SYMBOL } from '@/lib/constants';
 import { MOCK_PRODUCTS, MOCK_USERS } from '@/lib/mock-data';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
@@ -200,7 +200,7 @@ export default function CartPage() {
                 <div className="flex justify-end items-center mt-2 pt-2 border-t text-sm">
                   <span className="text-muted-foreground mr-2">Shipping for these items:</span>
                   {group.deliveryCharge !== null ? (
-                    <span className="font-semibold">${group.deliveryCharge.toFixed(2)}</span>
+                    <span className="font-semibold">{CURRENCY_SYMBOL}{group.deliveryCharge.toFixed(2)}</span>
                   ) : (
                     <span className="text-xs text-muted-foreground">{group.deliveryMessage || "Calculating..."}</span>
                   )}
@@ -234,21 +234,21 @@ export default function CartPage() {
           <CardContent className="space-y-4">
             <div className="flex justify-between">
               <span>Subtotal</span>
-              <span>${subTotal.toFixed(2)}</span>
+              <span>{CURRENCY_SYMBOL}{subTotal.toFixed(2)}</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="flex items-center gap-1"><Truck className="h-4 w-4 text-muted-foreground"/>Total Shipping</span>
               {isCalculating ? (
                 <span className="text-xs text-muted-foreground">Calculating...</span>
               ) : totalDeliveryCharge !== null ? (
-                <span>${totalDeliveryCharge.toFixed(2)}</span>
+                <span>{CURRENCY_SYMBOL}{totalDeliveryCharge.toFixed(2)}</span>
               ) : (
                 <span className="text-xs text-muted-foreground">{typeof overallDeliveryMessage === 'string' ? overallDeliveryMessage : "Unavailable"}</span>
               )}
             </div>
             <div className="flex justify-between font-bold text-lg border-t pt-4">
               <span>Grand Total</span>
-              <span>${grandTotal.toFixed(2)}</span>
+              <span>{CURRENCY_SYMBOL}{grandTotal.toFixed(2)}</span>
             </div>
           </CardContent>
           <CardFooter>
@@ -274,3 +274,4 @@ export default function CartPage() {
   );
 }
 
+    

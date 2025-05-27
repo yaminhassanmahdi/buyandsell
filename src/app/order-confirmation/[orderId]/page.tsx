@@ -12,6 +12,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Separator } from '@/components/ui/separator';
 import { Loader2, CheckCircle, ShoppingBag, HomeIcon } from 'lucide-react';
 import { format } from 'date-fns';
+import { CURRENCY_SYMBOL } from '@/lib/constants';
 
 export default function OrderConfirmationPage() {
   const params = useParams();
@@ -119,10 +120,10 @@ export default function OrderConfirmationPage() {
                   <div className="flex-grow">
                     <p className="font-medium text-sm">{item.name}</p>
                     <p className="text-xs text-muted-foreground">
-                      Quantity: {item.quantity} x ${item.price.toFixed(2)}
+                      Quantity: {item.quantity} x {CURRENCY_SYMBOL}{item.price.toFixed(2)}
                     </p>
                   </div>
-                  <p className="text-sm font-semibold">${(item.price * item.quantity).toFixed(2)}</p>
+                  <p className="text-sm font-semibold">{CURRENCY_SYMBOL}{(item.price * item.quantity).toFixed(2)}</p>
                 </div>
               ))}
             </div>
@@ -131,17 +132,17 @@ export default function OrderConfirmationPage() {
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-muted-foreground">Items Subtotal:</span>
-              <span className="font-medium">${itemsSubtotal.toFixed(2)}</span>
+              <span className="font-medium">{CURRENCY_SYMBOL}{itemsSubtotal.toFixed(2)}</span>
             </div>
             {order.deliveryChargeAmount !== undefined && (
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Shipping & Handling:</span>
-                <span className="font-medium">${order.deliveryChargeAmount.toFixed(2)}</span>
+                <span className="font-medium">{CURRENCY_SYMBOL}{order.deliveryChargeAmount.toFixed(2)}</span>
               </div>
             )}
             <div className="flex justify-between text-lg font-bold pt-2 border-t mt-2">
               <span>Order Total:</span>
-              <span>${order.totalAmount.toFixed(2)}</span>
+              <span>{CURRENCY_SYMBOL}{order.totalAmount.toFixed(2)}</span>
             </div>
           </div>
         </CardContent>
@@ -161,3 +162,5 @@ export default function OrderConfirmationPage() {
     </div>
   );
 }
+
+    

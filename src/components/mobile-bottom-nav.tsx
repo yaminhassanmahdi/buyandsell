@@ -10,14 +10,15 @@ import { useAuth } from '@/contexts/auth-context';
 import { Button } from '@/components/ui/button';
 import React, { useState } from 'react'; // Import useState
 import { MobileCategorySheet } from './mobile-category-sheet'; // New import
+import { CURRENCY_SYMBOL } from '@/lib/constants';
 
 export function MobileBottomNav() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { itemCount, getCartTotal } = useCart();
-  const { isAuthenticated } = useAuth(); // isAuthenticated is still needed for other logic if any, but not for Sell icon visibility
+  const { isAuthenticated } = useAuth(); 
   const [isClient, setIsClient] = React.useState(false);
-  const [isCategorySheetOpen, setIsCategorySheetOpen] = useState(false); // State for category sheet
+  const [isCategorySheetOpen, setIsCategorySheetOpen] = useState(false); 
 
   React.useEffect(() => {
     setIsClient(true);
@@ -26,7 +27,7 @@ export function MobileBottomNav() {
   // Define all navigation items, including "Sell"
   const navItems = [
     { href: '/', label: 'Home', icon: Home, id: 'home' },
-    { href: '#', label: 'Categories', icon: LayoutGrid, id: 'categories' }, // href '#' as action is handled by button
+    { href: '#', label: 'Categories', icon: LayoutGrid, id: 'categories' }, 
     { href: '/sell', label: 'Sell', icon: PlusCircle, id: 'sell' },
   ];
 
@@ -47,7 +48,7 @@ export function MobileBottomNav() {
                     Checkout
                   </span>
                   <span className="flex items-center justify-center px-2 sm:px-2.5 py-1 bg-primary/90 text-primary-foreground font-semibold text-xs sm:text-sm rounded-r-lg whitespace-nowrap">
-                    ${getCartTotal().toFixed(2)}
+                    {CURRENCY_SYMBOL}{getCartTotal().toFixed(2)}
                   </span>
                 </Link>
               </Button>
@@ -58,7 +59,7 @@ export function MobileBottomNav() {
             "flex justify-around items-center h-full",
             (itemCount > 0 && isClient) ? "w-2/5" : "w-full"
           )}>
-            {navItems.map((item) => { // Iterate over the updated navItems list
+            {navItems.map((item) => { 
               let isActive = false;
               if (item.id === 'home') {
                 isActive = pathname === '/' && !searchParams.has('category') && !searchParams.has('subcategory');
@@ -106,3 +107,5 @@ export function MobileBottomNav() {
     </>
   );
 }
+
+    
