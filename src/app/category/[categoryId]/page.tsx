@@ -20,7 +20,6 @@ const PRODUCTS_PER_SUB_CATEGORY_ROW = 4;
 
 export default function CategoryPage() {
   const params = useParams();
-  const searchParamsHook = useSearchParams(); // Keep this for potential future use
   const router = useRouter();
   const categoryId = params.categoryId as string;
 
@@ -28,7 +27,6 @@ export default function CategoryPage() {
   const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedSubCategoryIdForFilter, setSelectedSubCategoryIdForFilter] = useState<string | null>(null);
 
   const [settings] = useLocalStorage<BusinessSettings>(BUSINESS_SETTINGS_STORAGE_KEY, DEFAULT_BUSINESS_SETTINGS);
   const activeCurrency = useMemo(() => {
@@ -46,7 +44,7 @@ export default function CategoryPage() {
       setTimeout(() => {
         const foundCategory = MOCK_CATEGORIES.find(c => c.id === categoryId);
         if (!foundCategory) {
-          router.push('/'); // Redirect if category not found
+          router.push('/'); 
           return;
         }
         setCategory(foundCategory);
@@ -57,54 +55,32 @@ export default function CategoryPage() {
         const categoryProducts = MOCK_PRODUCTS.filter(p => p.categoryId === categoryId && p.status === 'approved' && p.stock > 0);
         setProducts(categoryProducts);
         setIsLoading(false);
-      }, 300); // Simulate loading
+      }, 300); 
     }
   }, [categoryId, router]);
 
-  const handleSubCategorySelect = (subCategoryId: string | null) => {
-    setSelectedSubCategoryIdForFilter(subCategoryId);
-    // Scroll to the top of the product grid for the selected subcategory or all products
-    const elementId = subCategoryId ? `subcategory-products-${subCategoryId}` : `all-products-section-for-category`;
-    const element = document.getElementById(elementId);
-    
-    if (element) {
-        const headerOffset = 80; // Adjust as needed for your sticky header height
-        const elementPosition = element.getBoundingClientRect().top;
-        const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
-
-        window.scrollTo({
-            top: offsetPosition,
-            behavior: "smooth"
-        });
-    } else if (!subCategoryId) { // If "All" is selected and its specific section doesn't exist, scroll to a general products area
-        const generalProductsArea = document.getElementById('all-products-section-for-category');
-        if (generalProductsArea) {
-             const headerOffset = 80;
-             const elementPosition = generalProductsArea.getBoundingClientRect().top;
-             const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
-             window.scrollTo({ top: offsetPosition, behavior: "smooth"});
-        } else {
-            window.scrollTo({ top: 0, behavior: "smooth"}); // Fallback to top of page
-        }
-    }
-  };
-
-
   if (isLoading) {
     return (
-      <div className="container mx-auto px-4 py-8"> {/* Keep container for loading skeleton */}
-        <Skeleton className="h-10 w-1/3 mb-6" />
+      <div className="py-2">
+        <div className="container mx-auto px-4">
+          <Skeleton className="h-10 w-1/3 my-6" />
+        </div>
         <Skeleton className="h-32 w-full mb-8" /> {/* Placeholder for SubCategoryScroller */}
         <Skeleton className="h-64 w-full mb-8" /> {/* Placeholder for HeroBanner */}
-        <Skeleton className="h-40 w-full mb-8" /> {/* Placeholder for Shop by Style */}
-        {[1, 2].map(i => (
-          <div key={i} className="mb-12">
-            <Skeleton className="h-8 w-1/4 mb-6" />
-            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-              {[...Array(4)].map((_, j) => <ProductCardSkeleton key={j} />)}
+        <div className="container mx-auto px-4">
+           <Skeleton className="h-8 w-1/4 my-6 md:my-12 text-center" />
+           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 justify-items-center mb-8">
+             {[...Array(4)].map((_,j) => <Skeleton key={j} className="aspect-square w-full max-w-[200px] md:max-w-[250px] rounded-lg"/>)}
+           </div>
+          {[1, 2].map(i => (
+            <div key={i} className="mb-12">
+              <Skeleton className="h-8 w-1/4 mb-6" />
+              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+                {[...Array(PRODUCTS_PER_SUB_CATEGORY_ROW)].map((_, j) => <ProductCardSkeleton key={j} />)}
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     );
   }
@@ -128,32 +104,27 @@ export default function CategoryPage() {
     return products.filter(p => p.subCategoryId === subCatId && p.stock > 0).slice(0, PRODUCTS_PER_SUB_CATEGORY_ROW);
   };
 
-  // Filtered products to display either all for the category or for a selected sub-category
-  const displayedProducts = selectedSubCategoryIdForFilter
-    ? products.filter(p => p.subCategoryId === selectedSubCategoryIdForFilter && p.stock > 0)
-    : products.filter(p => p.stock > 0);
-
   return (
-    <div className="py-2"> {/* Removed container from root, added basic py for spacing */}
-      <div className="container mx-auto px-4"> {/* Container for the title */}
+    <div className="py-2">
+      <div className="container mx-auto px-4">
         <h1 className="text-3xl md:text-4xl font-bold my-6 text-center">{category.name}</h1>
       </div>
 
       {subCategories.length > 0 && (
         <SubCategoryScroller 
             subCategories={subCategories} 
-            parentCategoryId={category.id} 
-            onSubCategorySelect={handleSubCategorySelect}
+            parentCategoryId={category.id}
+            // onSubCategorySelect is removed as navigation is now handled by Link
         />
       )}
 
       <HeroBanner />
 
       <section className="my-8 md:my-12">
-        <div className="container mx-auto px-4"> {/* Container for Shop by Style */}
+        <div className="container mx-auto px-4">
           <h2 className="text-2xl md:text-3xl font-bold mb-4 md:mb-6 text-center">Shop by Style</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 justify-items-center">
-            {[1, 2, 3, 4].map(i => ( // Placeholder content for "Shop by Style"
+            {[1, 2, 3, 4].map(i => ( 
               <Link key={i} href="#" className="group block">
                 <div className="aspect-square w-full max-w-[200px] md:max-w-[250px] bg-muted rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow">
                   <Image src={`https://placehold.co/300x300.png`} alt={`Featured Style ${i}`} width={300} height={300} className="object-cover w-full h-full group-hover:scale-105 transition-transform" data-ai-hint="style fashion" />
@@ -164,46 +135,18 @@ export default function CategoryPage() {
         </div>
       </section>
 
-      {/* Display logic for products */}
-      <section id="all-products-section-for-category" className="mb-10 md:mb-12 pt-6 -mt-6">
-        <div className="container mx-auto px-4"> {/* Container for this section */}
-          <div className="flex items-center justify-between mb-4 md:mb-6">
-            <h2 className="text-2xl md:text-3xl font-bold">
-              {selectedSubCategoryIdForFilter 
-                ? subCategories.find(sc => sc.id === selectedSubCategoryIdForFilter)?.name || category.name 
-                : `All Products in ${category.name}`}
-            </h2>
-          </div>
-          {displayedProducts.length > 0 ? (
-            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-              {displayedProducts.map(product => (
-                <ProductCard key={product.id} product={product} />
-              ))}
-            </div>
-          ) : (
-            <Alert variant="default" className="mt-4">
-              <SearchX className="h-5 w-5" />
-              <AlertTitle>No Products Yet</AlertTitle>
-              <AlertDescription>
-                There are currently no products listed for {selectedSubCategoryIdForFilter ? subCategories.find(sc => sc.id === selectedSubCategoryIdForFilter)?.name : category.name}. Check back soon!
-              </AlertDescription>
-            </Alert>
-          )}
-        </div>
-      </section>
-
-      {!selectedSubCategoryIdForFilter && subCategories.map(subCat => (
+      {subCategories.map(subCat => (
         <section key={subCat.id} id={`subcategory-products-${subCat.id}`} className="mb-10 md:mb-12 pt-6 -mt-6">
-          <div className="container mx-auto px-4"> {/* Container for this section */}
+          <div className="container mx-auto px-4">
             <div className="flex items-center justify-between mb-4 md:mb-6">
               <h2 className="text-2xl md:text-3xl font-bold">
                 {subCat.name}
               </h2>
               {products.filter(p => p.subCategoryId === subCat.id && p.stock > 0).length > PRODUCTS_PER_SUB_CATEGORY_ROW && (
                 <Button variant="outline" asChild>
-                  <button onClick={() => handleSubCategorySelect(subCat.id)} className="flex items-center">
+                  <Link href={`/browse?categoryId=${category.id}&subCategoryId=${subCat.id}`}>
                     View All <ArrowRight className="ml-2 h-4 w-4" />
-                  </button>
+                  </Link>
                 </Button>
               )}
             </div>
@@ -225,6 +168,25 @@ export default function CategoryPage() {
           </div>
         </section>
       ))}
+
+       {/* Section for All Products in the Parent Category if no subcategories or to show remaining */}
+      {subCategories.length === 0 && products.length > 0 && (
+        <section className="mb-10 md:mb-12 pt-6 -mt-6">
+          <div className="container mx-auto px-4">
+             <div className="flex items-center justify-between mb-4 md:mb-6">
+                <h2 className="text-2xl md:text-3xl font-bold">
+                  All Products in {category.name}
+                </h2>
+              </div>
+             <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+              {products.map(product => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
 
     </div>
   );

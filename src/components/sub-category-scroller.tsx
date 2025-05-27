@@ -3,32 +3,26 @@
 import type { SubCategory } from '@/lib/types';
 import Image from 'next/image';
 import { Tag } from 'lucide-react';
+import Link from 'next/link'; // Import Link
 
 interface SubCategoryScrollerProps {
   subCategories: SubCategory[];
   parentCategoryId: string;
-  onSubCategorySelect?: (subCategoryId: string | null) => void;
+  // onSubCategorySelect prop is removed as navigation is handled by Link
 }
 
-export function SubCategoryScroller({ subCategories, parentCategoryId, onSubCategorySelect }: SubCategoryScrollerProps) {
+export function SubCategoryScroller({ subCategories, parentCategoryId }: SubCategoryScrollerProps) {
   if (!subCategories || subCategories.length === 0) {
     return null;
   }
-
-  const handleSelect = (subCategoryId: string | null) => {
-    if (onSubCategorySelect) {
-      onSubCategorySelect(subCategoryId);
-      // Scroll to relevant product section - this logic is on the page itself
-    }
-  };
 
   return (
     <div className="py-4 bg-background">
       <div className="container mx-auto px-0 sm:px-4">
         <div className="flex items-start gap-3 sm:gap-4 overflow-x-auto scrollbar-hide py-3 px-4 sm:px-0">
           {/* "All" option for the parent category */}
-          <button
-            onClick={() => handleSelect(null)}
+          <Link
+            href={`/browse?categoryId=${parentCategoryId}`}
             className="flex flex-col items-center justify-start group w-20 min-w-[80px] text-center"
             aria-label={`View all products in this category`}
           >
@@ -38,12 +32,12 @@ export function SubCategoryScroller({ subCategories, parentCategoryId, onSubCate
             <span className="text-xs font-medium text-foreground group-hover:text-primary transition-colors line-clamp-2 break-words">
               All
             </span>
-          </button>
+          </Link>
 
           {subCategories.map((subCategory) => (
-            <button
+            <Link
               key={subCategory.id}
-              onClick={() => handleSelect(subCategory.id)}
+              href={`/browse?categoryId=${parentCategoryId}&subCategoryId=${subCategory.id}`}
               className="flex flex-col items-center justify-start group w-20 min-w-[80px] text-center"
               aria-label={`View products in ${subCategory.name}`}
             >
@@ -66,7 +60,7 @@ export function SubCategoryScroller({ subCategories, parentCategoryId, onSubCate
               <span className="text-xs font-medium text-foreground group-hover:text-primary transition-colors line-clamp-2 break-words">
                 {subCategory.name}
               </span>
-            </button>
+            </Link>
           ))}
         </div>
       </div>

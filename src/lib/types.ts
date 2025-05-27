@@ -16,14 +16,14 @@ export type SubCategory = {
 
 export type CategoryAttributeType = {
   id: string;
-  categoryId: string;
-  name: string;
+  categoryId: string; // Links to parent Category.id
+  name: string; // e.g., "Author", "Color", "Material"
 };
 
 export type CategoryAttributeValue = {
   id: string;
-  attributeTypeId: string;
-  value: string;
+  attributeTypeId: string; // Links to CategoryAttributeType.id
+  value: string; // e.g., "Mr. Rahim", "Red", "Cotton"
 };
 
 export type Product = {
@@ -52,8 +52,8 @@ export type CartItem = {
   price: number;
   imageUrl: string;
   quantity: number;
-  sellerId?: string;
-  stock?: number;
+  sellerId?: string; // To identify the seller of the item in cart
+  stock?: number; // To check against available stock when adding to cart
 };
 
 export type Division = {
@@ -64,22 +64,22 @@ export type Division = {
 export type District = {
   id: string;
   name: string;
-  divisionId: string; // Links to Division id
+  divisionId: string; 
 };
 
-export type Thana = { // Or Upazilla
+export type Thana = { // Also used as Upazilla
   id: string;
   name: string;
-  districtId: string; // Links to District id
+  districtId: string; 
 };
 
 export type ShippingAddress = {
   fullName: string;
   phoneNumber?: string;
-  country: string;
-  division: string; // Stores the name of the division
-  district: string; // Stores the name of the district
-  thana: string;    // Stores the name of the thana/upazilla
+  country: string; // Will default to "Bangladesh"
+  division: string; // Name of the division
+  district: string; // Name of the district
+  thana: string;    // Name of the thana/upazilla
   houseAddress: string;
   roadNumber?: string;
 };
@@ -141,17 +141,15 @@ export type User = {
 
 export type FilterValues = {
   category?: string;
-  brand?: string;
+  // brand?: string; // Brand is now category-specific attribute
   searchTerm?: string;
   minPrice?: number;
   maxPrice?: number;
   sortBy?: 'price_asc' | 'price_desc' | 'date_newest' | 'date_oldest';
+  // Add dynamic attributes here, e.g., color?: string, author?: string
+  [key: string]: any; // For dynamic attribute filters
 };
 
-export type CommissionSetting = {
-  categoryId: string;
-  percentage: number;
-};
 
 export type AdminNavItem = {
   name: string;
@@ -161,31 +159,31 @@ export type AdminNavItem = {
 };
 
 export type Currency = {
-  code: string;
-  symbol: string;
-  name: string;
+  code: string; // e.g., BDT, USD
+  symbol: string; // e.g., ৳, $
+  name: string; // e.g., Bangladeshi Taka, US Dollar
 };
 
 export type BusinessSettings = {
   logoUrl?: string;
-  primaryColor?: string;
-  secondaryColor?: string;
+  primaryColor?: string; // HSL format e.g., "217 91% 60%" or HEX e.g., "#FFFFFF"
+  secondaryColor?: string; // HSL format e.g., "216 34% 90%" or HEX
   faviconUrl?: string;
   appName?: string;
   availableCurrencies: Currency[];
-  defaultCurrencyCode: string;
+  defaultCurrencyCode: string; // Code of the default currency
 };
 
 export type HeroBannerSlide = {
   id: string;
   imageUrl: string;
-  imageHint: string;
+  imageHint: string; // For AI image search if needed
   title: string;
   description: string;
   buttonText: string;
   buttonLink: string;
-  bgColor?: string;
-  textColor?: string;
+  bgColor?: string; // Tailwind background class e.g. bg-blue-600
+  textColor?: string; // Tailwind text color class e.g. text-white
   isActive: boolean;
 };
 
@@ -193,34 +191,31 @@ export type CustomPage = {
   id: string;
   slug: string;
   title: string;
-  content: string;
+  content: string; // Could be Markdown or HTML
   createdAt: Date;
   updatedAt: Date;
 };
 
-export type CategoryPageData = {
-  category: Category;
-  subCategories: SubCategory[];
-};
 
 export type WithdrawalRequestStatus = 'pending' | 'approved' | 'rejected';
 
 export type WithdrawalRequest = {
   id: string;
   userId: string;
-  userName: string;
+  userName: string; // Seller's name
   amount: number;
   withdrawalMethodId: string;
   withdrawalMethodType: WithdrawalMethodType;
-  withdrawalMethodDetails: string; // Summary for quick display
+  withdrawalMethodDetails: string; // Summary like "bKash: ****1234" or Bank Name + Acc ****5678
   status: WithdrawalRequestStatus;
   requestedAt: Date;
   processedAt?: Date;
   adminNote?: string;
 };
 
+
 export type DeliveryChargeSettings = {
-  intraThana: number;
-  intraDistrict: number;
-  interDistrict: number;
+  intraThana: number;    // Seller and buyer in same Thana/Upazilla
+  intraDistrict: number; // Seller and buyer in same District, different Thana/Upazilla
+  interDistrict: number; // Seller and buyer in different Districts
 };
