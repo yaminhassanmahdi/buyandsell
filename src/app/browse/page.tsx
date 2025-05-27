@@ -1,27 +1,43 @@
 
 "use client";
 import React, { useState, useEffect, useMemo } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { MOCK_PRODUCTS, MOCK_CATEGORIES, MOCK_SUBCATEGORIES, MOCK_CATEGORY_ATTRIBUTE_TYPES, MOCK_CATEGORY_ATTRIBUTE_VALUES } from '@/lib/mock-data';
-import type { Product, Category, SubCategory, CategoryAttributeType, CategoryAttributeValue } from '@/lib/types';
+import type { Product, Category, SubCategory, CategoryAttributeType, CategoryAttributeValue, SortByType } from '@/lib/types';
 import { ProductCard } from '@/components/product-card';
 import { ProductListFilters } from '@/components/product-list-filters';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { SearchX } from 'lucide-react';
+import { SearchX, Filter as FilterIcon, ListFilter as SortIcon } from 'lucide-react';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
 import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetClose } from '@/components/ui/sheet';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+const SORT_OPTIONS: { value: SortByType; label: string }[] = [
+  { value: 'date_desc', label: 'Newest First' },
+  { value: 'date_asc', label: 'Oldest First' },
+  { value: 'price_asc', label: 'Price: Low to High' },
+  { value: 'price_desc', label: 'Price: High to Low' },
+  { value: 'name_asc', label: 'Name: A-Z' },
+  { value: 'name_desc', label: 'Name: Z-A' },
+];
 
 export default function BrowsePage() {
-  const searchParams = useSearchParams(); // Use the hook directly
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [isLoading, setIsLoading] = useState(true);
-  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
+  const [displayedProducts, setDisplayedProducts] = useState<Product[]>([]);
   
   const [currentCategory, setCurrentCategory] = useState<Category | undefined>(undefined);
-  
+  const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false);
+  const [sortBy, setSortBy] = useState<SortByType>(
+    (searchParams.get('sortBy') as SortByType) || 'date_desc'
+  );
+
   const categoryId = searchParams.get('categoryId');
 
-  // Memoize derived props for ProductListFilters
   const subCategoriesForFilter = useMemo(() => {
     if (!categoryId) return [];
     return MOCK_SUBCATEGORIES.filter(sc => sc.parentCategoryId === categoryId);
@@ -29,18 +45,17 @@ export default function BrowsePage() {
 
   const attributeTypesForFilter = useMemo(() => {
     if (!categoryId) return [];
-    // Ensure MOCK_CATEGORY_ATTRIBUTE_TYPES is treated as stable or memoize its derivation if complex
     return MOCK_CATEGORY_ATTRIBUTE_TYPES.filter(at => at.categoryId === categoryId);
   }, [categoryId]);
 
-  // Effect to set currentCategory and then filter products
   useEffect(() => {
     setIsLoading(true);
-    // searchParams from the hook is stable and will trigger effect when URL changes
-    const activeCategoryId = searchParams.get('categoryId'); 
+    const activeCategoryId = searchParams.get('categoryId');
     const activeSubCategoryIds = searchParams.getAll('subCategoryId');
     const activeMinPrice = searchParams.get('minPrice');
     const activeMaxPrice = searchParams.get('maxPrice');
+    const currentSortBy = (searchParams.get('sortBy') as SortByType) || 'date_desc';
+    setSortBy(currentSortBy);
 
     const activeDynamicAttributeFilters: Record<string, string[]> = {};
     MOCK_CATEGORY_ATTRIBUTE_TYPES.forEach(attrType => {
@@ -83,14 +98,40 @@ export default function BrowsePage() {
         );
       }
     });
+
+    // Apply sorting
+    products.sort((a, b) => {
+      switch (currentSortBy) {
+        case 'price_asc':
+          return a.price - b.price;
+        case 'price_desc':
+          return b.price - a.price;
+        case 'name_asc':
+          return a.name.localeCompare(b.name);
+        case 'name_desc':
+          return b.name.localeCompare(a.name);
+        case 'date_asc':
+          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        case 'date_desc':
+        default:
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      }
+    });
     
-    setFilteredProducts(products.sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+    setDisplayedProducts(products);
     setIsLoading(false);
-  }, [searchParams]); // Depend directly on searchParams from the hook
+  }, [searchParams]);
+
+  const handleSortChange = (newSortBy: SortByType) => {
+    setSortBy(newSortBy);
+    const newParams = new URLSearchParams(searchParams.toString());
+    newParams.set('sortBy', newSortBy);
+    router.push(`/browse?${newParams.toString()}`, { scroll: false });
+  };
 
   const getPageTitle = () => {
     const selectedSubCategoryIdsFromUrl = searchParams.getAll('subCategoryId');
-    if (!currentCategory) return "Browse Products";
+    if (!currentCategory) return "Browse All Products";
     if (selectedSubCategoryIdsFromUrl.length === 1) {
       const subCat = MOCK_SUBCATEGORIES.find(sc => sc.id === selectedSubCategoryIdsFromUrl[0]);
       return subCat ? `${subCat.name} in ${currentCategory.name}` : currentCategory.name;
@@ -118,7 +159,6 @@ export default function BrowsePage() {
             <>
               <BreadcrumbItem>
                 <BreadcrumbLink asChild>
-                  {/* Link to /browse to allow filtering from parent category */}
                   <Link href={`/browse?categoryId=${currentCategory.id}`}>{currentCategory.name}</Link>
                 </BreadcrumbLink>
               </BreadcrumbItem>
@@ -148,7 +188,8 @@ export default function BrowsePage() {
       </Breadcrumb>
 
       <div className="flex flex-col md:flex-row gap-8">
-        <div className="w-full md:w-72 lg:w-80 shrink-0">
+        {/* Desktop Filters Sidebar */}
+        <div className="hidden md:block w-full md:w-72 lg:w-80 shrink-0">
           <ProductListFilters
             currentCategory={currentCategory} 
             subCategoriesForCurrentCategory={subCategoriesForFilter}
@@ -158,14 +199,60 @@ export default function BrowsePage() {
         </div>
 
         <main className="flex-1">
-          <h1 className="text-2xl md:text-3xl font-bold mb-6">{getPageTitle()}</h1>
-          {isLoading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[...Array(6)].map((_, i) => <ProductCardSkeleton key={i} />)}
+          <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
+            <h1 className="text-2xl md:text-3xl font-bold">{getPageTitle()}</h1>
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              {/* Mobile Filter Button */}
+              <div className="md:hidden flex-grow sm:flex-grow-0">
+                <Sheet open={isFilterSheetOpen} onOpenChange={setIsFilterSheetOpen}>
+                  <SheetTrigger asChild>
+                    <Button variant="outline" className="w-full">
+                      <FilterIcon className="mr-2 h-4 w-4" /> Filter
+                    </Button>
+                  </SheetTrigger>
+                  <SheetContent side="right" className="w-[300px] p-0">
+                     <SheetHeader className="p-4 border-b">
+                        <SheetTitle>Filter Products</SheetTitle>
+                         <SheetClose className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary" />
+                     </SheetHeader>
+                     <div className="p-4">
+                        <ProductListFilters
+                            currentCategory={currentCategory} 
+                            subCategoriesForCurrentCategory={subCategoriesForFilter}
+                            attributeTypesForCurrentCategory={attributeTypesForFilter}
+                            allAttributeValues={MOCK_CATEGORY_ATTRIBUTE_VALUES}
+                            onApplyFilters={() => setIsFilterSheetOpen(false)} // Close sheet on apply
+                        />
+                     </div>
+                  </SheetContent>
+                </Sheet>
+              </div>
+              {/* Sorting Dropdown */}
+              <div className="flex-grow sm:flex-grow-0 sm:w-[200px]">
+                <Select value={sortBy} onValueChange={(value) => handleSortChange(value as SortByType)}>
+                  <SelectTrigger className="w-full">
+                    <SortIcon className="mr-2 h-4 w-4" />
+                    <SelectValue placeholder="Sort by..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SORT_OPTIONS.map(option => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-          ) : filteredProducts.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredProducts.map(product => (
+          </div>
+
+          {isLoading ? (
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+              {[...Array(8)].map((_, i) => <ProductCardSkeleton key={i} />)}
+            </div>
+          ) : displayedProducts.length > 0 ? (
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+              {displayedProducts.map(product => (
                 <ProductCard key={product.id} product={product} />
               ))}
             </div>
@@ -196,3 +283,4 @@ const ProductCardSkeleton = () => (
     </div>
   </div>
 );
+

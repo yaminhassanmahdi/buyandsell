@@ -18,6 +18,7 @@ interface ProductListFiltersProps {
   subCategoriesForCurrentCategory: SubCategory[];
   attributeTypesForCurrentCategory: CategoryAttributeType[];
   allAttributeValues: CategoryAttributeValue[];
+  onApplyFilters?: () => void; // Optional: callback for when filters are applied, e.g., to close mobile sheet
 }
 
 export function ProductListFilters({
@@ -25,21 +26,21 @@ export function ProductListFilters({
   subCategoriesForCurrentCategory,
   attributeTypesForCurrentCategory,
   allAttributeValues,
+  onApplyFilters,
 }: ProductListFiltersProps) {
   const router = useRouter();
-  const searchParams = useSearchParams(); // Use the hook from next/navigation
+  const searchParams = useSearchParams();
 
   const [settings] = useLocalStorage<BusinessSettings>(BUSINESS_SETTINGS_STORAGE_KEY, DEFAULT_BUSINESS_SETTINGS);
   const activeCurrency = settings.availableCurrencies.find(c => c.code === settings.defaultCurrencyCode) || settings.availableCurrencies[0] || { symbol: '?' };
   const currencySymbol = activeCurrency.symbol;
 
-  // State for controlled inputs, initialized from searchParams
   const [selectedSubCategoryIds, setSelectedSubCategoryIds] = useState<string[]>([]);
   const [selectedAttributeValues, setSelectedAttributeValues] = useState<Record<string, string[]>>({});
   const [minPrice, setMinPrice] = useState<string>('');
   const [maxPrice, setMaxPrice] = useState<string>('');
+  const [initialLoad, setInitialLoad] = useState(true);
 
-  // Effect to synchronize local filter state with URL searchParams and currentCategory changes
   useEffect(() => {
     const currentParams = new URLSearchParams(searchParams.toString());
     setSelectedSubCategoryIds(currentParams.getAll('subCategoryId') || []);
@@ -52,6 +53,7 @@ export function ProductListFilters({
     
     setMinPrice(currentParams.get('minPrice') || '');
     setMaxPrice(currentParams.get('maxPrice') || '');
+    setInitialLoad(false);
   }, [searchParams, attributeTypesForCurrentCategory, currentCategory?.id]);
 
 
@@ -68,8 +70,8 @@ export function ProductListFilters({
         ? [...currentValuesForType, valueId]
         : currentValuesForType.filter(id => id !== valueId);
       
-      if (newValuesForType.length === 0) {
-        const { [attributeTypeId]: _, ...rest } = prev;
+      if (newValuesForType.length === 0 && Object.keys(prev).includes(attributeTypeId)) {
+        const { [attributeTypeId]: _, ...rest } = prev; // Remove key if no values selected for it
         return rest;
       }
       return { ...prev, [attributeTypeId]: newValuesForType };
@@ -77,9 +79,16 @@ export function ProductListFilters({
   };
 
   const applyFilters = () => {
-    const newParams = new URLSearchParams();
+    const newParams = new URLSearchParams(searchParams.toString()); // Preserve existing params like sortBy
+
+    // Clear old filter params before setting new ones to avoid duplicates if some are removed
+    newParams.delete('subCategoryId');
+    attributeTypesForCurrentCategory.forEach(attrType => newParams.delete(attrType.id));
+    newParams.delete('minPrice');
+    newParams.delete('maxPrice');
+
     if (currentCategory) {
-      newParams.set('categoryId', currentCategory.id);
+      newParams.set('categoryId', currentCategory.id); // Always keep current category
     }
 
     selectedSubCategoryIds.forEach(id => newParams.append('subCategoryId', id));
@@ -90,8 +99,11 @@ export function ProductListFilters({
 
     if (minPrice) newParams.set('minPrice', minPrice);
     if (maxPrice) newParams.set('maxPrice', maxPrice);
-
+    
     router.push(`/browse?${newParams.toString()}`, { scroll: false });
+    if (onApplyFilters) {
+      onApplyFilters();
+    }
   };
 
   const clearFilters = () => {
@@ -99,34 +111,46 @@ export function ProductListFilters({
     setSelectedAttributeValues({});
     setMinPrice('');
     setMaxPrice('');
-    const newParams = new URLSearchParams();
+    const newParams = new URLSearchParams(searchParams.toString());
+    newParams.delete('subCategoryId');
+    attributeTypesForCurrentCategory.forEach(attrType => newParams.delete(attrType.id));
+    newParams.delete('minPrice');
+    newParams.delete('maxPrice');
+    
+    // Keep categoryId if it's set
     if (currentCategory) {
-      newParams.set('categoryId', currentCategory.id);
+        newParams.set('categoryId', currentCategory.id);
+    } else {
+        newParams.delete('categoryId');
     }
+
     router.push(`/browse?${newParams.toString()}`, { scroll: false });
+    if (onApplyFilters) {
+        onApplyFilters();
+      }
   };
 
-  if (!currentCategory) {
-    // Fallback or different filter set for when no category is selected (e.g. on a global /browse page)
-    // For now, we only show detailed filters if a category is context.
-    // You might want a global search or top-level category filter here instead.
+  if (!currentCategory && !initialLoad) {
     return <div className="p-4 text-sm text-muted-foreground">Select a main category to see more filters.</div>;
+  }
+  if (initialLoad && !currentCategory) {
+    return <div className="p-4 text-sm text-muted-foreground">Loading filters...</div>;
   }
   
   const defaultOpenAccordions = ['subcategories', 'price', ...(attributeTypesForCurrentCategory || []).map(at => at.id)];
 
   return (
-    <div className="w-full md:w-72 lg:w-80 space-y-6 p-1 sticky top-20 h-[calc(100vh-10rem)]">
+    <div className="w-full space-y-6">
       <div className="flex items-center justify-between pb-3 border-b">
-        <h3 className="text-xl font-semibold flex items-center">
-          <Filter className="mr-2 h-5 w-5" /> Filters for {currentCategory.name}
+        <h3 className="text-lg font-semibold flex items-center">
+          <Filter className="mr-2 h-4 w-4" /> Filters {currentCategory ? `for ${currentCategory.name}`: ""}
         </h3>
         <Button variant="ghost" size="sm" onClick={clearFilters} className="text-xs">
           <X className="mr-1 h-3 w-3" /> Clear All
         </Button>
       </div>
 
-      <ScrollArea className="h-[calc(100%-120px)] pr-4">
+      <ScrollArea className="h-[calc(100%-120px)] pr-2"> {/* Reduced height to account for apply button */}
         <Accordion type="multiple" defaultValue={defaultOpenAccordions} className="w-full">
           {subCategoriesForCurrentCategory.length > 0 && (
             <AccordionItem value="subcategories">
@@ -198,7 +222,7 @@ export function ProductListFilters({
           </AccordionItem>
         </Accordion>
       </ScrollArea>
-      <div className="pt-4 border-t">
+      <div className="pt-4 border-t absolute bottom-0 left-0 right-0 p-4 bg-background md:static md:bg-transparent md:p-0">
         <Button onClick={applyFilters} className="w-full">Apply Filters</Button>
       </div>
     </div>

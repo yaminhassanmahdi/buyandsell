@@ -1,4 +1,5 @@
 
+
 export type Category = {
   id: string;
   name: string;
@@ -84,6 +85,14 @@ export type ShippingAddress = {
   roadNumber?: string;
 };
 
+export type SortByType = 
+  | 'date_desc' 
+  | 'date_asc' 
+  | 'price_asc' 
+  | 'price_desc' 
+  | 'name_asc' 
+  | 'name_desc';
+
 export type OrderStatus = 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'accepted' | 'handed_over' | 'in_shipping';
 export type PaymentStatus = 'paid' | 'unpaid';
 
@@ -139,16 +148,8 @@ export type User = {
   withdrawalMethods?: WithdrawalMethod[];
 };
 
-export type FilterValues = {
-  category?: string;
-  // brand?: string; // Brand is now category-specific attribute
-  searchTerm?: string;
-  minPrice?: number;
-  maxPrice?: number;
-  sortBy?: 'price_asc' | 'price_desc' | 'date_newest' | 'date_oldest';
-  // Add dynamic attributes here, e.g., color?: string, author?: string
-  [key: string]: any; // For dynamic attribute filters
-};
+// FilterValues removed as ProductListFilters handles its own state now
+// export type FilterValues = { ... } 
 
 
 export type AdminNavItem = {
@@ -219,3 +220,4 @@ export type DeliveryChargeSettings = {
   intraDistrict: number; // Seller and buyer in same District, different Thana/Upazilla
   interDistrict: number; // Seller and buyer in different Districts
 };
+
