@@ -81,7 +81,12 @@ export default function AdminDistrictsPage() {
 
   const handleDelete = (districtId: string) => {
     if (window.confirm("Are you sure you want to delete this district? This might affect thanas under it.")) {
-      setDistricts(prevDistricts => prevDistricts.filter(d => d.id !== districtId));
+      console.log("Attempting to delete district with ID:", districtId);
+      setDistricts(prevDistricts => {
+        const updatedDistricts = prevDistricts.filter(d => d.id !== districtId);
+        console.log("Previous districts count:", prevDistricts.length, "New districts count:", updatedDistricts.length);
+        return updatedDistricts;
+      });
       toast({ title: "District Deleted", description: "The district has been deleted." });
     }
   };

@@ -100,7 +100,12 @@ export default function AdminThanasPage() {
 
   const handleDelete = (thanaId: string) => {
     if (window.confirm("Are you sure you want to delete this Thana/Upazilla?")) {
-      setThanas(prevThanas => prevThanas.filter(t => t.id !== thanaId));
+      console.log("Attempting to delete thana with ID:", thanaId);
+      setThanas(prevThanas => {
+        const updatedThanas = prevThanas.filter(t => t.id !== thanaId);
+        console.log("Previous thanas count:", prevThanas.length, "New thanas count:", updatedThanas.length);
+        return updatedThanas;
+      });
       toast({ title: "Thana/Upazilla Deleted", description: "The Thana/Upazilla has been deleted." });
     }
   };

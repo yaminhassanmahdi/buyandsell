@@ -70,7 +70,12 @@ export default function AdminDivisionsPage() {
 
   const handleDelete = (divisionId: string) => {
     if (window.confirm("Are you sure you want to delete this division? This might affect districts and thanas under it.")) {
-      setDivisions(prevDivisions => prevDivisions.filter(d => d.id !== divisionId));
+      console.log("Attempting to delete division with ID:", divisionId);
+      setDivisions(prevDivisions => {
+        const updatedDivisions = prevDivisions.filter(d => d.id !== divisionId);
+        console.log("Previous divisions count:", prevDivisions.length, "New divisions count:", updatedDivisions.length);
+        return updatedDivisions;
+      });
       toast({ title: "Division Deleted", description: "The division has been deleted." });
     }
   };
