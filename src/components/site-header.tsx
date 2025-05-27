@@ -7,9 +7,9 @@ import Link from 'next/link';
 import { PlusCircle, Search, Menu } from 'lucide-react';
 import { Input } from './ui/input';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { MainNav } from './main-nav'; // Keep for mobile drawer
-import { MOCK_CATEGORIES } from '@/lib/mock-data'; // For mobile drawer categories
-import { useAuth } from '@/contexts/auth-context'; // For mobile drawer sell link
+// MainNav import is removed as per previous refactor, if mobile nav needs categories, it's handled differently.
+import { MOCK_CATEGORIES } from '@/lib/mock-data';
+import { useAuth } from '@/contexts/auth-context';
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
@@ -27,9 +27,9 @@ export function SiteHeader() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 max-w-screen-2xl items-center">
+      <div className="container flex h-16 max-w-screen-2xl items-center px-2 sm:px-4">
         {/* Mobile Menu */}
-        <div className="md:hidden mr-4">
+        <div className="md:hidden mr-2 sm:mr-4">
           <Sheet>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon">
@@ -50,7 +50,7 @@ export function SiteHeader() {
                   <div className="pt-4">
                     <h3 className="mb-2 px-0 text-lg font-semibold tracking-tight">Categories</h3>
                     {MOCK_CATEGORIES.map((category) => (
-                       <Link key={category.id} href={`/?category=${category.id}`} className="block py-2 text-muted-foreground hover:text-primary">
+                       <Link key={category.id} href={`/category/${category.id}`} className="block py-2 text-muted-foreground hover:text-primary">
                         {category.name}
                       </Link>
                     ))}
@@ -60,9 +60,9 @@ export function SiteHeader() {
                       <div className="pt-4 mt-4 border-t">
                         <h3 className="mb-2 px-0 text-lg font-semibold tracking-tight">My Account</h3>
                         <Link href="/account/orders" className="block py-2 text-muted-foreground hover:text-primary">My Orders</Link>
-                        <Link href="/account/settings" className="block py-2 text-muted-foreground hover:text-primary">Account Settings</Link>
-                         <Link href="/account/my-products" className="block py-2 text-muted-foreground hover:text-primary">My Products</Link>
+                        <Link href="/account/my-products" className="block py-2 text-muted-foreground hover:text-primary">My Products</Link>
                         <Link href="/account/my-earnings" className="block py-2 text-muted-foreground hover:text-primary">My Earnings</Link>
+                        <Link href="/account/settings" className="block py-2 text-muted-foreground hover:text-primary">Account Settings</Link>
                       </div>
                      </>
                    )}
@@ -72,29 +72,40 @@ export function SiteHeader() {
           </Sheet>
         </div>
         
-        <div className="hidden md:flex">
+        {/* Logo - always visible after mobile menu toggle */}
+        <div className="flex-shrink-0">
           <Logo />
         </div>
 
-        <form onSubmit={handleSearchSubmit} className="flex-1 mx-4 md:mx-8">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        {/* Search Bar Wrapper - Takes available space and centers the form */}
+        <div className="flex-1 flex justify-center items-center mx-2 sm:mx-4">
+          <form onSubmit={handleSearchSubmit} className="relative w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />
             <Input
               type="search"
-              placeholder="Search for Products, Brands and More"
+              placeholder="Search products..."
               className="w-full rounded-lg bg-muted pl-10 pr-4 py-2 h-10"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
-          </div>
-        </form>
-
-        <div className="hidden md:flex items-center space-x-4">
-          <UserNav />
+          </form>
         </div>
-         {/* Cart icon for mobile, UserNav handles its own cart icon on desktop */}
-        <div className="md:hidden">
-           <UserNav />
+
+        {/* Right side actions - common container */}
+        <div className="flex items-center gap-1 sm:gap-2 ml-auto flex-shrink-0">
+            {/* Sell Now Button */}
+            <Link href="/sell" passHref>
+                <Button
+                    variant="default"
+                    className="bg-accent hover:bg-accent/90 text-accent-foreground px-2 sm:px-3 h-10"
+                >
+                    <PlusCircle className="h-5 w-5" />
+                    <span className="ml-1 hidden sm:inline">Sell Now</span>
+                </Button>
+            </Link>
+
+            {/* User Navigation (includes Cart and Login/UserMenu) */}
+            <UserNav />
         </div>
       </div>
     </header>
