@@ -7,14 +7,15 @@ import Link from 'next/link';
 import { PlusCircle, Search, Menu, Handshake } from 'lucide-react'; 
 import { Input } from './ui/input';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { MOCK_CATEGORIES } from '@/lib/mock-data';
+import { USER_NAVIGATION } from '@/lib/constants'; 
+import { MOCK_CATEGORIES } from '@/lib/mock-data'; // Corrected import path
 import { useAuth } from '@/contexts/auth-context';
 import React, { useState, useEffect } from 'react'; 
 import { useRouter } from 'next/navigation';
 import Image from 'next/image'; 
 import useLocalStorage from '@/hooks/use-local-storage'; 
 import type { BusinessSettings } from '@/lib/types'; 
-import { BUSINESS_SETTINGS_STORAGE_KEY, DEFAULT_BUSINESS_SETTINGS, APP_NAME, USER_NAVIGATION } from '@/lib/constants'; // Added USER_NAVIGATION
+import { BUSINESS_SETTINGS_STORAGE_KEY, DEFAULT_BUSINESS_SETTINGS, APP_NAME } from '@/lib/constants';
 
 export function SiteHeader() {
   const { isAuthenticated } = useAuth();
@@ -44,7 +45,7 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 max-w-screen-2xl items-center">
-        {/* Mobile Menu */}
+        {/* Mobile Menu Trigger */}
         <div className="md:hidden mr-2 sm:mr-4">
           <Sheet>
             <SheetTrigger asChild>
@@ -56,7 +57,7 @@ export function SiteHeader() {
             <SheetContent side="left" className="w-3/4 sm:w-1/2">
               <div className="py-6">
                 <div className="px-4 mb-6">
-                  {/* Display full logo in mobile sheet header for branding */}
+                  {/* Using Logo component directly for mobile drawer as well, it handles favicon itself */}
                   <Logo />
                 </div>
                 <nav className="grid gap-2 px-4">
@@ -91,13 +92,14 @@ export function SiteHeader() {
         </div>
         
         {/* Logo / Favicon Section */}
-        <Link href="/" className="flex items-center flex-shrink-0 text-primary hover:text-primary/90 transition-colors mr-2 sm:mr-4">
-          {/* Desktop: Render the full Logo component */}
-          <div className="hidden md:block">
-            <Logo />
-          </div>
-          {/* Mobile: Render Favicon */}
-          <div className="block md:hidden h-8 w-8 flex items-center justify-center">
+        {/* Desktop: Render the full Logo component */}
+        <div className="hidden md:block mr-2 sm:mr-4 flex-shrink-0">
+          <Logo />
+        </div>
+        
+        {/* Mobile: Render the Favicon */}
+        <Link href="/" className="md:hidden flex items-center flex-shrink-0 text-primary hover:text-primary/90 transition-colors mr-2 sm:mr-4">
+          <div className="h-8 w-8 flex items-center justify-center">
             {isClient && faviconUrl && faviconUrl !== DEFAULT_BUSINESS_SETTINGS.faviconUrl ? (
               <Image
                 src={faviconUrl}
@@ -107,12 +109,12 @@ export function SiteHeader() {
                 className="object-contain"
               />
             ) : (
-              <Handshake className="h-7 w-7" /> // Fallback icon
+              <Handshake className="h-7 w-7" /> 
             )}
           </div>
         </Link>
 
-        {/* Search Bar Wrapper - Takes available space and centers the form */}
+        {/* Search Bar Wrapper */}
         <div className="flex-1 flex justify-center items-center mx-1 sm:mx-2 px-1 sm:px-2">
           <form onSubmit={handleSearchSubmit} className="relative w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />
@@ -126,9 +128,8 @@ export function SiteHeader() {
           </form>
         </div>
 
-        {/* Right side actions - common container */}
+        {/* Right side actions */}
         <div className="flex items-center gap-1 sm:gap-2 ml-auto flex-shrink-0">
-            {/* Sell Now Button */}
             <Link href="/sell" passHref>
                 <Button
                     variant="default"
@@ -138,8 +139,6 @@ export function SiteHeader() {
                     <span className="hidden sm:inline">Sell Now</span>
                 </Button>
             </Link>
-
-            {/* User Navigation (includes Cart and Login/UserMenu) */}
             <UserNav />
         </div>
       </div>
