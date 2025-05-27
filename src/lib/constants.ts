@@ -13,11 +13,11 @@ import {
 export let APP_NAME = '2ndhandbajar.com'; // Made it mutable
 
 export const INITIAL_CATEGORIES: Category[] = [
-  { id: 'electronics', name: 'Electronics' },
-  { id: 'fashion', name: 'Fashion' },
-  { id: 'home-garden', name: 'Home & Garden' },
-  { id: 'books', name: 'Books' },
-  { id: 'others', name: 'Others' },
+  { id: 'electronics', name: 'Electronics', imageUrl: 'https://placehold.co/80x80.png', imageHint: 'electronics gadget' },
+  { id: 'fashion', name: 'Fashion', imageUrl: 'https://placehold.co/80x80.png', imageHint: 'fashion clothing' },
+  { id: 'home-garden', name: 'Home & Garden', imageUrl: 'https://placehold.co/80x80.png', imageHint: 'home decor' },
+  { id: 'books', name: 'Books', imageUrl: 'https://placehold.co/80x80.png', imageHint: 'books literature' },
+  { id: 'others', name: 'Others', imageUrl: 'https://placehold.co/80x80.png', imageHint: 'various items' },
 ];
 
 export const INITIAL_BRANDS: Brand[] = [
@@ -188,8 +188,8 @@ export const SHIPPING_METHODS_STORAGE_KEY = 'shippingMethods';
 export const DEFAULT_BUSINESS_SETTINGS: BusinessSettings = {
   appName: '2ndhandbajar.com',
   logoUrl: '/logo-placeholder.png', // Default path to a placeholder logo
-  primaryColor: '217 91% 60%', // HSL for --primary
-  secondaryColor: '216 34% 90%', // HSL for --secondary
+  primaryColor: '47 92% 52%',      // HSL for --primary (Vivid Yellow #F0BB23 from PRD)
+  secondaryColor: '77 30% 60%',    // HSL for --accent (Soft Green #9DBD5B from PRD, used as secondary)
   faviconUrl: '/favicon.ico',
 };
 
@@ -232,22 +232,22 @@ export const DEFAULT_HERO_BANNER_SLIDES: HeroBannerSlide[] = [
   },
 ];
 
-export const MOCK_CUSTOM_PAGES: CustomPage[] = [ // Added MOCK_CUSTOM_PAGES export for consistency, though it's also used in mock-data.ts
+export const MOCK_CUSTOM_PAGES: CustomPage[] = [ 
   {
     id: 'page-privacy',
     slug: 'privacy-policy',
     title: 'Privacy Policy',
     content: '## Our Privacy Policy\n\nThis is a placeholder for the privacy policy content. Please replace this with your actual policy.\n\nWe collect information to provide better services to all our users.',
-    createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // Approx 30 days ago
-    updatedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),  // Approx 5 days ago
+    createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), 
+    updatedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),  
   },
   {
     id: 'page-terms',
     slug: 'terms-and-conditions',
     title: 'Terms and Conditions',
     content: '## Terms and Conditions\n\nWelcome to our website. If you continue to browse and use this website, you are agreeing to comply with and be bound by the following terms and conditions of use...',
-    createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // Approx 30 days ago
-    updatedAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000), // Approx 10 days ago
+    createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), 
+    updatedAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000), 
   },
 ];
 

@@ -2,6 +2,8 @@
 export type Category = {
   id: string;
   name: string;
+  imageUrl?: string; // Added for Category Bar redesign
+  imageHint?: string; // Added for Category Bar redesign
 };
 
 export type SubCategory = {

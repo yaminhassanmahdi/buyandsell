@@ -1,6 +1,6 @@
 
 import type { Product, User, Order, ShippingAddress, Category, SubCategory, Brand, WithdrawalRequest, PaymentStatus, HeroBannerSlide, CustomPage } from './types';
-import { INITIAL_CATEGORIES, INITIAL_BRANDS, DEFAULT_HERO_BANNER_SLIDES, MOCK_CUSTOM_PAGES as DEFAULT_CUSTOM_PAGES } from './constants'; // DEFAULT_HERO_BANNER_SLIDES for admin panel default
+import { INITIAL_CATEGORIES, INITIAL_BRANDS, MOCK_CUSTOM_PAGES as DEFAULT_CUSTOM_PAGES } from './constants'; // Removed DEFAULT_HERO_BANNER_SLIDES import
 
 const createPastDate = (daysAgo: number): Date => {
   const date = new Date();
@@ -8,7 +8,12 @@ const createPastDate = (daysAgo: number): Date => {
   return date;
 };
 
-export let MOCK_CATEGORIES: Category[] = INITIAL_CATEGORIES.map(cat => ({ id: cat.id, name: cat.name }));
+export let MOCK_CATEGORIES: Category[] = INITIAL_CATEGORIES.map(cat => ({ 
+  id: cat.id, 
+  name: cat.name,
+  imageUrl: cat.imageUrl, // Ensure imageUrl is mapped
+  imageHint: cat.imageHint, // Ensure imageHint is mapped
+}));
 
 export let MOCK_SUBCATEGORIES: SubCategory[] = [
   { id: 'sc1', name: 'Smartphones', parentCategoryId: 'electronics' },
@@ -210,14 +215,16 @@ export const MOCK_ORDERS: Order[] = [
     items: [
       { id: 'prod1', name: 'Vintage Leather Jacket', price: 75, imageUrl: 'https://placehold.co/100x100.png', quantity: 1, sellerId: 'user2' },
     ],
-    totalAmount: 75 + 70,
+    totalAmount: 75 + 70, // item price + delivery
     deliveryChargeAmount: 70,
     shippingAddress: MOCK_USERS.find(u => u.id === 'user1')?.defaultShippingAddress || MOCK_SHIPPING_ADDRESS_BANGLADESH,
     status: 'delivered',
     paymentStatus: 'paid',
-    platformCommission: 0,
+    platformCommission: 7.5, // Assuming 10% commission on fashion for this example
     createdAt: createPastDate(7),
     updatedAt: createPastDate(3),
+    selectedShippingMethodId: 'standard-delivery',
+    shippingMethodName: 'Standard Delivery',
   },
   {
     id: 'order2',
@@ -226,14 +233,16 @@ export const MOCK_ORDERS: Order[] = [
       { id: 'prod2', name: 'Used iPhone X', price: 250, imageUrl: 'https://placehold.co/100x100.png', quantity: 1, sellerId: 'user2' },
       { id: 'prod5', name: 'Running Shoes Size 9', price: 40, imageUrl: 'https://placehold.co/100x100.png', quantity: 1, sellerId: 'user1' },
     ],
-    totalAmount: 290 + 130,
+    totalAmount: 290 + 130, // item prices + delivery
     deliveryChargeAmount: 130,
     shippingAddress: { ...(MOCK_USERS.find(u => u.id === 'user1')?.defaultShippingAddress || MOCK_SHIPPING_ADDRESS_BANGLADESH), fullName: 'John Doe Updated', district: 'Gazipur', thana: 'Gazipur Sadar' },
     status: 'delivered',
     paymentStatus: 'unpaid',
-    platformCommission: 0,
+    platformCommission: 0, // Not paid yet
     createdAt: createPastDate(3),
     updatedAt: createPastDate(1),
+    selectedShippingMethodId: 'express-delivery',
+    shippingMethodName: 'Express Delivery (Next Day)',
   },
   {
     id: 'order3',
@@ -241,7 +250,7 @@ export const MOCK_ORDERS: Order[] = [
     items: [
       { id: 'prod4', name: 'Samsung Galaxy S20', price: 300, imageUrl: 'https://placehold.co/100x100.png', quantity: 1, sellerId: 'user2' },
     ],
-    totalAmount: 300 + 110,
+    totalAmount: 300 + 110, // item price + delivery
     deliveryChargeAmount: 110,
     shippingAddress: { ...MOCK_SHIPPING_ADDRESS_BANGLADESH, fullName: 'Jane Smith BD', division: 'Chittagong', district: 'Chittagong', thana: 'Kotwali (Chittagong)' },
     status: 'processing',
@@ -249,6 +258,8 @@ export const MOCK_ORDERS: Order[] = [
     platformCommission: 0,
     createdAt: createPastDate(1),
     updatedAt: createPastDate(0),
+    selectedShippingMethodId: 'standard-delivery',
+    shippingMethodName: 'Standard Delivery',
   },
 ];
 
@@ -266,11 +277,4 @@ export let MOCK_WITHDRAWAL_REQUESTS: WithdrawalRequest[] = [
   }
 ];
 
-// MOCK_HERO_BANNER_SLIDES is removed from here.
-// Its default definition is now in src/lib/constants.ts as DEFAULT_HERO_BANNER_SLIDES.
-// The admin panel will use localStorage, seeded by this default.
-
-// MOCK_CUSTOM_PAGES is also managed by localStorage, seeded by DEFAULT_CUSTOM_PAGES from constants.ts
 export let MOCK_CUSTOM_PAGES: CustomPage[] = [...DEFAULT_CUSTOM_PAGES];
-
-  

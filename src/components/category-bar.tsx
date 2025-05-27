@@ -1,25 +1,38 @@
 
 "use client";
 import Link from 'next/link';
-import { MOCK_CATEGORIES } from '@/lib/mock-data'; // Updated import
-import Image from 'next/image'; // For potential future image use
-import { Tag } from 'lucide-react'; // Default icon if needed
+import { MOCK_CATEGORIES } from '@/lib/mock-data'; 
+import Image from 'next/image';
+import { Tag } from 'lucide-react';
 
 export function CategoryBar() {
   return (
     <div className="bg-background shadow-sm">
-      <div className="container mx-auto px-4">
-        <div className="flex items-center justify-center md:justify-start overflow-x-auto scrollbar-hide py-3 md:py-0">
-          {MOCK_CATEGORIES.map((category) => ( // Use MOCK_CATEGORIES
+      <div className="container mx-auto px-0 sm:px-4">
+        <div className="flex items-start gap-3 sm:gap-4 overflow-x-auto scrollbar-hide py-3 px-4 sm:px-0">
+          {MOCK_CATEGORIES.map((category) => (
             <Link
               key={category.id}
-              href={`/?category=${category.id}`} // Simple filtering for now
-              className="flex flex-col items-center justify-center p-2 md:p-3 text-center group min-w-[80px] md:min-w-[100px]"
+              href={`/?category=${category.id}`}
+              className="flex flex-col items-center justify-start group w-20 min-w-[80px] text-center"
             >
-              {/* Icon rendering removed as Category type no longer has icon property */}
-              {/* You can add a default icon or specific logic here if needed */}
-              <Tag className="h-6 w-6 md:h-7 md:w-7 text-muted-foreground group-hover:text-primary transition-colors" />
-              <span className="mt-1.5 text-xs md:text-sm font-medium text-foreground group-hover:text-primary transition-colors whitespace-nowrap">
+              <div className="relative w-16 h-16 mb-1.5 rounded-full overflow-hidden border-2 border-border group-hover:border-primary transition-all duration-200 ease-in-out">
+                {category.imageUrl ? (
+                  <Image
+                    src={category.imageUrl}
+                    alt={category.name}
+                    fill
+                    sizes="64px" // Equivalent to w-16
+                    className="object-cover group-hover:scale-105 transition-transform duration-200 ease-in-out"
+                    data-ai-hint={category.imageHint || category.name.toLowerCase()}
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-muted rounded-full">
+                    <Tag className="h-8 w-8 text-muted-foreground" />
+                  </div>
+                )}
+              </div>
+              <span className="text-xs font-medium text-foreground group-hover:text-primary transition-colors line-clamp-2 break-words">
                 {category.name}
               </span>
             </Link>
@@ -29,13 +42,3 @@ export function CategoryBar() {
     </div>
   );
 }
-
-// Helper for hiding scrollbar (optional, can be in globals.css too)
-// Add to your globals.css or keep in a style tag if preferred locally.
-// .scrollbar-hide::-webkit-scrollbar {
-//   display: none;
-// }
-// .scrollbar-hide {
-//   -ms-overflow-style: none;  /* IE and Edge */
-//   scrollbar-width: none;  /* Firefox */
-// }
