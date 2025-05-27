@@ -87,8 +87,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     <div className="flex h-16 items-center px-6">
                       <Logo />
                     </div>
-                    {/* You can add a SheetTitle here if needed, or keep it visually clean */}
-                    {/* <SheetTitle className="sr-only">Admin Navigation</SheetTitle> */}
+                    <SheetTitle className="sr-only">Admin Navigation</SheetTitle>
                   </SheetHeader>
                   <ScrollArea className="flex-1 py-4">
                     <div className="px-4">
