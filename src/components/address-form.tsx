@@ -14,18 +14,23 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { ShippingAddress, StaticDistrict, StaticThana } from "@/lib/types";
-import { DIVISIONS_BD, DISTRICTS_BD, THANAS_BD } from "@/lib/constants";
+import type { ShippingAddress, Division, District, Thana } from "@/lib/types";
+import { 
+    DEFAULT_DIVISIONS, DIVISIONS_STORAGE_KEY,
+    DEFAULT_DISTRICTS, DISTRICTS_STORAGE_KEY,
+    DEFAULT_THANAS, THANAS_STORAGE_KEY
+} from "@/lib/constants";
+import useLocalStorage from '@/hooks/use-local-storage';
 import { Loader2 } from "lucide-react";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 
 const addressSchema = z.object({
   fullName: z.string().min(2, "Full name is required."),
   phoneNumber: z.string().optional(),
   country: z.string().default("Bangladesh"),
-  division: z.string().min(1, "Please select a division."),
-  district: z.string().min(1, "Please select a district."),
-  thana: z.string().min(1, "Please select a thana."),
+  division: z.string().min(1, "Please select a division."), // Stores selected division name
+  district: z.string().min(1, "Please select a district."), // Stores selected district name
+  thana: z.string().min(1, "Please select a thana."),       // Stores selected thana name
   houseAddress: z.string().min(3, "House address is required."),
   roadNumber: z.string().optional(),
 });
@@ -39,8 +44,12 @@ type AddressFormProps = {
 };
 
 export function AddressForm({ onSubmit, isLoading = false, initialData = {} }: AddressFormProps) {
-  const [availableDistricts, setAvailableDistricts] = useState<StaticDistrict[]>([]);
-  const [availableThanas, setAvailableThanas] = useState<StaticThana[]>([]);
+  const [divisions] = useLocalStorage<Division[]>(DIVISIONS_STORAGE_KEY, DEFAULT_DIVISIONS);
+  const [districts] = useLocalStorage<District[]>(DISTRICTS_STORAGE_KEY, DEFAULT_DISTRICTS);
+  const [thanas] = useLocalStorage<Thana[]>(THANAS_STORAGE_KEY, DEFAULT_THANAS);
+
+  const [availableDistricts, setAvailableDistricts] = useState<District[]>([]);
+  const [availableThanas, setAvailableThanas] = useState<Thana[]>([]);
 
   const form = useForm<AddressFormValues>({
     resolver: zodResolver(addressSchema),
@@ -56,7 +65,6 @@ export function AddressForm({ onSubmit, isLoading = false, initialData = {} }: A
     },
   });
 
-  // Effect to reset form and populate dropdowns when initialData changes
   useEffect(() => {
     form.reset({
       fullName: initialData?.fullName || "",
@@ -70,100 +78,99 @@ export function AddressForm({ onSubmit, isLoading = false, initialData = {} }: A
     });
 
     if (initialData?.division) {
-      const division = DIVISIONS_BD.find(d => d.name === initialData.division);
-      if (division) {
-        const newDistricts = DISTRICTS_BD.filter(dist => dist.divisionId === division.id);
+      const selectedDivisionObj = divisions.find(d => d.name === initialData.division);
+      if (selectedDivisionObj) {
+        const newDistricts = districts.filter(dist => dist.divisionId === selectedDivisionObj.id);
         setAvailableDistricts(newDistricts);
         if (initialData.district) {
-          const district = newDistricts.find(d => d.name === initialData.district);
-          if (district) {
-            setAvailableThanas(THANAS_BD.filter(th => th.districtId === district.id));
+          const selectedDistrictObj = newDistricts.find(d => d.name === initialData.district);
+          if (selectedDistrictObj) {
+            setAvailableThanas(thanas.filter(th => th.districtId === selectedDistrictObj.id));
           } else {
-            setAvailableThanas([]); // Initial district not valid for initial division
+            setAvailableThanas([]);
           }
         } else {
-          setAvailableThanas([]); // No initial district
+          setAvailableThanas([]);
         }
-      } else { // Initial division not found
+      } else {
         setAvailableDistricts([]);
         setAvailableThanas([]);
       }
-    } else { // No initial division
+    } else {
       setAvailableDistricts([]);
       setAvailableThanas([]);
     }
-  }, [initialData, form.reset]);
+  // initialData, divisions, districts, thanas, form.reset are dependencies
+  // eslint-disable-next-line react-hooks/exhaustive-deps 
+  }, [initialData, divisions, districts, thanas]); 
 
 
-  const watchedDivision = form.watch("division");
-  const watchedDistrict = form.watch("district");
+  const watchedDivisionName = form.watch("division");
+  const watchedDistrictName = form.watch("district");
 
-  // Effect to update available districts and reset child fields if division changes
   useEffect(() => {
-    if (watchedDivision) {
-      const division = DIVISIONS_BD.find(d => d.name === watchedDivision);
-      if (division) {
-        const newDistricts = DISTRICTS_BD.filter(dist => dist.divisionId === division.id);
+    if (watchedDivisionName) {
+      const selectedDivisionObj = divisions.find(d => d.name === watchedDivisionName);
+      if (selectedDivisionObj) {
+        const newDistricts = districts.filter(dist => dist.divisionId === selectedDivisionObj.id);
         setAvailableDistricts(newDistricts);
         
-        // Check if current district is valid for the new division
         const currentDistrictValue = form.getValues("district");
         if (currentDistrictValue && !newDistricts.some(d => d.name === currentDistrictValue)) {
           form.setValue("district", "");
-          form.setValue("thana", ""); // Reset thana as well
+          form.setValue("thana", "");
           setAvailableThanas([]);
         } else if (!currentDistrictValue && form.formState.dirtyFields.division) {
-          // If division was changed by user and district is now empty, clear it.
            form.setValue("district", "");
            form.setValue("thana", "");
            setAvailableThanas([]);
         }
-
-      } else { // Invalid division selected
+      } else {
         setAvailableDistricts([]);
         form.setValue("district", "");
         form.setValue("thana", "");
         setAvailableThanas([]);
       }
-    } else { // No division selected
+    } else {
       setAvailableDistricts([]);
       form.setValue("district", "");
       form.setValue("thana", "");
       setAvailableThanas([]);
     }
-  // form.getValues and form.setValue are stable, formState.dirtyFields helps detect user interaction
-  }, [watchedDivision, form]); 
+  // form, divisions, districts are dependencies
+  // eslint-disable-next-line react-hooks/exhaustive-deps 
+  }, [watchedDivisionName, divisions, districts]); 
 
-  // Effect to update available thanas and reset thana field if district changes
   useEffect(() => {
-    if (watchedDistrict && watchedDivision) {
-      const division = DIVISIONS_BD.find(d => d.name === watchedDivision); // Need to ensure division is valid
-      if (division) {
-        const district = DISTRICTS_BD.find(d => d.name === watchedDistrict && d.divisionId === division.id);
-        if (district) {
-          const newThanas = THANAS_BD.filter(th => th.districtId === district.id);
-          setAvailableThanas(newThanas);
+    if (watchedDistrictName && watchedDivisionName) {
+        const selectedDivisionObj = divisions.find(d => d.name === watchedDivisionName);
+        if (selectedDivisionObj) {
+            const selectedDistrictObj = districts.find(d => d.name === watchedDistrictName && d.divisionId === selectedDivisionObj.id);
+            if (selectedDistrictObj) {
+                const newThanas = thanas.filter(th => th.districtId === selectedDistrictObj.id);
+                setAvailableThanas(newThanas);
 
-          // Check if current thana is valid for the new district
-          const currentThanaValue = form.getValues("thana");
-          if (currentThanaValue && !newThanas.some(t => t.name === currentThanaValue)) {
+                const currentThanaValue = form.getValues("thana");
+                if (currentThanaValue && !newThanas.some(t => t.name === currentThanaValue)) {
+                    form.setValue("thana", "");
+                } else if (!currentThanaValue && form.formState.dirtyFields.district) {
+                    form.setValue("thana", "");
+                }
+            } else {
+                setAvailableThanas([]);
+                form.setValue("thana", "");
+            }
+        } else {
+            setAvailableThanas([]);
             form.setValue("thana", "");
-          } else if (!currentThanaValue && form.formState.dirtyFields.district) {
-             form.setValue("thana", "");
-          }
-        } else { // Invalid district selected
-          setAvailableThanas([]);
-          form.setValue("thana", "");
         }
-      } else { // Parent division became invalid
-         setAvailableThanas([]);
-         form.setValue("thana", "");
-      }
-    } else { // No district selected or no division
+    } else {
       setAvailableThanas([]);
       form.setValue("thana", "");
     }
-  }, [watchedDistrict, watchedDivision, form]);
+  // form, divisions, districts, thanas are dependencies
+  // eslint-disable-next-line react-hooks/exhaustive-deps 
+  }, [watchedDistrictName, watchedDivisionName, divisions, districts, thanas]);
 
 
   const handleFormSubmit = (values: AddressFormValues) => {
@@ -230,7 +237,7 @@ export function AddressForm({ onSubmit, isLoading = false, initialData = {} }: A
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {DIVISIONS_BD.map(division => (
+                  {divisions.map(division => (
                     <SelectItem key={division.id} value={division.name}>{division.name}</SelectItem>
                   ))}
                 </SelectContent>
@@ -249,11 +256,11 @@ export function AddressForm({ onSubmit, isLoading = false, initialData = {} }: A
               <Select 
                 onValueChange={field.onChange} 
                 value={field.value} 
-                disabled={!watchedDivision || availableDistricts.length === 0}
+                disabled={!watchedDivisionName || availableDistricts.length === 0}
               >
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder={!watchedDivision ? "Select a division first" : (availableDistricts.length === 0 && watchedDivision ? "No districts in division" : "Select District")} />
+                    <SelectValue placeholder={!watchedDivisionName ? "Select a division first" : (availableDistricts.length === 0 && watchedDivisionName ? "No districts in division" : "Select District")} />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
@@ -276,11 +283,11 @@ export function AddressForm({ onSubmit, isLoading = false, initialData = {} }: A
               <Select 
                 onValueChange={field.onChange} 
                 value={field.value} 
-                disabled={!watchedDistrict || availableThanas.length === 0}
+                disabled={!watchedDistrictName || availableThanas.length === 0}
               >
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder={!watchedDistrict ? "Select a district first" : (availableThanas.length === 0 && watchedDistrict ? "No thanas in district" : "Select Thana")} />
+                    <SelectValue placeholder={!watchedDistrictName ? "Select a district first" : (availableThanas.length === 0 && watchedDistrictName ? "No thanas in district" : "Select Thana")} />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>

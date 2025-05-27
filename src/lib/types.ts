@@ -14,17 +14,16 @@ export type SubCategory = {
   imageHint?: string;
 };
 
-// New types for category-specific attributes
 export type CategoryAttributeType = {
-  id: string; // e.g., 'attr_author', 'attr_color'
-  categoryId: string; // Links to parent Category.id
-  name: string; // Display name for the attribute, e.g., "Author", "Color", "Publication"
+  id: string;
+  categoryId: string;
+  name: string;
 };
 
 export type CategoryAttributeValue = {
-  id: string; // e.g., 'val_author_rahim', 'val_color_red'
-  attributeTypeId: string; // Links to CategoryAttributeType.id
-  value: string; // The actual value, e.g., "Mr. Rahim", "Red"
+  id: string;
+  attributeTypeId: string;
+  value: string;
 };
 
 export type Product = {
@@ -44,7 +43,7 @@ export type Product = {
   sellerName?: string;
   status: 'pending' | 'approved' | 'rejected' | 'sold';
   createdAt: Date;
-  stock: number; // Added stock field
+  stock: number;
 };
 
 export type CartItem = {
@@ -54,16 +53,33 @@ export type CartItem = {
   imageUrl: string;
   quantity: number;
   sellerId?: string;
-  stock?: number; // Added stock to cart item for easier checking
+  stock?: number;
+};
+
+export type Division = {
+  id: string;
+  name: string;
+};
+
+export type District = {
+  id: string;
+  name: string;
+  divisionId: string;
+};
+
+export type Thana = {
+  id: string;
+  name: string;
+  districtId: string;
 };
 
 export type ShippingAddress = {
   fullName: string;
   phoneNumber?: string;
   country: string;
-  division: string;
-  district: string;
-  thana: string;
+  division: string; // Stores the name of the division
+  district: string; // Stores the name of the district
+  thana: string;    // Stores the name of the thana
   houseAddress: string;
   roadNumber?: string;
 };
@@ -132,45 +148,6 @@ export type FilterValues = {
   sortBy?: 'price_asc' | 'price_desc' | 'date_newest' | 'date_oldest';
 };
 
-export type StaticDivision = {
-  id: string;
-  name: string;
-};
-
-export type StaticDistrict = {
-  id: string;
-  name: string;
-  divisionId: string;
-};
-
-export type StaticThana = {
-  id: string;
-  name: string;
-  districtId: string;
-};
-
-export interface DeliveryChargeSettings {
-  intraThana: number;
-  intraDistrict: number;
-  interDistrict: number;
-}
-
-export type WithdrawalRequestStatus = 'pending' | 'approved' | 'rejected';
-
-export type WithdrawalRequest = {
-  id: string;
-  userId: string;
-  userName: string;
-  amount: number;
-  withdrawalMethodId: string;
-  withdrawalMethodType: WithdrawalMethodType;
-  withdrawalMethodDetails: string;
-  status: WithdrawalRequestStatus;
-  requestedAt: Date;
-  processedAt?: Date;
-  adminNote?: string;
-};
-
 export type CommissionSetting = {
   categoryId: string;
   percentage: number;
@@ -224,4 +201,26 @@ export type CustomPage = {
 export type CategoryPageData = {
   category: Category;
   subCategories: SubCategory[];
+};
+
+export type WithdrawalRequestStatus = 'pending' | 'approved' | 'rejected';
+
+export type WithdrawalRequest = {
+  id: string;
+  userId: string;
+  userName: string;
+  amount: number;
+  withdrawalMethodId: string;
+  withdrawalMethodType: WithdrawalMethodType;
+  withdrawalMethodDetails: string; // Summary for quick display
+  status: WithdrawalRequestStatus;
+  requestedAt: Date;
+  processedAt?: Date;
+  adminNote?: string;
+};
+
+export type DeliveryChargeSettings = {
+  intraThana: number;
+  intraDistrict: number;
+  interDistrict: number;
 };

@@ -1,5 +1,5 @@
 
-import type { OrderStatus, StaticDivision, StaticDistrict, StaticThana, Category, CommissionSetting, AdminNavItem, BusinessSettings, HeroBannerSlide, CustomPage, ShippingMethod, Currency } from './types';
+import type { OrderStatus, Division, District, Thana, Category, CommissionSetting, AdminNavItem, BusinessSettings, HeroBannerSlide, CustomPage, ShippingMethod, Currency } from './types';
 import {
   Smartphone, Laptop, Shirt, Armchair, BookOpen, Tag,
   Package as PackageIcon,
@@ -42,7 +42,7 @@ export const SITE_NAVIGATION = [
 ];
 
 export const USER_NAVIGATION = [
-  { name: 'My Orders', href: '/account/orders' },
+  { name: 'My Orders', href: '/account/orders', icon: ShoppingCart },
   { name: 'My Products', href: '/account/my-products', icon: Briefcase },
   { name: 'My Earnings', href: '/account/my-earnings', icon: TrendingUp },
   { name: 'Account Settings', href: '/account/settings', icon: SettingsIcon },
@@ -77,7 +77,7 @@ export const ADMIN_NAVIGATION: AdminNavItem[] = [
   },
   {
     name: 'Location',
-    href: '/admin/locations/countries',
+    href: '/admin/locations/countries', // Default to first sub-item or a general location overview
     icon: MapPin,
     subItems: [
       { name: 'Countries', href: '/admin/locations/countries', icon: Globe },
@@ -90,7 +90,7 @@ export const ADMIN_NAVIGATION: AdminNavItem[] = [
   },
   {
     name: 'Financials',
-    href: '/admin/financials/withdrawal-requests',
+    href: '/admin/financials/withdrawal-requests', // Default to first sub-item
     icon: PieChart,
     subItems: [
       { name: 'Withdrawal Requests', href: '/admin/financials/withdrawal-requests', icon: CreditCard },
@@ -100,7 +100,7 @@ export const ADMIN_NAVIGATION: AdminNavItem[] = [
   },
   {
     name: 'General Settings',
-    href: '/admin/settings/business',
+    href: '/admin/settings/business', // Default to first sub-item
     icon: SettingsIcon,
     subItems: [
       { name: 'Business Settings', href: '/admin/settings/business', icon: Briefcase },
@@ -117,7 +117,7 @@ export const getStatusIcon = (status: OrderStatus) => {
   return statusObj?.icon;
 };
 
-export const DIVISIONS_BD: StaticDivision[] = [
+export const DEFAULT_DIVISIONS: Division[] = [
   { id: 'dhaka_div', name: 'Dhaka' },
   { id: 'chittagong_div', name: 'Chittagong' },
   { id: 'sylhet_div', name: 'Sylhet' },
@@ -128,7 +128,7 @@ export const DIVISIONS_BD: StaticDivision[] = [
   { id: 'mymensingh_div', name: 'Mymensingh' },
 ];
 
-export const DISTRICTS_BD: StaticDistrict[] = [
+export const DEFAULT_DISTRICTS: District[] = [
   { id: 'dhaka_dist', name: 'Dhaka', divisionId: 'dhaka_div' },
   { id: 'gazipur_dist', name: 'Gazipur', divisionId: 'dhaka_div' },
   { id: 'narayanganj_dist', name: 'Narayanganj', divisionId: 'dhaka_div' },
@@ -146,7 +146,7 @@ export const DISTRICTS_BD: StaticDistrict[] = [
   { id: 'pabna_dist', name: 'Pabna', divisionId: 'rajshahi_div' },
 ];
 
-export const THANAS_BD: StaticThana[] = [
+export const DEFAULT_THANAS: Thana[] = [
   { id: 'dhanmondi_thana', name: 'Dhanmondi', districtId: 'dhaka_dist' },
   { id: 'gulshan_thana', name: 'Gulshan', districtId: 'dhaka_dist' },
   { id: 'mirpur_thana', name: 'Mirpur', districtId: 'dhaka_dist' },
@@ -164,22 +164,28 @@ export const THANAS_BD: StaticThana[] = [
   { id: 'motihar_thana', name: 'Motihar', districtId: 'rajshahi_sadar_dist' },
 ];
 
+// Storage Keys
 export const DELIVERY_CHARGES_STORAGE_KEY = 'deliveryChargeSettings';
-export const DEFAULT_DELIVERY_CHARGES: DeliveryChargeSettings = {
-  intraThana: 70,
-  intraDistrict: 110,
-  interDistrict: 130,
-};
-
 export const COMMISSION_SETTINGS_STORAGE_KEY = 'commissionSettings';
-export const DEFAULT_COMMISSION_SETTINGS: CommissionSetting[] = [];
-
 export const BUSINESS_SETTINGS_STORAGE_KEY = 'businessSettings';
 export const HERO_BANNERS_STORAGE_KEY = 'heroBannerSlides';
 export const CUSTOM_PAGES_STORAGE_KEY = 'customPages';
 export const SHIPPING_METHODS_STORAGE_KEY = 'shippingMethods';
 export const CATEGORY_ATTRIBUTES_TYPES_STORAGE_KEY = 'categoryAttributeTypes';
 export const CATEGORY_ATTRIBUTE_VALUES_STORAGE_KEY = 'categoryAttributeValues';
+export const DIVISIONS_STORAGE_KEY = 'appDivisions';
+export const DISTRICTS_STORAGE_KEY = 'appDistricts';
+export const THANAS_STORAGE_KEY = 'appThanas';
+
+
+// Default Values for Settings
+export const DEFAULT_DELIVERY_CHARGES: DeliveryChargeSettings = {
+  intraThana: 70,
+  intraDistrict: 110,
+  interDistrict: 130,
+};
+
+export const DEFAULT_COMMISSION_SETTINGS: CommissionSetting[] = [];
 
 export const DEFAULT_CURRENCIES: Currency[] = [
   { code: 'BDT', symbol: '৳', name: 'Bangladeshi Taka' },
@@ -189,8 +195,8 @@ export const DEFAULT_CURRENCIES: Currency[] = [
 export const DEFAULT_BUSINESS_SETTINGS: BusinessSettings = {
   appName: '2ndhandbajar.com',
   logoUrl: '/logo-placeholder.png',
-  primaryColor: '47 92% 52%', 
-  secondaryColor: '77 30% 60%', 
+  primaryColor: '47 92% 52%',
+  secondaryColor: '77 30% 60%',
   faviconUrl: '/favicon.ico',
   availableCurrencies: DEFAULT_CURRENCIES,
   defaultCurrencyCode: 'BDT',
@@ -258,5 +264,3 @@ export const DEFAULT_SHIPPING_METHODS: ShippingMethod[] = [
   { id: 'standard-delivery', name: 'Standard Delivery' },
   { id: 'express-delivery', name: 'Express Delivery (Next Day)' },
 ];
-
-    
