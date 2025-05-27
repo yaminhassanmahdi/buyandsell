@@ -64,13 +64,13 @@ export type Division = {
 export type District = {
   id: string;
   name: string;
-  divisionId: string;
+  divisionId: string; // Links to Division id
 };
 
-export type Thana = {
+export type Thana = { // Or Upazilla
   id: string;
   name: string;
-  districtId: string;
+  districtId: string; // Links to District id
 };
 
 export type ShippingAddress = {
@@ -79,7 +79,7 @@ export type ShippingAddress = {
   country: string;
   division: string; // Stores the name of the division
   district: string; // Stores the name of the district
-  thana: string;    // Stores the name of the thana
+  thana: string;    // Stores the name of the thana/upazilla
   houseAddress: string;
   roadNumber?: string;
 };

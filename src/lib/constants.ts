@@ -48,6 +48,122 @@ export const USER_NAVIGATION = [
   { name: 'Account Settings', href: '/account/settings', icon: SettingsIcon },
 ];
 
+export const DEFAULT_DIVISIONS: Division[] = [
+  { id: 'barisal', name: 'Barisal' },
+  { id: 'chittagong', name: 'Chittagong' },
+  { id: 'dhaka', name: 'Dhaka' },
+  { id: 'khulna', name: 'Khulna' },
+  { id: 'mymensingh', name: 'Mymensingh' },
+  { id: 'rajshahi', name: 'Rajshahi' },
+  { id: 'rangpur', name: 'Rangpur' },
+  { id: 'sylhet', name: 'Sylhet' },
+];
+
+export const DEFAULT_DISTRICTS: District[] = [
+  // Dhaka Division
+  { id: 'dhaka_dist', name: 'Dhaka', divisionId: 'dhaka' },
+  { id: 'faridpur', name: 'Faridpur', divisionId: 'dhaka' },
+  { id: 'gazipur', name: 'Gazipur', divisionId: 'dhaka' },
+  { id: 'gopalganj', name: 'Gopalganj', divisionId: 'dhaka' },
+  { id: 'kishoreganj', name: 'Kishoreganj', divisionId: 'dhaka' },
+  { id: 'madaripur', name: 'Madaripur', divisionId: 'dhaka' },
+  { id: 'manikganj', name: 'Manikganj', divisionId: 'dhaka' },
+  { id: 'munshiganj', name: 'Munshiganj', divisionId: 'dhaka' },
+  { id: 'narayanganj', name: 'Narayanganj', divisionId: 'dhaka' },
+  { id: 'narsingdi', name: 'Narsingdi', divisionId: 'dhaka' },
+  { id: 'rajbari', name: 'Rajbari', divisionId: 'dhaka' },
+  { id: 'shariatpur', name: 'Shariatpur', divisionId: 'dhaka' },
+  { id: 'tangail', name: 'Tangail', divisionId: 'dhaka' },
+  // Chittagong Division
+  { id: 'bandarban', name: 'Bandarban', divisionId: 'chittagong' },
+  { id: 'brahmanbaria', name: 'Brahmanbaria', divisionId: 'chittagong' },
+  { id: 'chandpur', name: 'Chandpur', divisionId: 'chittagong' },
+  { id: 'chittagong_dist', name: 'Chittagong', divisionId: 'chittagong' },
+  { id: 'comilla', name: 'Comilla', divisionId: 'chittagong' },
+  { id: 'coxs_bazar', name: 'Cox\'s Bazar', divisionId: 'chittagong' },
+  { id: 'feni', name: 'Feni', divisionId: 'chittagong' },
+  { id: 'khagrachhari', name: 'Khagrachhari', divisionId: 'chittagong' },
+  { id: 'lakshmipur', name: 'Lakshmipur', divisionId: 'chittagong' },
+  { id: 'noakhali', name: 'Noakhali', divisionId: 'chittagong' },
+  { id: 'rangamati', name: 'Rangamati', divisionId: 'chittagong' },
+  // Rajshahi Division
+  { id: 'bogra', name: 'Bogra', divisionId: 'rajshahi' },
+  { id: 'joypurhat', name: 'Joypurhat', divisionId: 'rajshahi' },
+  { id: 'naogaon', name: 'Naogaon', divisionId: 'rajshahi' },
+  { id: 'natore', name: 'Natore', divisionId: 'rajshahi' },
+  { id: 'nawabganj_raj', name: 'Nawabganj', divisionId: 'rajshahi' },
+  { id: 'pabna', name: 'Pabna', divisionId: 'rajshahi' },
+  { id: 'rajshahi_dist', name: 'Rajshahi', divisionId: 'rajshahi' },
+  { id: 'sirajganj', name: 'Sirajganj', divisionId: 'rajshahi' },
+  // Khulna Division
+  { id: 'bagerhat', name: 'Bagerhat', divisionId: 'khulna' },
+  { id: 'chuadanga', name: 'Chuadanga', divisionId: 'khulna' },
+  { id: 'jessore', name: 'Jessore', divisionId: 'khulna' },
+  { id: 'jhenaidah', name: 'Jhenaidah', divisionId: 'khulna' },
+  { id: 'khulna_dist', name: 'Khulna', divisionId: 'khulna' },
+  { id: 'kushtia', name: 'Kushtia', divisionId: 'khulna' },
+  { id: 'magura', name: 'Magura', divisionId: 'khulna' },
+  { id: 'meherpur', name: 'Meherpur', divisionId: 'khulna' },
+  { id: 'narail', name: 'Narail', divisionId: 'khulna' },
+  { id: 'satkhira', name: 'Satkhira', divisionId: 'khulna' },
+  // Barisal Division
+  { id: 'barguna', name: 'Barguna', divisionId: 'barisal' },
+  { id: 'barisal_dist', name: 'Barisal', divisionId: 'barisal' },
+  { id: 'bhola', name: 'Bhola', divisionId: 'barisal' },
+  { id: 'jhalokati', name: 'Jhalokati', divisionId: 'barisal' },
+  { id: 'patuakhali', name: 'Patuakhali', divisionId: 'barisal' },
+  { id: 'pirojpur', name: 'Pirojpur', divisionId: 'barisal' },
+  // Sylhet Division
+  { id: 'habiganj', name: 'Habiganj', divisionId: 'sylhet' },
+  { id: 'moulvibazar', name: 'Moulvibazar', divisionId: 'sylhet' },
+  { id: 'sunamganj', name: 'Sunamganj', divisionId: 'sylhet' },
+  { id: 'sylhet_dist', name: 'Sylhet', divisionId: 'sylhet' },
+  // Rangpur Division
+  { id: 'dinajpur', name: 'Dinajpur', divisionId: 'rangpur' },
+  { id: 'gaibandha', name: 'Gaibandha', divisionId: 'rangpur' },
+  { id: 'kurigram', name: 'Kurigram', divisionId: 'rangpur' },
+  { id: 'lalmonirhat', name: 'Lalmonirhat', divisionId: 'rangpur' },
+  { id: 'nilphamari', name: 'Nilphamari', divisionId: 'rangpur' },
+  { id: 'panchagarh', name: 'Panchagarh', divisionId: 'rangpur' },
+  { id: 'rangpur_dist', name: 'Rangpur', divisionId: 'rangpur' },
+  { id: 'thakurgaon', name: 'Thakurgaon', divisionId: 'rangpur' },
+  // Mymensingh Division
+  { id: 'jamalpur', name: 'Jamalpur', divisionId: 'mymensingh' },
+  { id: 'mymensingh_dist', name: 'Mymensingh', divisionId: 'mymensingh' },
+  { id: 'netrokona', name: 'Netrokona', divisionId: 'mymensingh' },
+  { id: 'sherpur', name: 'Sherpur', divisionId: 'mymensingh' },
+];
+
+export const DEFAULT_UPAZILLAS: Thana[] = [ // Renaming to UPAZILLAS for clarity, type is Thana
+  // Dhaka District Upazillas
+  { id: 'dhaka_city_north_upazilla', name: 'Dhaka City Corporation (North)', districtId: 'dhaka_dist' },
+  { id: 'dhaka_city_south_upazilla', name: 'Dhaka City Corporation (South)', districtId: 'dhaka_dist' },
+  { id: 'savar_upazilla', name: 'Savar Upazila', districtId: 'dhaka_dist' },
+  { id: 'keraniganj_upazilla', name: 'Keraniganj Upazila', districtId: 'dhaka_dist' },
+  { id: 'dhamrai_upazilla', name: 'Dhamrai Upazila', districtId: 'dhaka_dist' },
+  { id: 'dohar_upazilla', name: 'Dohar Upazila', districtId: 'dhaka_dist' },
+  { id: 'nawabganj_dhaka_upazilla', name: 'Nawabganj Upazila (Dhaka)', districtId: 'dhaka_dist' },
+  // Gazipur District Upazillas
+  { id: 'gazipur_sadar_upazilla', name: 'Gazipur Sadar Upazila', districtId: 'gazipur' },
+  { id: 'kaliakair_upazilla', name: 'Kaliakair Upazila', districtId: 'gazipur' },
+  { id: 'kapasia_upazilla', name: 'Kapasia Upazila', districtId: 'gazipur' },
+  { id: 'sreepur_upazilla', name: 'Sreepur Upazila', districtId: 'gazipur' },
+  { id: 'kaliganj_gazipur_upazilla', name: 'Kaliganj Upazila (Gazipur)', districtId: 'gazipur' },
+  // Chittagong District Upazillas
+  { id: 'chittagong_sadar_upazilla', name: 'Chittagong Sadar Upazila', districtId: 'chittagong_dist' }, // Example, actual may vary
+  { id: 'sitakunda_upazilla', name: 'Sitakunda Upazila', districtId: 'chittagong_dist' },
+  { id: 'mirsharai_upazilla', name: 'Mirsharai Upazila', districtId: 'chittagong_dist' },
+  { id: 'patiya_upazilla', name: 'Patiya Upazila', districtId: 'chittagong_dist' },
+  // Add more representative upazillas for other districts as needed for demonstration
+  { id: 'sylhet_sadar_upazilla', name: 'Sylhet Sadar Upazila', districtId: 'sylhet_dist' },
+  { id: 'rajshahi_sadar_upazilla', name: 'Rajshahi Sadar Upazila (Boalia)', districtId: 'rajshahi_dist' },
+  { id: 'khulna_sadar_upazilla', name: 'Khulna Sadar Upazila', districtId: 'khulna_dist' },
+  { id: 'barisal_sadar_upazilla', name: 'Barisal Sadar Upazila', districtId: 'barisal_dist' },
+  { id: 'rangpur_sadar_upazilla', name: 'Rangpur Sadar Upazila', districtId: 'rangpur_dist' },
+  { id: 'mymensingh_sadar_upazilla', name: 'Mymensingh Sadar Upazila', districtId: 'mymensingh_dist' },
+];
+
+
 export const ADMIN_NAVIGATION: AdminNavItem[] = [
   { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
   { name: 'Approve Products', href: '/admin/products', icon: CheckSquare },
@@ -77,20 +193,20 @@ export const ADMIN_NAVIGATION: AdminNavItem[] = [
   },
   {
     name: 'Location',
-    href: '/admin/locations/countries', // Default to first sub-item or a general location overview
+    href: '/admin/locations/countries', 
     icon: MapPin,
     subItems: [
       { name: 'Countries', href: '/admin/locations/countries', icon: Globe },
       { name: 'Divisions', href: '/admin/locations/divisions', icon: Library },
       { name: 'Districts', href: '/admin/locations/districts', icon: MapPin },
-      { name: 'Thanas/Upazillas', href: '/admin/locations/thanas', icon: Home },
+      { name: 'Upazillas', href: '/admin/locations/upazillas', icon: Home }, // Renamed
       { name: 'Delivery Charges', href: '/admin/locations/delivery-charges', icon: DollarSign },
       { name: 'Shipping Methods', href: '/admin/locations/shipping-methods', icon: Ship },
     ]
   },
   {
     name: 'Financials',
-    href: '/admin/financials/withdrawal-requests', // Default to first sub-item
+    href: '/admin/financials/withdrawal-requests', 
     icon: PieChart,
     subItems: [
       { name: 'Withdrawal Requests', href: '/admin/financials/withdrawal-requests', icon: CreditCard },
@@ -100,7 +216,7 @@ export const ADMIN_NAVIGATION: AdminNavItem[] = [
   },
   {
     name: 'General Settings',
-    href: '/admin/settings/business', // Default to first sub-item
+    href: '/admin/settings/business', 
     icon: SettingsIcon,
     subItems: [
       { name: 'Business Settings', href: '/admin/settings/business', icon: Briefcase },
@@ -117,53 +233,6 @@ export const getStatusIcon = (status: OrderStatus) => {
   return statusObj?.icon;
 };
 
-export const DEFAULT_DIVISIONS: Division[] = [
-  { id: 'dhaka_div', name: 'Dhaka' },
-  { id: 'chittagong_div', name: 'Chittagong' },
-  { id: 'sylhet_div', name: 'Sylhet' },
-  { id: 'rajshahi_div', name: 'Rajshahi' },
-  { id: 'khulna_div', name: 'Khulna' },
-  { id: 'barisal_div', name: 'Barisal' },
-  { id: 'rangpur_div', name: 'Rangpur' },
-  { id: 'mymensingh_div', name: 'Mymensingh' },
-];
-
-export const DEFAULT_DISTRICTS: District[] = [
-  { id: 'dhaka_dist', name: 'Dhaka', divisionId: 'dhaka_div' },
-  { id: 'gazipur_dist', name: 'Gazipur', divisionId: 'dhaka_div' },
-  { id: 'narayanganj_dist', name: 'Narayanganj', divisionId: 'dhaka_div' },
-  { id: 'tangail_dist', name: 'Tangail', divisionId: 'dhaka_div' },
-  { id: 'kishoreganj_dist', name: 'Kishoreganj', divisionId: 'dhaka_div' },
-  { id: 'chittagong_dist', name: 'Chittagong', divisionId: 'chittagong_div' },
-  { id: 'coxsbazar_dist', name: 'Cox\'s Bazar', divisionId: 'chittagong_div' },
-  { id: 'comilla_dist', name: 'Comilla', divisionId: 'chittagong_div' },
-  { id: 'feni_dist', name: 'Feni', divisionId: 'chittagong_div' },
-  { id: 'sylhet_sadar_dist', name: 'Sylhet Sadar', divisionId: 'sylhet_div' },
-  { id: 'moulvibazar_dist', name: 'Moulvibazar', divisionId: 'sylhet_div' },
-  { id: 'habiganj_dist', name: 'Habiganj', divisionId: 'sylhet_div' },
-  { id: 'rajshahi_sadar_dist', name: 'Rajshahi Sadar', divisionId: 'rajshahi_div' },
-  { id: 'bogra_dist', name: 'Bogra', divisionId: 'rajshahi_div' },
-  { id: 'pabna_dist', name: 'Pabna', divisionId: 'rajshahi_div' },
-];
-
-export const DEFAULT_THANAS: Thana[] = [
-  { id: 'dhanmondi_thana', name: 'Dhanmondi', districtId: 'dhaka_dist' },
-  { id: 'gulshan_thana', name: 'Gulshan', districtId: 'dhaka_dist' },
-  { id: 'mirpur_thana', name: 'Mirpur', districtId: 'dhaka_dist' },
-  { id: 'mohammadpur_thana', name: 'Mohammadpur', districtId: 'dhaka_dist' },
-  { id: 'uttara_thana', name: 'Uttara', districtId: 'dhaka_dist' },
-  { id: 'gazipur_sadar_thana', name: 'Gazipur Sadar', districtId: 'gazipur_dist' },
-  { id: 'kaliakair_thana', name: 'Kaliakair', districtId: 'gazipur_dist' },
-  { id: 'kapasia_thana', name: 'Kapasia', districtId: 'gazipur_dist' },
-  { id: 'kotwali_ctg_thana', name: 'Kotwali (Chittagong)', districtId: 'chittagong_dist' },
-  { id: 'pahartali_thana', name: 'Pahartali', districtId: 'chittagong_dist' },
-  { id: 'panchlaish_thana', name: 'Panchlaish', districtId: 'chittagong_dist' },
-  { id: 'sylhet_sadar_thana', name: 'Sylhet Sadar Upazila', districtId: 'sylhet_sadar_dist' },
-  { id: 'south_surma_thana', name: 'South Surma', districtId: 'sylhet_sadar_dist' },
-  { id: 'boalia_thana', name: 'Boalia', districtId: 'rajshahi_sadar_dist' },
-  { id: 'motihar_thana', name: 'Motihar', districtId: 'rajshahi_sadar_dist' },
-];
-
 // Storage Keys
 export const DELIVERY_CHARGES_STORAGE_KEY = 'deliveryChargeSettings';
 export const COMMISSION_SETTINGS_STORAGE_KEY = 'commissionSettings';
@@ -173,14 +242,12 @@ export const CUSTOM_PAGES_STORAGE_KEY = 'customPages';
 export const SHIPPING_METHODS_STORAGE_KEY = 'shippingMethods';
 export const CATEGORY_ATTRIBUTES_TYPES_STORAGE_KEY = 'categoryAttributeTypes';
 export const CATEGORY_ATTRIBUTE_VALUES_STORAGE_KEY = 'categoryAttributeValues';
-export const DIVISIONS_STORAGE_KEY = 'appDivisions';
-export const DISTRICTS_STORAGE_KEY = 'appDistricts';
-export const THANAS_STORAGE_KEY = 'appThanas';
+// Removed DIVISIONS_STORAGE_KEY, DISTRICTS_STORAGE_KEY, THANAS_STORAGE_KEY
 
 
 // Default Values for Settings
 export const DEFAULT_DELIVERY_CHARGES: DeliveryChargeSettings = {
-  intraThana: 70,
+  intraThana: 70, // Intra Upazilla
   intraDistrict: 110,
   interDistrict: 130,
 };
@@ -195,8 +262,8 @@ export const DEFAULT_CURRENCIES: Currency[] = [
 export const DEFAULT_BUSINESS_SETTINGS: BusinessSettings = {
   appName: '2ndhandbajar.com',
   logoUrl: '/logo-placeholder.png',
-  primaryColor: '47 92% 52%',
-  secondaryColor: '77 30% 60%',
+  primaryColor: '47 92% 52%', // Example: Tailwind orange-500
+  secondaryColor: '77 30% 60%', // Example: A complementary green
   faviconUrl: '/favicon.ico',
   availableCurrencies: DEFAULT_CURRENCIES,
   defaultCurrencyCode: 'BDT',

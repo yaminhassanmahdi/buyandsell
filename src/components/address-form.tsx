@@ -14,13 +14,12 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { ShippingAddress, Division, District, Thana } from "@/lib/types";
+import type { ShippingAddress, Division, District, Thana as Upazilla } from "@/lib/types"; // Using Thana as Upazilla type alias
 import { 
-    DEFAULT_DIVISIONS, DIVISIONS_STORAGE_KEY,
-    DEFAULT_DISTRICTS, DISTRICTS_STORAGE_KEY,
-    DEFAULT_THANAS, THANAS_STORAGE_KEY
+    DEFAULT_DIVISIONS,
+    DEFAULT_DISTRICTS,
+    DEFAULT_UPAZILLAS // Using new constant name for upazillas
 } from "@/lib/constants";
-import useLocalStorage from '@/hooks/use-local-storage';
 import { Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
 
@@ -28,9 +27,9 @@ const addressSchema = z.object({
   fullName: z.string().min(2, "Full name is required."),
   phoneNumber: z.string().optional(),
   country: z.string().default("Bangladesh"),
-  division: z.string().min(1, "Please select a division."), // Stores selected division name
-  district: z.string().min(1, "Please select a district."), // Stores selected district name
-  thana: z.string().min(1, "Please select a thana."),       // Stores selected thana name
+  division: z.string().min(1, "Please select a division."), 
+  district: z.string().min(1, "Please select a district."), 
+  thana: z.string().min(1, "Please select an upazilla."), // Renamed label to Upazilla
   houseAddress: z.string().min(3, "House address is required."),
   roadNumber: z.string().optional(),
 });
@@ -44,12 +43,12 @@ type AddressFormProps = {
 };
 
 export function AddressForm({ onSubmit, isLoading = false, initialData = {} }: AddressFormProps) {
-  const [divisions] = useLocalStorage<Division[]>(DIVISIONS_STORAGE_KEY, DEFAULT_DIVISIONS);
-  const [districts] = useLocalStorage<District[]>(DISTRICTS_STORAGE_KEY, DEFAULT_DISTRICTS);
-  const [thanas] = useLocalStorage<Thana[]>(THANAS_STORAGE_KEY, DEFAULT_THANAS);
+  const divisions: Division[] = DEFAULT_DIVISIONS;
+  const allDistricts: District[] = DEFAULT_DISTRICTS;
+  const allUpazillas: Upazilla[] = DEFAULT_UPAZILLAS;
 
   const [availableDistricts, setAvailableDistricts] = useState<District[]>([]);
-  const [availableThanas, setAvailableThanas] = useState<Thana[]>([]);
+  const [availableUpazillas, setAvailableUpazillas] = useState<Upazilla[]>([]); // Renamed from thanas
 
   const form = useForm<AddressFormValues>({
     resolver: zodResolver(addressSchema),
@@ -59,7 +58,7 @@ export function AddressForm({ onSubmit, isLoading = false, initialData = {} }: A
       country: "Bangladesh",
       division: initialData?.division || "",
       district: initialData?.district || "",
-      thana: initialData?.thana || "",
+      thana: initialData?.thana || "", // Stays 'thana' in form state for now due to schema
       houseAddress: initialData?.houseAddress || "",
       roadNumber: initialData?.roadNumber || "",
     },
@@ -80,29 +79,28 @@ export function AddressForm({ onSubmit, isLoading = false, initialData = {} }: A
     if (initialData?.division) {
       const selectedDivisionObj = divisions.find(d => d.name === initialData.division);
       if (selectedDivisionObj) {
-        const newDistricts = districts.filter(dist => dist.divisionId === selectedDivisionObj.id);
+        const newDistricts = allDistricts.filter(dist => dist.divisionId === selectedDivisionObj.id);
         setAvailableDistricts(newDistricts);
         if (initialData.district) {
           const selectedDistrictObj = newDistricts.find(d => d.name === initialData.district);
           if (selectedDistrictObj) {
-            setAvailableThanas(thanas.filter(th => th.districtId === selectedDistrictObj.id));
+            setAvailableUpazillas(allUpazillas.filter(up => up.districtId === selectedDistrictObj.id));
           } else {
-            setAvailableThanas([]);
+            setAvailableUpazillas([]);
           }
         } else {
-          setAvailableThanas([]);
+          setAvailableUpazillas([]);
         }
       } else {
         setAvailableDistricts([]);
-        setAvailableThanas([]);
+        setAvailableUpazillas([]);
       }
     } else {
       setAvailableDistricts([]);
-      setAvailableThanas([]);
+      setAvailableUpazillas([]);
     }
-  // initialData, divisions, districts, thanas, form.reset are dependencies
   // eslint-disable-next-line react-hooks/exhaustive-deps 
-  }, [initialData, divisions, districts, thanas]); 
+  }, [initialData]); 
 
 
   const watchedDivisionName = form.watch("division");
@@ -112,65 +110,63 @@ export function AddressForm({ onSubmit, isLoading = false, initialData = {} }: A
     if (watchedDivisionName) {
       const selectedDivisionObj = divisions.find(d => d.name === watchedDivisionName);
       if (selectedDivisionObj) {
-        const newDistricts = districts.filter(dist => dist.divisionId === selectedDivisionObj.id);
+        const newDistricts = allDistricts.filter(dist => dist.divisionId === selectedDivisionObj.id);
         setAvailableDistricts(newDistricts);
         
         const currentDistrictValue = form.getValues("district");
         if (currentDistrictValue && !newDistricts.some(d => d.name === currentDistrictValue)) {
           form.setValue("district", "");
-          form.setValue("thana", "");
-          setAvailableThanas([]);
+          form.setValue("thana", ""); // Reset thana/upazilla
+          setAvailableUpazillas([]);
         } else if (!currentDistrictValue && form.formState.dirtyFields.division) {
            form.setValue("district", "");
-           form.setValue("thana", "");
-           setAvailableThanas([]);
+           form.setValue("thana", ""); // Reset thana/upazilla
+           setAvailableUpazillas([]);
         }
       } else {
         setAvailableDistricts([]);
         form.setValue("district", "");
-        form.setValue("thana", "");
-        setAvailableThanas([]);
+        form.setValue("thana", ""); // Reset thana/upazilla
+        setAvailableUpazillas([]);
       }
     } else {
       setAvailableDistricts([]);
       form.setValue("district", "");
-      form.setValue("thana", "");
-      setAvailableThanas([]);
+      form.setValue("thana", ""); // Reset thana/upazilla
+      setAvailableUpazillas([]);
     }
-  // form, divisions, districts are dependencies
   // eslint-disable-next-line react-hooks/exhaustive-deps 
-  }, [watchedDivisionName, divisions, districts]); 
+  }, [watchedDivisionName]); 
 
   useEffect(() => {
     if (watchedDistrictName && watchedDivisionName) {
         const selectedDivisionObj = divisions.find(d => d.name === watchedDivisionName);
         if (selectedDivisionObj) {
-            const selectedDistrictObj = districts.find(d => d.name === watchedDistrictName && d.divisionId === selectedDivisionObj.id);
+            const selectedDistrictObj = allDistricts.find(d => d.name === watchedDistrictName && d.divisionId === selectedDivisionObj.id);
             if (selectedDistrictObj) {
-                const newThanas = thanas.filter(th => th.districtId === selectedDistrictObj.id);
-                setAvailableThanas(newThanas);
+                const newUpazillas = allUpazillas.filter(up => up.districtId === selectedDistrictObj.id);
+                setAvailableUpazillas(newUpazillas);
 
                 const currentThanaValue = form.getValues("thana");
-                if (currentThanaValue && !newThanas.some(t => t.name === currentThanaValue)) {
+                if (currentThanaValue && !newUpazillas.some(t => t.name === currentThanaValue)) {
                     form.setValue("thana", "");
                 } else if (!currentThanaValue && form.formState.dirtyFields.district) {
                     form.setValue("thana", "");
                 }
             } else {
-                setAvailableThanas([]);
+                setAvailableUpazillas([]);
                 form.setValue("thana", "");
             }
         } else {
-            setAvailableThanas([]);
+            setAvailableUpazillas([]);
             form.setValue("thana", "");
         }
     } else {
-      setAvailableThanas([]);
+      setAvailableUpazillas([]);
       form.setValue("thana", "");
     }
-  // form, divisions, districts, thanas are dependencies
   // eslint-disable-next-line react-hooks/exhaustive-deps 
-  }, [watchedDistrictName, watchedDivisionName, divisions, districts, thanas]);
+  }, [watchedDistrictName, watchedDivisionName]);
 
 
   const handleFormSubmit = (values: AddressFormValues) => {
@@ -180,7 +176,7 @@ export function AddressForm({ onSubmit, isLoading = false, initialData = {} }: A
       country: "Bangladesh",
       division: values.division,
       district: values.district,
-      thana: values.thana,
+      thana: values.thana, // This is now essentially Upazilla name
       houseAddress: values.houseAddress,
       roadNumber: values.roadNumber,
     };
@@ -276,23 +272,23 @@ export function AddressForm({ onSubmit, isLoading = false, initialData = {} }: A
 
         <FormField
           control={form.control}
-          name="thana"
+          name="thana" // Internally form uses 'thana', UI shows 'Upazilla'
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Thana / Upazilla</FormLabel>
+              <FormLabel>Upazilla</FormLabel> 
               <Select 
                 onValueChange={field.onChange} 
                 value={field.value} 
-                disabled={!watchedDistrictName || availableThanas.length === 0}
+                disabled={!watchedDistrictName || availableUpazillas.length === 0}
               >
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder={!watchedDistrictName ? "Select a district first" : (availableThanas.length === 0 && watchedDistrictName ? "No thanas in district" : "Select Thana")} />
+                    <SelectValue placeholder={!watchedDistrictName ? "Select a district first" : (availableUpazillas.length === 0 && watchedDistrictName ? "No upazillas in district" : "Select Upazilla")} />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {availableThanas.map(thana => (
-                    <SelectItem key={thana.id} value={thana.name}>{thana.name}</SelectItem>
+                  {availableUpazillas.map(upazilla => ( // Renamed thana to upazilla for clarity
+                    <SelectItem key={upazilla.id} value={upazilla.name}>{upazilla.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
