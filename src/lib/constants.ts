@@ -1,5 +1,5 @@
 
-import type { OrderStatus, Division, District, Thana, Category, CommissionSetting, AdminNavItem, BusinessSettings, HeroBannerSlide, CustomPage, ShippingMethod, Currency } from './types';
+import type { OrderStatus, Division, District, Thana as Upazilla, Category, CommissionSetting, AdminNavItem, BusinessSettings, HeroBannerSlide, CustomPage, ShippingMethod, Currency } from './types';
 import {
   Smartphone, Laptop, Shirt, Armchair, BookOpen, Tag,
   Package as PackageIcon,
@@ -134,10 +134,9 @@ export const DEFAULT_DISTRICTS: District[] = [
   { id: 'sherpur', name: 'Sherpur', divisionId: 'mymensingh' },
 ];
 
-export const DEFAULT_UPAZILLAS: Thana[] = [
+export const DEFAULT_UPAZILLAS: Upazilla[] = [
   // Dhaka District Upazillas
-  { id: 'dhaka_city_north_upazilla', name: 'Dhaka City Corporation (North)', districtId: 'dhaka_dist' },
-  { id: 'dhaka_city_south_upazilla', name: 'Dhaka City Corporation (South)', districtId: 'dhaka_dist' },
+  { id: 'dhaka_city_consolidated', name: 'Dhaka City', districtId: 'dhaka_dist' },
   { id: 'savar_upazilla', name: 'Savar Upazila', districtId: 'dhaka_dist' },
   { id: 'keraniganj_upazilla', name: 'Keraniganj Upazila', districtId: 'dhaka_dist' },
   { id: 'dhamrai_upazilla', name: 'Dhamrai Upazila', districtId: 'dhaka_dist' },
@@ -198,20 +197,20 @@ export const ADMIN_NAVIGATION: AdminNavItem[] = [
   },
   {
     name: 'Location',
-    href: '/admin/locations/countries', 
-    icon: MapPin,
+    href: '/admin/locations/countries',
+    icon: Landmark, // Updated icon
     subItems: [
       { name: 'Countries', href: '/admin/locations/countries', icon: Globe },
       { name: 'Divisions', href: '/admin/locations/divisions', icon: Library },
       { name: 'Districts', href: '/admin/locations/districts', icon: MapPin },
-      { name: 'Upazillas', href: '/admin/locations/upazillas', icon: Home }, // Ensured correct href
+      { name: 'Upazillas', href: '/admin/locations/upazillas', icon: Home },
       { name: 'Delivery Charges', href: '/admin/locations/delivery-charges', icon: DollarSign },
       { name: 'Shipping Methods', href: '/admin/locations/shipping-methods', icon: Ship },
     ]
   },
   {
     name: 'Financials',
-    href: '/admin/financials/withdrawal-requests', 
+    href: '/admin/financials/withdrawal-requests',
     icon: PieChart,
     subItems: [
       { name: 'Withdrawal Requests', href: '/admin/financials/withdrawal-requests', icon: CreditCard },
@@ -221,7 +220,7 @@ export const ADMIN_NAVIGATION: AdminNavItem[] = [
   },
   {
     name: 'General Settings',
-    href: '/admin/settings/business', 
+    href: '/admin/settings/business',
     icon: SettingsIcon,
     subItems: [
       { name: 'Business Settings', href: '/admin/settings/business', icon: Briefcase },
@@ -247,8 +246,6 @@ export const CUSTOM_PAGES_STORAGE_KEY = 'customPages';
 export const SHIPPING_METHODS_STORAGE_KEY = 'shippingMethods';
 export const CATEGORY_ATTRIBUTES_TYPES_STORAGE_KEY = 'categoryAttributeTypes';
 export const CATEGORY_ATTRIBUTE_VALUES_STORAGE_KEY = 'categoryAttributeValues';
-// Removed DIVISIONS_STORAGE_KEY, DISTRICTS_STORAGE_KEY, THANAS_STORAGE_KEY (now UPAZILLAS_STORAGE_KEY implicitly removed as they are static)
-
 
 // Default Values for Settings
 export const DEFAULT_DELIVERY_CHARGES: DeliveryChargeSettings = {
@@ -267,8 +264,8 @@ export const DEFAULT_CURRENCIES: Currency[] = [
 export const DEFAULT_BUSINESS_SETTINGS: BusinessSettings = {
   appName: '2ndhandbajar.com',
   logoUrl: '/logo-placeholder.png',
-  primaryColor: '47 92% 52%', 
-  secondaryColor: '77 30% 60%', 
+  primaryColor: '47 92% 52%',
+  secondaryColor: '77 30% 60%',
   faviconUrl: '/favicon.ico',
   availableCurrencies: DEFAULT_CURRENCIES,
   defaultCurrencyCode: 'BDT',
@@ -336,3 +333,5 @@ export const DEFAULT_SHIPPING_METHODS: ShippingMethod[] = [
   { id: 'standard-delivery', name: 'Standard Delivery' },
   { id: 'express-delivery', name: 'Express Delivery (Next Day)' },
 ];
+
+    

@@ -1,6 +1,6 @@
 
 import type { Product, User, Order, ShippingAddress, Category, SubCategory, WithdrawalRequest, CategoryAttributeType, CategoryAttributeValue } from './types';
-import { INITIAL_CATEGORIES, MOCK_CUSTOM_PAGES as DEFAULT_PAGES_FROM_CONSTANTS } from './constants'; // Changed import name
+import { INITIAL_CATEGORIES, MOCK_CUSTOM_PAGES as DEFAULT_PAGES_FROM_CONSTANTS } from './constants';
 
 const createPastDate = (daysAgo: number): Date => {
   const date = new Date();
@@ -25,7 +25,6 @@ export let MOCK_SUBCATEGORIES: SubCategory[] = [
   { id: 'sc_novels', name: 'Novels', parentCategoryId: 'books', imageUrl: 'https://placehold.co/80x80.png', imageHint: 'fiction books' },
 ];
 
-// New Mock Data for Category-Specific Attributes
 export let MOCK_CATEGORY_ATTRIBUTE_TYPES: CategoryAttributeType[] = [
   { id: 'attr_author', categoryId: 'books', name: 'Author' },
   { id: 'attr_publication', categoryId: 'books', name: 'Publication' },
@@ -36,25 +35,19 @@ export let MOCK_CATEGORY_ATTRIBUTE_TYPES: CategoryAttributeType[] = [
 ];
 
 export let MOCK_CATEGORY_ATTRIBUTE_VALUES: CategoryAttributeValue[] = [
-  // For Books - Author
   { id: 'val_author_rahim', attributeTypeId: 'attr_author', value: 'Mr. Rahim' },
   { id: 'val_author_tagore', attributeTypeId: 'attr_author', value: 'Rabindranath Tagore' },
   { id: 'val_author_humayun', attributeTypeId: 'attr_author', value: 'Humayun Ahmed' },
-  // For Books - Publication
   { id: 'val_pub_prothom', attributeTypeId: 'attr_publication', value: 'Prothom Alo Prokashona' },
   { id: 'val_pub_anyaprokash', attributeTypeId: 'attr_publication', value: 'Anyaprokash' },
-  // For Fashion - Color
   { id: 'val_color_red', attributeTypeId: 'attr_color', value: 'Red' },
   { id: 'val_color_blue', attributeTypeId: 'attr_color', value: 'Blue' },
   { id: 'val_color_black', attributeTypeId: 'attr_color', value: 'Black' },
-  // For Fashion - Material
   { id: 'val_material_cotton', attributeTypeId: 'attr_material', value: 'Cotton' },
   { id: 'val_material_leather', attributeTypeId: 'attr_material', value: 'Leather' },
-  // For Electronics - Storage
   { id: 'val_storage_64gb', attributeTypeId: 'attr_storage', value: '64GB' },
   { id: 'val_storage_128gb', attributeTypeId: 'attr_storage', value: '128GB' },
   { id: 'val_storage_256gb', attributeTypeId: 'attr_storage', value: '256GB' },
-  // For Electronics - RAM
   { id: 'val_ram_4gb', attributeTypeId: 'attr_ram', value: '4GB' },
   { id: 'val_ram_8gb', attributeTypeId: 'attr_ram', value: '8GB' },
   { id: 'val_ram_16gb', attributeTypeId: 'attr_ram', value: '16GB' },
@@ -71,7 +64,7 @@ export const MOCK_USERS: User[] = [
       country: 'Bangladesh',
       division: 'Dhaka',
       district: 'Dhaka',
-      thana: 'Gulshan',
+      thana: 'Dhaka City', // Consolidated
       houseAddress: '123 Gulshan Ave',
       roadNumber: 'Road 10',
     },
@@ -95,7 +88,7 @@ export const MOCK_USERS: User[] = [
       country: 'Bangladesh',
       division: 'Chittagong',
       district: 'Chittagong',
-      thana: 'Pahartali',
+      thana: 'Pahartali', // Example, assuming Pahartali is an Upazila in Chittagong
       houseAddress: 'Apt 2B, Hill View Road',
       roadNumber: 'Road 5',
     },
@@ -131,10 +124,10 @@ export const MOCK_USERS: User[] = [
       fullName: 'Admin B. Admin',
       phoneNumber: '01999999999',
       country: 'Bangladesh',
-      division: 'Chittagong',
-      district: 'Chittagong',
-      thana: 'Kotwali (Chittagong)',
-      houseAddress: 'Admin Building, CTG',
+      division: 'Dhaka',
+      district: 'Dhaka',
+      thana: 'Dhaka City', // Consolidated
+      houseAddress: 'Admin Building, HQ',
       roadNumber: 'Main St',
     },
     withdrawalMethods: [],
@@ -185,7 +178,7 @@ export let MOCK_PRODUCTS: Product[] = [
     name: 'Bookshelf, Wooden',
     description: 'Solid wood bookshelf, 5 shelves. Excellent condition.',
     price: 50,
-    stock: 0, // Sold out example
+    stock: 0,
     imageUrl: 'https://placehold.co/600x400.png',
     imageHint: 'bookshelf furniture',
     categoryId: 'home-garden',
@@ -212,7 +205,7 @@ export let MOCK_PRODUCTS: Product[] = [
     ],
     sellerId: 'user2',
     sellerName: 'Jane Smith',
-    status: 'sold', // Note: if status is 'sold', stock logic might also set it to 0
+    status: 'sold',
     createdAt: createPastDate(15),
   },
   {
@@ -239,7 +232,7 @@ export let MOCK_PRODUCTS: Product[] = [
     name: 'Admission Guide - Physics',
     description: 'Comprehensive physics admission test preparation guide.',
     price: 20,
-    stock: 0, // Sold out example
+    stock: 0,
     imageUrl: 'https://placehold.co/600x400.png',
     imageHint: 'physics guide book',
     categoryId: 'books',
@@ -249,7 +242,7 @@ export let MOCK_PRODUCTS: Product[] = [
     ],
     sellerId: 'user2',
     sellerName: 'Jane Smith',
-    status: 'rejected', // Even if stock is 0, status can be rejected
+    status: 'rejected',
     createdAt: createPastDate(1),
   },
 ];
@@ -260,7 +253,7 @@ const MOCK_SHIPPING_ADDRESS_BANGLADESH: ShippingAddress = {
   country: 'Bangladesh',
   division: 'Dhaka',
   district: 'Dhaka',
-  thana: 'Dhanmondi',
+  thana: 'Dhaka City', // Consolidated
   houseAddress: 'House 123',
   roadNumber: 'Road 7A',
 };
@@ -292,7 +285,12 @@ export let MOCK_ORDERS: Order[] = [
     ],
     totalAmount: 290 + 130,
     deliveryChargeAmount: 130,
-    shippingAddress: { ...(MOCK_USERS.find(u => u.id === 'user1')?.defaultShippingAddress || MOCK_SHIPPING_ADDRESS_BANGLADESH), fullName: 'John Doe Updated', district: 'Gazipur', thana: 'Gazipur Sadar' },
+    shippingAddress: { 
+      ...(MOCK_USERS.find(u => u.id === 'user1')?.defaultShippingAddress || MOCK_SHIPPING_ADDRESS_BANGLADESH), 
+      fullName: 'John Doe Updated', 
+      district: 'Gazipur', 
+      thana: 'Gazipur Sadar Upazila' 
+    },
     status: 'delivered',
     paymentStatus: 'unpaid',
     platformCommission: 0,
@@ -309,7 +307,13 @@ export let MOCK_ORDERS: Order[] = [
     ],
     totalAmount: 300 + 110,
     deliveryChargeAmount: 110,
-    shippingAddress: { ...MOCK_SHIPPING_ADDRESS_BANGLADESH, fullName: 'Jane Smith BD', division: 'Chittagong', district: 'Chittagong', thana: 'Kotwali (Chittagong)' },
+    shippingAddress: { 
+      ...MOCK_SHIPPING_ADDRESS_BANGLADESH, 
+      fullName: 'Jane Smith BD', 
+      division: 'Chittagong', 
+      district: 'Chittagong', 
+      thana: 'Chittagong Sadar Upazila' 
+    },
     status: 'processing',
     paymentStatus: 'unpaid',
     platformCommission: 0,
@@ -334,4 +338,6 @@ export let MOCK_WITHDRAWAL_REQUESTS: WithdrawalRequest[] = [
   }
 ];
 
-export let MOCK_CUSTOM_PAGES = [...DEFAULT_PAGES_FROM_CONSTANTS]; // Use the aliased import
+export let MOCK_CUSTOM_PAGES = [...DEFAULT_PAGES_FROM_CONSTANTS];
+
+    
