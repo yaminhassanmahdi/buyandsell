@@ -7,7 +7,6 @@ import Link from 'next/link';
 import { PlusCircle, Search, Menu } from 'lucide-react';
 import { Input } from './ui/input';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-// MainNav import is removed as per previous refactor, if mobile nav needs categories, it's handled differently.
 import { MOCK_CATEGORIES } from '@/lib/mock-data';
 import { useAuth } from '@/contexts/auth-context';
 import React, { useState } from 'react';
@@ -27,7 +26,7 @@ export function SiteHeader() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 max-w-screen-2xl items-center px-2 sm:px-4">
+      <div className="container flex h-16 max-w-screen-2xl items-center"> {/* Removed px-2 sm:px-4 */}
         {/* Mobile Menu */}
         <div className="md:hidden mr-2 sm:mr-4">
           <Sheet>
@@ -99,8 +98,8 @@ export function SiteHeader() {
                     variant="default"
                     className="bg-accent hover:bg-accent/90 text-accent-foreground px-2 sm:px-3 h-10"
                 >
-                    <PlusCircle className="h-5 w-5" />
-                    <span className="ml-1 hidden sm:inline">Sell Now</span>
+                    <PlusCircle className="h-5 w-5 sm:mr-1" /> {/* Keep margin on larger screens */}
+                    <span className="hidden sm:inline">Sell Now</span>
                 </Button>
             </Link>
 
