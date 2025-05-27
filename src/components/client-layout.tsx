@@ -13,9 +13,10 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isAdminRoute = pathname.startsWith('/admin');
   const isHomePage = pathname === '/';
+  const isCategoryPage = pathname.startsWith('/category/');
 
   let mainContainerClass = 'container';
-  if (isHomePage || isAdminRoute) {
+  if (isHomePage || isAdminRoute || isCategoryPage) { // Added isCategoryPage
     mainContainerClass = ''; 
   }
 

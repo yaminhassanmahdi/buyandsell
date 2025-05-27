@@ -64,7 +64,7 @@ export default function CategoryPage() {
   const handleSubCategorySelect = (subCategoryId: string | null) => {
     setSelectedSubCategoryIdForFilter(subCategoryId);
     // Scroll to the top of the product grid for the selected subcategory or all products
-    const elementId = subCategoryId ? `subcategory-products-${subCategoryId}` : `category-products-all`;
+    const elementId = subCategoryId ? `subcategory-products-${subCategoryId}` : `all-products-section-for-category`;
     const element = document.getElementById(elementId);
     
     if (element) {
@@ -92,7 +92,7 @@ export default function CategoryPage() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8"> {/* Keep container for loading skeleton */}
         <Skeleton className="h-10 w-1/3 mb-6" />
         <Skeleton className="h-32 w-full mb-8" /> {/* Placeholder for SubCategoryScroller */}
         <Skeleton className="h-64 w-full mb-8" /> {/* Placeholder for HeroBanner */}
@@ -134,8 +134,10 @@ export default function CategoryPage() {
     : products.filter(p => p.stock > 0);
 
   return (
-    <div className="container mx-auto px-4 py-2">
-      <h1 className="text-3xl md:text-4xl font-bold my-6 text-center">{category.name}</h1>
+    <div className="py-2"> {/* Removed container from root, added basic py for spacing */}
+      <div className="container mx-auto px-4"> {/* Container for the title */}
+        <h1 className="text-3xl md:text-4xl font-bold my-6 text-center">{category.name}</h1>
+      </div>
 
       {subCategories.length > 0 && (
         <SubCategoryScroller 
@@ -148,76 +150,79 @@ export default function CategoryPage() {
       <HeroBanner />
 
       <section className="my-8 md:my-12">
-        <h2 className="text-2xl md:text-3xl font-bold mb-4 md:mb-6 text-center">Shop by Style</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 justify-items-center">
-          {[1, 2, 3, 4].map(i => ( // Placeholder content for "Shop by Style"
-            <Link key={i} href="#" className="group block">
-              <div className="aspect-square w-full max-w-[200px] md:max-w-[250px] bg-muted rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow">
-                <Image src={`https://placehold.co/300x300.png`} alt={`Featured Style ${i}`} width={300} height={300} className="object-cover w-full h-full group-hover:scale-105 transition-transform" data-ai-hint="style fashion" />
-              </div>
-            </Link>
-          ))}
+        <div className="container mx-auto px-4"> {/* Container for Shop by Style */}
+          <h2 className="text-2xl md:text-3xl font-bold mb-4 md:mb-6 text-center">Shop by Style</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 justify-items-center">
+            {[1, 2, 3, 4].map(i => ( // Placeholder content for "Shop by Style"
+              <Link key={i} href="#" className="group block">
+                <div className="aspect-square w-full max-w-[200px] md:max-w-[250px] bg-muted rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow">
+                  <Image src={`https://placehold.co/300x300.png`} alt={`Featured Style ${i}`} width={300} height={300} className="object-cover w-full h-full group-hover:scale-105 transition-transform" data-ai-hint="style fashion" />
+                </div>
+              </Link>
+            ))}
+          </div>
         </div>
       </section>
 
       {/* Display logic for products */}
       <section id="all-products-section-for-category" className="mb-10 md:mb-12 pt-6 -mt-6">
-        <div className="flex items-center justify-between mb-4 md:mb-6">
-          <h2 className="text-2xl md:text-3xl font-bold">
-            {selectedSubCategoryIdForFilter 
-              ? subCategories.find(sc => sc.id === selectedSubCategoryIdForFilter)?.name || category.name 
-              : `All Products in ${category.name}`}
-          </h2>
-          {/* "View All" button logic might need adjustment if this section shows ALL products already */}
-        </div>
-        {displayedProducts.length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-            {displayedProducts.map(product => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
-        ) : (
-          <Alert variant="default" className="mt-4">
-            <SearchX className="h-5 w-5" />
-            <AlertTitle>No Products Yet</AlertTitle>
-            <AlertDescription>
-              There are currently no products listed for {selectedSubCategoryIdForFilter ? subCategories.find(sc => sc.id === selectedSubCategoryIdForFilter)?.name : category.name}. Check back soon!
-            </AlertDescription>
-          </Alert>
-        )}
-      </section>
-
-      {/* Optionally, if you still want to show individual sub-category rows when "All" is NOT selected */}
-      {!selectedSubCategoryIdForFilter && subCategories.map(subCat => (
-        <section key={subCat.id} id={`subcategory-products-${subCat.id}`} className="mb-10 md:mb-12 pt-6 -mt-6">
+        <div className="container mx-auto px-4"> {/* Container for this section */}
           <div className="flex items-center justify-between mb-4 md:mb-6">
             <h2 className="text-2xl md:text-3xl font-bold">
-              {subCat.name}
+              {selectedSubCategoryIdForFilter 
+                ? subCategories.find(sc => sc.id === selectedSubCategoryIdForFilter)?.name || category.name 
+                : `All Products in ${category.name}`}
             </h2>
-            {products.filter(p => p.subCategoryId === subCat.id && p.stock > 0).length > PRODUCTS_PER_SUB_CATEGORY_ROW && (
-              <Button variant="outline" asChild>
-                {/* This link should ideally filter the main product grid by this subcategory */}
-                <button onClick={() => handleSubCategorySelect(subCat.id)} className="flex items-center">
-                  View All <ArrowRight className="ml-2 h-4 w-4" />
-                </button>
-              </Button>
-            )}
           </div>
-          {productsBySubCategory(subCat.id).length > 0 ? (
+          {displayedProducts.length > 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-              {productsBySubCategory(subCat.id).map(product => (
+              {displayedProducts.map(product => (
                 <ProductCard key={product.id} product={product} />
               ))}
             </div>
           ) : (
-             <Alert variant="default" className="mt-4">
-                <SearchX className="h-5 w-5" />
-                <AlertTitle>No Products Yet</AlertTitle>
-                <AlertDescription>
-                  There are currently no products listed for {subCat.name}. Check back soon!
-                </AlertDescription>
-              </Alert>
+            <Alert variant="default" className="mt-4">
+              <SearchX className="h-5 w-5" />
+              <AlertTitle>No Products Yet</AlertTitle>
+              <AlertDescription>
+                There are currently no products listed for {selectedSubCategoryIdForFilter ? subCategories.find(sc => sc.id === selectedSubCategoryIdForFilter)?.name : category.name}. Check back soon!
+              </AlertDescription>
+            </Alert>
           )}
+        </div>
+      </section>
+
+      {!selectedSubCategoryIdForFilter && subCategories.map(subCat => (
+        <section key={subCat.id} id={`subcategory-products-${subCat.id}`} className="mb-10 md:mb-12 pt-6 -mt-6">
+          <div className="container mx-auto px-4"> {/* Container for this section */}
+            <div className="flex items-center justify-between mb-4 md:mb-6">
+              <h2 className="text-2xl md:text-3xl font-bold">
+                {subCat.name}
+              </h2>
+              {products.filter(p => p.subCategoryId === subCat.id && p.stock > 0).length > PRODUCTS_PER_SUB_CATEGORY_ROW && (
+                <Button variant="outline" asChild>
+                  <button onClick={() => handleSubCategorySelect(subCat.id)} className="flex items-center">
+                    View All <ArrowRight className="ml-2 h-4 w-4" />
+                  </button>
+                </Button>
+              )}
+            </div>
+            {productsBySubCategory(subCat.id).length > 0 ? (
+              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+                {productsBySubCategory(subCat.id).map(product => (
+                  <ProductCard key={product.id} product={product} />
+                ))}
+              </div>
+            ) : (
+               <Alert variant="default" className="mt-4">
+                  <SearchX className="h-5 w-5" />
+                  <AlertTitle>No Products Yet</AlertTitle>
+                  <AlertDescription>
+                    There are currently no products listed for {subCat.name}. Check back soon!
+                  </AlertDescription>
+                </Alert>
+            )}
+          </div>
         </section>
       ))}
 
@@ -237,4 +242,3 @@ const ProductCardSkeleton = () => (
     </div>
   </div>
 );
-
