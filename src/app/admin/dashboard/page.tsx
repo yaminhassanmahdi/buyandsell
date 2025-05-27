@@ -1,11 +1,11 @@
 
-"use client"; // Make it a client component to use hooks like useLocalStorage
+"use client"; 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { MOCK_ORDERS, MOCK_PRODUCTS, MOCK_USERS, MOCK_CATEGORIES } from "@/lib/mock-data";
+import { MOCK_ORDERS, MOCK_PRODUCTS, MOCK_USERS } from "@/lib/mock-data";
 import { DollarSign, ShoppingCart, Users, CheckSquare, Percent, Truck } from "lucide-react";
 import useLocalStorage from "@/hooks/use-local-storage";
-import type { CommissionSetting } from "@/lib/types";
-import { COMMISSION_SETTINGS_STORAGE_KEY, DEFAULT_COMMISSION_SETTINGS, CURRENCY_SYMBOL } from "@/lib/constants";
+import type { CommissionSetting, BusinessSettings } from "@/lib/types";
+import { COMMISSION_SETTINGS_STORAGE_KEY, DEFAULT_COMMISSION_SETTINGS, BUSINESS_SETTINGS_STORAGE_KEY, DEFAULT_BUSINESS_SETTINGS } from "@/lib/constants";
 import { useMemo } from "react";
 
 export default function AdminDashboardPage() {
@@ -13,6 +13,9 @@ export default function AdminDashboardPage() {
     COMMISSION_SETTINGS_STORAGE_KEY,
     DEFAULT_COMMISSION_SETTINGS
   );
+  const [settings] = useLocalStorage<BusinessSettings>(BUSINESS_SETTINGS_STORAGE_KEY, DEFAULT_BUSINESS_SETTINGS);
+  const activeCurrency = settings.availableCurrencies.find(c => c.code === settings.defaultCurrencyCode) || settings.availableCurrencies[0] || { symbol: '?' };
+  const currencySymbol = activeCurrency.symbol;
 
   const dashboardStats = useMemo(() => {
     let totalPlatformSales = 0;
@@ -21,15 +24,13 @@ export default function AdminDashboardPage() {
 
     MOCK_ORDERS.forEach(order => {
       if (order.status === 'delivered' && order.paymentStatus === 'paid') {
-        // Calculate item subtotal for this order
         const orderItemSubtotal = order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-        totalPlatformSales += orderItemSubtotal; // Commission is based on item subtotal before delivery
+        totalPlatformSales += orderItemSubtotal; 
 
         if (order.deliveryChargeAmount) {
           totalDeliveryChargesCollected += order.deliveryChargeAmount;
         }
 
-        // Calculate commission for this order
         let orderCommission = 0;
         order.items.forEach(item => {
           const product = MOCK_PRODUCTS.find(p => p.id === item.id);
@@ -41,19 +42,16 @@ export default function AdminDashboardPage() {
         });
         totalPlatformCommission += orderCommission;
         
-        // Store calculated commission on the order object if needed (optional, MOCK_ORDERS is mutable)
-        // This might be redundant if platformCommission is already being stored when order status changes
         const orderInMock = MOCK_ORDERS.find(mo => mo.id === order.id);
         if(orderInMock && orderInMock.platformCommission !== orderCommission) {
-            // console.log(`Updating commission for order ${order.id} from ${orderInMock.platformCommission} to ${orderCommission}`);
-            // orderInMock.platformCommission = parseFloat(orderCommission.toFixed(2)); // ensure precision
+            // orderInMock.platformCommission = parseFloat(orderCommission.toFixed(2)); 
         }
       }
     });
 
     const pendingProducts = MOCK_PRODUCTS.filter(p => p.status === 'pending').length;
     const totalUsers = MOCK_USERS.length;
-    const totalOrders = MOCK_ORDERS.length; // All orders, regardless of status
+    const totalOrders = MOCK_ORDERS.length; 
 
     return {
       totalPlatformCommission: parseFloat(totalPlatformCommission.toFixed(2)),
@@ -76,7 +74,7 @@ export default function AdminDashboardPage() {
             <Percent className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{CURRENCY_SYMBOL}{dashboardStats.totalPlatformCommission.toFixed(2)}</div>
+            <div className="text-2xl font-bold">{currencySymbol}{dashboardStats.totalPlatformCommission.toFixed(2)}</div>
             <p className="text-xs text-muted-foreground">From delivered & paid orders</p>
           </CardContent>
         </Card>
@@ -86,7 +84,7 @@ export default function AdminDashboardPage() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{CURRENCY_SYMBOL}{dashboardStats.totalPlatformSales.toFixed(2)}</div>
+            <div className="text-2xl font-bold">{currencySymbol}{dashboardStats.totalPlatformSales.toFixed(2)}</div>
             <p className="text-xs text-muted-foreground">Subtotal of items in delivered & paid orders</p>
           </CardContent>
         </Card>
@@ -96,7 +94,7 @@ export default function AdminDashboardPage() {
             <Truck className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{CURRENCY_SYMBOL}{dashboardStats.totalDeliveryChargesCollected.toFixed(2)}</div>
+            <div className="text-2xl font-bold">{currencySymbol}{dashboardStats.totalDeliveryChargesCollected.toFixed(2)}</div>
             <p className="text-xs text-muted-foreground">Collected from delivered & paid orders</p>
           </CardContent>
         </Card>
@@ -137,11 +135,9 @@ export default function AdminDashboardPage() {
             <CardDescription>Use the navigation on the left to manage the platform.</CardDescription>
         </CardHeader>
         <CardContent>
-            <p>This is your central hub for overseeing 2ndhandbajar.com. From here you can manage products, orders, users, locations, and financial settings like commissions and withdrawal requests.</p>
+            <p>This is your central hub for overseeing {settings.appName}. From here you can manage products, orders, users, locations, and financial settings like commissions and withdrawal requests.</p>
         </CardContent>
       </Card>
     </div>
   );
 }
-
-    

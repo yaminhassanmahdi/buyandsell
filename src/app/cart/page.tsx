@@ -1,7 +1,7 @@
 
 "use client";
 import { useCart } from '@/contexts/cart-context';
-import { CartItem as CartItemComponent } from '@/components/cart-item'; // Renamed to avoid conflict
+import { CartItem as CartItemComponent } from '@/components/cart-item'; 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import Link from 'next/link';
@@ -9,8 +9,8 @@ import { ShoppingCart, ArrowRight, Truck, Info, Package } from 'lucide-react';
 import React, { useEffect, useState, useMemo } from 'react';
 import { useAuth } from '@/contexts/auth-context';
 import useLocalStorage from '@/hooks/use-local-storage';
-import type { DeliveryChargeSettings, ShippingAddress, Product as ProductType, User as UserType, CartItem } from '@/lib/types';
-import { DELIVERY_CHARGES_STORAGE_KEY, DEFAULT_DELIVERY_CHARGES, CURRENCY_SYMBOL } from '@/lib/constants';
+import type { DeliveryChargeSettings, ShippingAddress, Product as ProductType, User as UserType, CartItem, BusinessSettings } from '@/lib/types';
+import { DELIVERY_CHARGES_STORAGE_KEY, DEFAULT_DELIVERY_CHARGES, BUSINESS_SETTINGS_STORAGE_KEY, DEFAULT_BUSINESS_SETTINGS } from '@/lib/constants';
 import { MOCK_PRODUCTS, MOCK_USERS } from '@/lib/mock-data';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
@@ -21,7 +21,7 @@ interface SellerCartGroup {
   sellerAddress?: ShippingAddress | null;
   items: CartItem[];
   deliveryCharge: number | null;
-  deliveryMessage: React.ReactNode | null; // Changed to React.ReactNode
+  deliveryMessage: React.ReactNode | null; 
 }
 
 export default function CartPage() {
@@ -31,10 +31,13 @@ export default function CartPage() {
     DELIVERY_CHARGES_STORAGE_KEY,
     DEFAULT_DELIVERY_CHARGES
   );
+  const [settings] = useLocalStorage<BusinessSettings>(BUSINESS_SETTINGS_STORAGE_KEY, DEFAULT_BUSINESS_SETTINGS);
+  const activeCurrency = settings.availableCurrencies.find(c => c.code === settings.defaultCurrencyCode) || settings.availableCurrencies[0] || { symbol: '?' };
+  const currencySymbol = activeCurrency.symbol;
 
   const [sellerCartGroups, setSellerCartGroups] = useState<SellerCartGroup[]>([]);
   const [totalDeliveryCharge, setTotalDeliveryCharge] = useState<number | null>(null);
-  const [overallDeliveryMessage, setOverallDeliveryMessage] = useState<React.ReactNode | null>("Calculating shipping..."); // Changed to React.ReactNode
+  const [overallDeliveryMessage, setOverallDeliveryMessage] = useState<React.ReactNode | null>("Calculating shipping..."); 
   const [isCalculating, setIsCalculating] = useState(true);
 
 
@@ -74,7 +77,7 @@ export default function CartPage() {
       }
 
       if (itemCount === 0) {
-        setOverallDeliveryMessage(null); // No items, no message needed
+        setOverallDeliveryMessage(null); 
         setSellerCartGroups([]);
         setTotalDeliveryCharge(0);
         setIsCalculating(false);
@@ -93,7 +96,7 @@ export default function CartPage() {
           }
           groupedBySeller[productDetails.sellerId].items.push(cartItem);
         } else {
-          // Handle items with no sellerId (e.g., group them under a generic seller or error)
+          
           if (!groupedBySeller['unknown_seller']) {
              groupedBySeller['unknown_seller'] = { seller: undefined, items: [] };
           }
@@ -109,10 +112,10 @@ export default function CartPage() {
         const group = groupedBySeller[sellerId];
         const sellerAddress = group.seller?.defaultShippingAddress;
         let charge: number | null = null;
-        let message: React.ReactNode | null = null; // Changed to React.ReactNode
+        let message: React.ReactNode | null = null; 
 
         if (!sellerAddress) {
-          charge = deliverySettings.interDistrict; // Fallback if seller address is missing
+          charge = deliverySettings.interDistrict; 
           message = "Seller address unavailable, using default charge.";
         } else {
           if (buyerAddress.thana === sellerAddress.thana && buyerAddress.district === sellerAddress.district) {
@@ -127,7 +130,7 @@ export default function CartPage() {
         if (charge !== null) {
             calculatedTotalDelivery += charge;
         } else {
-            allChargesCalculated = false; // If any charge is null
+            allChargesCalculated = false; 
         }
 
         newSellerCartGroups.push({
@@ -142,7 +145,7 @@ export default function CartPage() {
       
       setSellerCartGroups(newSellerCartGroups);
       setTotalDeliveryCharge(allChargesCalculated ? calculatedTotalDelivery : null);
-      setOverallDeliveryMessage(null); // Clear global message as calculations are done or per-group messages exist
+      setOverallDeliveryMessage(null); 
       setIsCalculating(false);
     };
 
@@ -200,12 +203,11 @@ export default function CartPage() {
                 <div className="flex justify-end items-center mt-2 pt-2 border-t text-sm">
                   <span className="text-muted-foreground mr-2">Shipping for these items:</span>
                   {group.deliveryCharge !== null ? (
-                    <span className="font-semibold">{CURRENCY_SYMBOL}{group.deliveryCharge.toFixed(2)}</span>
+                    <span className="font-semibold">{currencySymbol}{group.deliveryCharge.toFixed(2)}</span>
                   ) : (
                     <span className="text-xs text-muted-foreground">{group.deliveryMessage || "Calculating..."}</span>
                   )}
                 </div>
-                {/* {index < sellerCartGroups.length - 1 && <Separator className="my-4" />} */}
               </div>
             ))}
           </CardContent>
@@ -234,21 +236,21 @@ export default function CartPage() {
           <CardContent className="space-y-4">
             <div className="flex justify-between">
               <span>Subtotal</span>
-              <span>{CURRENCY_SYMBOL}{subTotal.toFixed(2)}</span>
+              <span>{currencySymbol}{subTotal.toFixed(2)}</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="flex items-center gap-1"><Truck className="h-4 w-4 text-muted-foreground"/>Total Shipping</span>
               {isCalculating ? (
                 <span className="text-xs text-muted-foreground">Calculating...</span>
               ) : totalDeliveryCharge !== null ? (
-                <span>{CURRENCY_SYMBOL}{totalDeliveryCharge.toFixed(2)}</span>
+                <span>{currencySymbol}{totalDeliveryCharge.toFixed(2)}</span>
               ) : (
                 <span className="text-xs text-muted-foreground">{typeof overallDeliveryMessage === 'string' ? overallDeliveryMessage : "Unavailable"}</span>
               )}
             </div>
             <div className="flex justify-between font-bold text-lg border-t pt-4">
               <span>Grand Total</span>
-              <span>{CURRENCY_SYMBOL}{grandTotal.toFixed(2)}</span>
+              <span>{currencySymbol}{grandTotal.toFixed(2)}</span>
             </div>
           </CardContent>
           <CardFooter>
@@ -273,5 +275,3 @@ export default function CartPage() {
     </div>
   );
 }
-
-    

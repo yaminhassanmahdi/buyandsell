@@ -1,17 +1,17 @@
 
-import type { OrderStatus, StaticDivision, StaticDistrict, StaticThana, Category, Brand, DeliveryChargeSettings, CommissionSetting, AdminNavItem, BusinessSettings, HeroBannerSlide, CustomPage, ShippingMethod } from './types';
+import type { OrderStatus, StaticDivision, StaticDistrict, StaticThana, Category, Brand, DeliveryChargeSettings, CommissionSetting, AdminNavItem, BusinessSettings, HeroBannerSlide, CustomPage, ShippingMethod, Currency } from './types';
 import {
   Smartphone, Laptop, Shirt, Armchair, BookOpen, Tag,
   Package as PackageIcon,
   PackageCheck, PackageX, Truck, CheckCircle2, Hourglass,
   Handshake as HandshakeIcon,
   LayoutDashboard, CheckSquare, ShoppingCart, Users as UsersIcon,
-  ListChecks, FolderTree, Tags as TagsIcon, Settings2 as SettingsIcon, // Renamed Settings2 to SettingsIcon for clarity
-  Globe, Library, MapPin, Home, DollarSign, Briefcase, Edit, Trash2, CreditCard, PieChart, FileText, TrendingUp, Percent, Image as ImageIcon, FileType, Ship
+  ListChecks, FolderTree, Tags as TagsIcon, Settings2 as SettingsIcon, 
+  Globe, Library, MapPin, Home, DollarSign, Briefcase, Edit, Trash2, CreditCard, PieChart, FileText, TrendingUp, Percent, Image as ImageIcon, FileType, Ship, Landmark
 } from 'lucide-react';
 
-export let APP_NAME = '2ndhandbajar.com'; // Made it mutable
-export const CURRENCY_SYMBOL = '৳'; // Added currency symbol
+export let APP_NAME = '2ndhandbajar.com'; 
+// export const CURRENCY_SYMBOL = '৳'; // Removed, will be dynamic
 
 export const INITIAL_CATEGORIES: Category[] = [
   { id: 'electronics', name: 'Electronics', imageUrl: 'https://placehold.co/80x80.png', imageHint: 'electronics gadget' },
@@ -180,18 +180,24 @@ export const DELIVERY_CHARGES_STORAGE_KEY = 'deliveryChargeSettings';
 export const COMMISSION_SETTINGS_STORAGE_KEY = 'commissionSettings';
 export const DEFAULT_COMMISSION_SETTINGS: CommissionSetting[] = [];
 
-// New constants for General Settings
 export const BUSINESS_SETTINGS_STORAGE_KEY = 'businessSettings';
 export const HERO_BANNERS_STORAGE_KEY = 'heroBannerSlides';
 export const CUSTOM_PAGES_STORAGE_KEY = 'customPages';
 export const SHIPPING_METHODS_STORAGE_KEY = 'shippingMethods';
 
+export const DEFAULT_CURRENCIES: Currency[] = [
+  { code: 'BDT', symbol: '৳', name: 'Bangladeshi Taka' },
+  { code: 'USD', symbol: '$', name: 'US Dollar' },
+];
+
 export const DEFAULT_BUSINESS_SETTINGS: BusinessSettings = {
   appName: '2ndhandbajar.com',
-  logoUrl: '/logo-placeholder.png', // Default path to a placeholder logo
-  primaryColor: '47 92% 52%',      // HSL for --primary (Vivid Yellow #F0BB23 from PRD)
-  secondaryColor: '77 30% 60%',    // HSL for --accent (Soft Green #9DBD5B from PRD, used as secondary)
+  logoUrl: '/logo-placeholder.png', 
+  primaryColor: '47 92% 52%',      
+  secondaryColor: '77 30% 60%',    
   faviconUrl: '/favicon.ico',
+  availableCurrencies: DEFAULT_CURRENCIES,
+  defaultCurrencyCode: 'BDT',
 };
 
 export const DEFAULT_HERO_BANNER_SLIDES: HeroBannerSlide[] = [
@@ -229,7 +235,7 @@ export const DEFAULT_HERO_BANNER_SLIDES: HeroBannerSlide[] = [
     buttonLink: '/?category=home-garden',
     bgColor: 'bg-green-500',
     textColor: 'text-white',
-    isActive: false, // Example of an inactive slide
+    isActive: false, 
   },
 ];
 
@@ -256,5 +262,3 @@ export const DEFAULT_SHIPPING_METHODS: ShippingMethod[] = [
   { id: 'standard-delivery', name: 'Standard Delivery' },
   { id: 'express-delivery', name: 'Express Delivery (Next Day)' },
 ];
-
-    

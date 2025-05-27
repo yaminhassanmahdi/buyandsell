@@ -2,12 +2,13 @@
 "use client";
 import Image from 'next/image';
 import Link from 'next/link';
-import type { Product } from '@/lib/types';
+import type { Product, BusinessSettings } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { ShoppingCart, Minus, Plus } from 'lucide-react';
 import { useCart } from '@/contexts/cart-context';
-import { CURRENCY_SYMBOL } from '@/lib/constants';
+import useLocalStorage from '@/hooks/use-local-storage';
+import { BUSINESS_SETTINGS_STORAGE_KEY, DEFAULT_BUSINESS_SETTINGS } from '@/lib/constants';
 
 interface ProductCardProps {
   product: Product;
@@ -15,6 +16,10 @@ interface ProductCardProps {
 
 export function ProductCard({ product }: ProductCardProps) {
   const { cartItems, addToCart, updateQuantity } = useCart();
+  const [settings] = useLocalStorage<BusinessSettings>(BUSINESS_SETTINGS_STORAGE_KEY, DEFAULT_BUSINESS_SETTINGS);
+
+  const activeCurrency = settings.availableCurrencies.find(c => c.code === settings.defaultCurrencyCode) || settings.availableCurrencies[0] || { symbol: '?' };
+  const currencySymbol = activeCurrency.symbol;
 
   const cartItem = cartItems.find(item => item.id === product.id);
   const currentQuantity = cartItem ? cartItem.quantity : 0;
@@ -42,7 +47,7 @@ export function ProductCard({ product }: ProductCardProps) {
           </CardTitle>
         </Link>
         <p className="text-lg font-bold text-primary">
-          {CURRENCY_SYMBOL}{product.price.toFixed(2)}
+          {currencySymbol}{product.price.toFixed(2)}
         </p>
       </CardContent>
       <CardFooter className="p-3 border-t mt-auto">
@@ -82,5 +87,3 @@ export function ProductCard({ product }: ProductCardProps) {
     </Card>
   );
 }
-
-    

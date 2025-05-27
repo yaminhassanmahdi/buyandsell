@@ -7,13 +7,13 @@ import { useCart } from '@/contexts/cart-context';
 import { AddressForm } from '@/components/address-form';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import type { ShippingAddress, Order, DeliveryChargeSettings, Product as ProductType, User as UserType, CartItem, ShippingMethod } from '@/lib/types';
+import type { ShippingAddress, Order, DeliveryChargeSettings, Product as ProductType, User as UserType, CartItem, ShippingMethod, BusinessSettings } from '@/lib/types';
 import { MOCK_ORDERS, MOCK_PRODUCTS, MOCK_USERS } from '@/lib/mock-data';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
 import { Loader2, ShieldCheck, Edit3, Home, Truck, Ship } from 'lucide-react';
 import useLocalStorage from '@/hooks/use-local-storage';
-import { DELIVERY_CHARGES_STORAGE_KEY, DEFAULT_DELIVERY_CHARGES, SHIPPING_METHODS_STORAGE_KEY, DEFAULT_SHIPPING_METHODS, CURRENCY_SYMBOL } from '@/lib/constants';
+import { DELIVERY_CHARGES_STORAGE_KEY, DEFAULT_DELIVERY_CHARGES, SHIPPING_METHODS_STORAGE_KEY, DEFAULT_SHIPPING_METHODS, BUSINESS_SETTINGS_STORAGE_KEY, DEFAULT_BUSINESS_SETTINGS } from '@/lib/constants';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from '@/components/ui/label';
 
@@ -35,18 +35,21 @@ export default function CheckoutPage() {
     DEFAULT_DELIVERY_CHARGES
   );
 
-  const [availableShippingMethods, setAvailableShippingMethods] = useLocalStorage<ShippingMethod[]>(
+  const [availableShippingMethods] = useLocalStorage<ShippingMethod[]>(
     SHIPPING_METHODS_STORAGE_KEY,
     DEFAULT_SHIPPING_METHODS
   );
   const [selectedShippingMethodId, setSelectedShippingMethodId] = useState<string>('');
+  const [settings] = useLocalStorage<BusinessSettings>(BUSINESS_SETTINGS_STORAGE_KEY, DEFAULT_BUSINESS_SETTINGS);
+  const activeCurrency = settings.availableCurrencies.find(c => c.code === settings.defaultCurrencyCode) || settings.availableCurrencies[0] || { symbol: '?' };
+  const currencySymbol = activeCurrency.symbol;
+
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
       router.push('/login?redirect=/checkout');
       return;
     }
-    // If auth is loaded, user is authenticated, cart is empty, and not in the middle of placing an order, redirect to cart.
     if (!authLoading && isAuthenticated && itemCount === 0 && !isPlacingOrder) {
       router.push('/cart');
       return;
@@ -61,7 +64,8 @@ export default function CheckoutPage() {
         setIsEditingAddress(true);
       }
     }
-  }, [isAuthenticated, authLoading, router, itemCount, currentUser, isPlacingOrder]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, authLoading, itemCount, currentUser, isPlacingOrder]); // router was removed as it can cause re-runs if not stable
 
   useEffect(() => {
     if (availableShippingMethods.length === 1 && !selectedShippingMethodId) {
@@ -179,6 +183,7 @@ export default function CheckoutPage() {
       shippingMethodName: selectedMethod?.name,
       createdAt: new Date(),
       updatedAt: new Date(),
+      platformCommission: 0, // Initialize commission
     };
     MOCK_ORDERS.push(newOrder);
 
@@ -190,7 +195,6 @@ export default function CheckoutPage() {
       duration: 4000,
     });
     router.push(`/order-confirmation/${newOrder.id}`);
-    // setIsPlacingOrder(false); // Let component unmount handle state reset
   };
 
   if (authLoading || (!authLoading && !isAuthenticated && !isPlacingOrder) || (itemCount === 0 && !isPlacingOrder && !authLoading)) {
@@ -315,27 +319,27 @@ export default function CheckoutPage() {
                   <Image src={item.imageUrl} alt={item.name} width={40} height={40} className="rounded" data-ai-hint="product item" />
                   <div>
                     <p className="text-sm font-medium">{item.name} (x{item.quantity})</p>
-                    <p className="text-xs text-muted-foreground">{CURRENCY_SYMBOL}{item.price.toFixed(2)} each</p>
+                    <p className="text-xs text-muted-foreground">{currencySymbol}{item.price.toFixed(2)} each</p>
                   </div>
                 </div>
-                <p className="text-sm font-semibold">{CURRENCY_SYMBOL}{(item.price * item.quantity).toFixed(2)}</p>
+                <p className="text-sm font-semibold">{currencySymbol}{(item.price * item.quantity).toFixed(2)}</p>
               </div>
             ))}
             <div className="mt-4 pt-4 border-t space-y-1">
                 <div className="flex justify-between">
                     <span>Subtotal</span>
-                    <span>{CURRENCY_SYMBOL}{itemsSubtotal.toFixed(2)}</span>
+                    <span>{currencySymbol}{itemsSubtotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
                     <span className="flex items-center gap-1"><Truck className="h-4 w-4 text-muted-foreground"/>Shipping</span>
                     <span>
                         {isCalculatingDelivery ? 'Calculating...' :
-                         (totalDeliveryCharge !== null ? `${CURRENCY_SYMBOL}${totalDeliveryCharge.toFixed(2)}` : 'N/A')}
+                         (totalDeliveryCharge !== null ? `${currencySymbol}${totalDeliveryCharge.toFixed(2)}` : 'N/A')}
                     </span>
                 </div>
                 <div className="flex justify-between font-bold text-lg mt-2 pt-2 border-t">
                     <span>Total</span>
-                    <span>{CURRENCY_SYMBOL}{finalTotalAmount.toFixed(2)}</span>
+                    <span>{currencySymbol}{finalTotalAmount.toFixed(2)}</span>
                 </div>
             </div>
           </CardContent>
@@ -362,5 +366,3 @@ export default function CheckoutPage() {
     </div>
   );
 }
-
-    

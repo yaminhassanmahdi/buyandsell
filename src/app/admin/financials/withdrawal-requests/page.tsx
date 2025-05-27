@@ -2,7 +2,7 @@
 "use client";
 import { useEffect, useState } from 'react';
 import { MOCK_WITHDRAWAL_REQUESTS } from '@/lib/mock-data';
-import type { WithdrawalRequest, WithdrawalRequestStatus } from '@/lib/types';
+import type { WithdrawalRequest, WithdrawalRequestStatus, BusinessSettings } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogClose } from '@/components/ui/dialog';
@@ -14,7 +14,8 @@ import { Loader2, CheckCircle, XCircle, Edit, CreditCard, FileText } from 'lucid
 import { format } from 'date-fns';
 import { Label } from '@/components/ui/label'; 
 import { DialogFooter } from '@/components/ui/dialog'; 
-import { CURRENCY_SYMBOL } from '@/lib/constants';
+import useLocalStorage from '@/hooks/use-local-storage';
+import { BUSINESS_SETTINGS_STORAGE_KEY, DEFAULT_BUSINESS_SETTINGS } from '@/lib/constants';
 
 export default function AdminWithdrawalRequestsPage() {
   const [requests, setRequests] = useState<WithdrawalRequest[]>([]);
@@ -27,10 +28,13 @@ export default function AdminWithdrawalRequestsPage() {
   const [actionType, setActionType] = useState<'approve' | 'reject' | null>(null);
   const [formSubmitting, setFormSubmitting] = useState(false);
 
+  const [settings] = useLocalStorage<BusinessSettings>(BUSINESS_SETTINGS_STORAGE_KEY, DEFAULT_BUSINESS_SETTINGS);
+  const activeCurrency = settings.availableCurrencies.find(c => c.code === settings.defaultCurrencyCode) || settings.availableCurrencies[0] || { symbol: '?' };
+  const currencySymbol = activeCurrency.symbol;
+
   useEffect(() => {
     setIsLoading(true);
     setTimeout(() => {
-      // Sort by requestedAt descending, then by status (pending first)
       const sortedRequests = [...MOCK_WITHDRAWAL_REQUESTS].sort((a, b) => {
         if (a.status === 'pending' && b.status !== 'pending') return -1;
         if (a.status !== 'pending' && b.status === 'pending') return 1;
@@ -61,7 +65,7 @@ export default function AdminWithdrawalRequestsPage() {
       MOCK_WITHDRAWAL_REQUESTS[requestIndex].processedAt = new Date();
       
       setRequests(prev => prev.map(r => r.id === currentRequest.id ? MOCK_WITHDRAWAL_REQUESTS[requestIndex] : r)
-                              .sort((a, b) => { // Re-sort after update
+                              .sort((a, b) => { 
                                 if (a.status === 'pending' && b.status !== 'pending') return -1;
                                 if (a.status !== 'pending' && b.status === 'pending') return 1;
                                 return new Date(b.requestedAt).getTime() - new Date(a.requestedAt).getTime();
@@ -128,7 +132,7 @@ export default function AdminWithdrawalRequestsPage() {
                 <TableRow key={req.id}>
                   <TableCell className="font-medium">{req.id}</TableCell>
                   <TableCell>{req.userName} <span className="text-xs text-muted-foreground">({req.userId})</span></TableCell>
-                  <TableCell>{CURRENCY_SYMBOL}{req.amount.toFixed(2)}</TableCell>
+                  <TableCell>{currencySymbol}{req.amount.toFixed(2)}</TableCell>
                   <TableCell className="text-xs">{req.withdrawalMethodDetails}</TableCell>
                   <TableCell>{format(new Date(req.requestedAt), 'dd MMM yyyy, hh:mm a')}</TableCell>
                   <TableCell>
@@ -175,7 +179,7 @@ export default function AdminWithdrawalRequestsPage() {
               </DialogTitle>
               <DialogDescription>
                 User: {currentRequest.userName} ({currentRequest.userId})<br/>
-                Amount: {CURRENCY_SYMBOL}{currentRequest.amount.toFixed(2)} to {currentRequest.withdrawalMethodDetails}
+                Amount: {currencySymbol}{currentRequest.amount.toFixed(2)} to {currentRequest.withdrawalMethodDetails}
               </DialogDescription>
             </DialogHeader>
             <div className="py-4 space-y-2">
@@ -210,5 +214,3 @@ export default function AdminWithdrawalRequestsPage() {
     </div>
   );
 }
-
-    

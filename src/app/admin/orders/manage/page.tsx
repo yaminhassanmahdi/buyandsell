@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { MOCK_ORDERS, MOCK_PRODUCTS, MOCK_USERS } from '@/lib/mock-data';
-import type { Order, OrderStatus, User, PaymentStatus } from '@/lib/types'; // Added PaymentStatus
+import type { Order, OrderStatus, User, PaymentStatus, BusinessSettings } from '@/lib/types'; 
 import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from '@/components/ui/input';
@@ -13,10 +13,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Card } from "@/components/ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { OrderStatusBadge } from '@/components/order-status-badge';
-import { Settings2, Loader2, SearchX, Filter, Edit, Trash2, MoreHorizontal, Eye, CreditCard } from 'lucide-react'; // Added CreditCard
+import { Settings2, Loader2, SearchX, Filter, Edit, Trash2, MoreHorizontal, Eye, CreditCard } from 'lucide-react'; 
 import { format } from 'date-fns';
-import { ORDER_STATUSES, PAYMENT_STATUSES, CURRENCY_SYMBOL } from '@/lib/constants'; // Added PAYMENT_STATUSES
-import { Badge } from '@/components/ui/badge'; // Added Badge for payment status
+import { ORDER_STATUSES, PAYMENT_STATUSES, BUSINESS_SETTINGS_STORAGE_KEY, DEFAULT_BUSINESS_SETTINGS } from '@/lib/constants'; 
+import { Badge } from '@/components/ui/badge'; 
+import useLocalStorage from '@/hooks/use-local-storage';
 
 export default function AdminManageOrdersPage() {
   const [allOrders, setAllOrders] = useState<Order[]>([]);
@@ -27,7 +28,12 @@ export default function AdminManageOrdersPage() {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<OrderStatus | 'all'>('all');
-  const [paymentStatusFilter, setPaymentStatusFilter] = useState<PaymentStatus | 'all'>('all'); // New filter
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState<PaymentStatus | 'all'>('all'); 
+
+  const [settings] = useLocalStorage<BusinessSettings>(BUSINESS_SETTINGS_STORAGE_KEY, DEFAULT_BUSINESS_SETTINGS);
+  const activeCurrency = settings.availableCurrencies.find(c => c.code === settings.defaultCurrencyCode) || settings.availableCurrencies[0] || { symbol: '?' };
+  const currencySymbol = activeCurrency.symbol;
+
 
   useEffect(() => {
     setIsLoading(true);
@@ -51,7 +57,7 @@ export default function AdminManageOrdersPage() {
     if (statusFilter !== 'all') {
       tempOrders = tempOrders.filter(order => order.status === statusFilter);
     }
-    if (paymentStatusFilter !== 'all') { // Apply new filter
+    if (paymentStatusFilter !== 'all') { 
       tempOrders = tempOrders.filter(order => order.paymentStatus === paymentStatusFilter);
     }
     setFilteredOrders(tempOrders);
@@ -83,7 +89,7 @@ export default function AdminManageOrdersPage() {
     const orderIndex = MOCK_ORDERS.findIndex(o => o.id === orderId);
     if (orderIndex !== -1) {
       MOCK_ORDERS[orderIndex].paymentStatus = newPaymentStatus;
-      MOCK_ORDERS[orderIndex].updatedAt = new Date(); // Also update updatedAt for consistency
+      MOCK_ORDERS[orderIndex].updatedAt = new Date(); 
     }
 
     setAllOrders(prevOrders =>
@@ -120,7 +126,6 @@ export default function AdminManageOrdersPage() {
           <Settings2 className="h-8 w-8 text-primary"/>
           Manage All Orders
         </h1>
-        {/* Removed Add New Order button as it was not implemented */}
       </div>
 
       <div className="p-4 border rounded-lg bg-card shadow grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
@@ -196,7 +201,7 @@ export default function AdminManageOrdersPage() {
                     </TableCell>
                     <TableCell>{format(new Date(order.createdAt), 'dd MMM yyyy')}</TableCell>
                     <TableCell>{buyer?.name || order.shippingAddress.fullName}</TableCell>
-                    <TableCell>{CURRENCY_SYMBOL}{order.totalAmount.toFixed(2)}</TableCell>
+                    <TableCell>{currencySymbol}{order.totalAmount.toFixed(2)}</TableCell>
                     <TableCell>
                       <Select
                         value={order.status}
@@ -262,5 +267,3 @@ export default function AdminManageOrdersPage() {
     </div>
   );
 }
-
-    

@@ -1,14 +1,15 @@
 
 "use client";
 import Image from 'next/image';
-import type { Product } from '@/lib/types';
+import type { Product, BusinessSettings } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle, XCircle, User, Tag, DollarSign, Calendar, Layers } from 'lucide-react'; // Added Layers
+import { CheckCircle, XCircle, User, Tag, DollarSign, Calendar, Layers } from 'lucide-react'; 
 import { format } from 'date-fns';
 import { MOCK_CATEGORIES, MOCK_SUBCATEGORIES, MOCK_BRANDS } from '@/lib/mock-data';
-import { CURRENCY_SYMBOL } from '@/lib/constants';
+import useLocalStorage from '@/hooks/use-local-storage';
+import { BUSINESS_SETTINGS_STORAGE_KEY, DEFAULT_BUSINESS_SETTINGS } from '@/lib/constants';
 
 interface ProductApprovalCardProps {
   product: Product;
@@ -21,6 +22,10 @@ export function ProductApprovalCard({ product, onApprove, onReject, isProcessing
   const categoryName = MOCK_CATEGORIES.find(c => c.id === product.categoryId)?.name || 'N/A';
   const subCategoryName = product.subCategoryId ? MOCK_SUBCATEGORIES.find(sc => sc.id === product.subCategoryId)?.name : null;
   const brandName = MOCK_BRANDS.find(b => b.id === product.brandId)?.name || 'N/A';
+  
+  const [settings] = useLocalStorage<BusinessSettings>(BUSINESS_SETTINGS_STORAGE_KEY, DEFAULT_BUSINESS_SETTINGS);
+  const activeCurrency = settings.availableCurrencies.find(c => c.code === settings.defaultCurrencyCode) || settings.availableCurrencies[0] || { symbol: '?' };
+  const currencySymbol = activeCurrency.symbol;
 
   return (
     <Card className="overflow-hidden shadow-lg">
@@ -54,7 +59,7 @@ export function ProductApprovalCard({ product, onApprove, onReject, isProcessing
             <CardDescription className="mb-3 text-sm text-foreground/80">{product.description}</CardDescription>
             <div className="space-y-1 text-sm text-muted-foreground">
               <p className="flex items-center"><User className="h-4 w-4 mr-2" /> Seller: {product.sellerName || product.sellerId}</p>
-              <p className="flex items-center"><DollarSign className="h-4 w-4 mr-2" /> Price: {CURRENCY_SYMBOL}{product.price.toFixed(2)}</p>
+              <p className="flex items-center"><DollarSign className="h-4 w-4 mr-2" /> Price: {currencySymbol}{product.price.toFixed(2)}</p>
               <p className="flex items-center"><Calendar className="h-4 w-4 mr-2" /> Listed: {format(new Date(product.createdAt), 'PPpp')}</p>
             </div>
           </CardContent>
@@ -82,5 +87,3 @@ export function ProductApprovalCard({ product, onApprove, onReject, isProcessing
     </Card>
   );
 }
-
-    

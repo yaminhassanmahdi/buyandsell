@@ -17,20 +17,21 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MOCK_PRODUCTS, MOCK_CATEGORIES, MOCK_SUBCATEGORIES, MOCK_BRANDS } from "@/lib/mock-data";
-import type { Product, Category, SubCategory, Brand as BrandType } from "@/lib/types";
+import type { Product, Category, SubCategory, Brand as BrandType, BusinessSettings } from "@/lib/types";
 import { useAuth } from "@/contexts/auth-context";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
 import { Loader2, UploadCloud } from "lucide-react";
-import { CURRENCY_SYMBOL } from "@/lib/constants";
+import useLocalStorage from '@/hooks/use-local-storage';
+import { BUSINESS_SETTINGS_STORAGE_KEY, DEFAULT_BUSINESS_SETTINGS } from '@/lib/constants';
 
 const productSchema = z.object({
   name: z.string().min(3, "Product name must be at least 3 characters.").max(100),
   description: z.string().min(10, "Description must be at least 10 characters.").max(1000),
   price: z.coerce.number().min(0.01, "Price must be a positive number."),
   categoryId: z.string().min(1, "Please select a parent category."),
-  subCategoryId: z.string().optional(), // Stays as string or empty string in form, converted to undefined on submit
+  subCategoryId: z.string().optional(), 
   brandId: z.string().min(1, "Please select a brand."),
 });
 
@@ -48,6 +49,10 @@ export function ProductUploadForm() {
   const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
   const [availableSubCategories, setAvailableSubCategories] = useState<SubCategory[]>([]);
   const [brands, setBrands] = useState<BrandType[]>([]);
+  
+  const [settings] = useLocalStorage<BusinessSettings>(BUSINESS_SETTINGS_STORAGE_KEY, DEFAULT_BUSINESS_SETTINGS);
+  const activeCurrency = settings.availableCurrencies.find(c => c.code === settings.defaultCurrencyCode) || settings.availableCurrencies[0] || { symbol: '?' };
+  // const currencySymbol = activeCurrency.symbol; // Not directly used in form inputs, but good for consistency if needed
 
   const form = useForm<ProductFormData>({
     resolver: zodResolver(productSchema),
@@ -62,7 +67,6 @@ export function ProductUploadForm() {
   });
 
   useEffect(() => {
-    // Load initial data for dropdowns
     setParentCategories([...MOCK_CATEGORIES]);
     setSubCategories([...MOCK_SUBCATEGORIES]);
     setBrands([...MOCK_BRANDS]);
@@ -77,11 +81,11 @@ export function ProductUploadForm() {
       
       const currentSubCategoryId = form.getValues("subCategoryId");
       if (currentSubCategoryId && currentSubCategoryId !== VALUE_FOR_NO_SUBCATEGORY_SELECTED && !filteredSubs.some(sc => sc.id === currentSubCategoryId)) {
-        form.setValue("subCategoryId", VALUE_FOR_NO_SUBCATEGORY_SELECTED); // Reset if current sub-category is no longer valid
+        form.setValue("subCategoryId", VALUE_FOR_NO_SUBCATEGORY_SELECTED); 
       }
     } else {
       setAvailableSubCategories([]);
-      form.setValue("subCategoryId", VALUE_FOR_NO_SUBCATEGORY_SELECTED); // Reset if no parent category
+      form.setValue("subCategoryId", VALUE_FOR_NO_SUBCATEGORY_SELECTED); 
     }
   }, [watchedCategoryId, subCategories, form]);
 
@@ -156,7 +160,7 @@ export function ProductUploadForm() {
           name="price"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Price (BDT)</FormLabel>
+              <FormLabel>Price ({activeCurrency.code})</FormLabel>
               <FormControl>
                 <Input type="number" step="0.01" placeholder="29.99" {...field} />
               </FormControl>
@@ -265,5 +269,3 @@ export function ProductUploadForm() {
     </Form>
   );
 }
-
-    

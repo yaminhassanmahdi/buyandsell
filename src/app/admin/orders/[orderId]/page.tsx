@@ -3,7 +3,7 @@
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState, useMemo } from 'react';
 import { MOCK_ORDERS, MOCK_PRODUCTS, MOCK_USERS } from '@/lib/mock-data';
-import type { Order, Product as ProductType, User as UserType, ShippingAddress, CartItem, OrderStatus, PaymentStatus, WithdrawalMethod, CommissionSetting } from '@/lib/types';
+import type { Order, Product as ProductType, User as UserType, ShippingAddress, CartItem, OrderStatus, PaymentStatus, WithdrawalMethod, CommissionSetting, BusinessSettings } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -12,12 +12,12 @@ import { OrderStatusBadge } from '@/components/order-status-badge';
 import Image from 'next/image';
 import { format } from 'date-fns';
 import { ArrowLeft, UserCircle, MapPin, CalendarDays, ShoppingBag, Briefcase, Home, Loader2, CreditCard, Smartphone, Banknote, Save, Truck, AlertTriangle, Percent, Ship } from 'lucide-react';
-import { ORDER_STATUSES, PAYMENT_STATUSES, COMMISSION_SETTINGS_STORAGE_KEY, DEFAULT_COMMISSION_SETTINGS, CURRENCY_SYMBOL } from '@/lib/constants';
+import { ORDER_STATUSES, PAYMENT_STATUSES, COMMISSION_SETTINGS_STORAGE_KEY, DEFAULT_COMMISSION_SETTINGS, BUSINESS_SETTINGS_STORAGE_KEY, DEFAULT_BUSINESS_SETTINGS } from '@/lib/constants';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import useLocalStorage from '@/hooks/use-local-storage';
-import { Label } from '@/components/ui/label'; // Ensure Label is imported
-import { Alert, AlertTitle } from '@/components/ui/alert'; // Ensure Alert, AlertTitle are imported
+import { Label } from '@/components/ui/label'; 
+import { Alert, AlertTitle } from '@/components/ui/alert'; 
 
 interface EnrichedOrderItem extends CartItem {
   productDetails?: ProductType;
@@ -45,7 +45,10 @@ export default function AdminOrderDetailPage() {
   const [selectedOrderStatus, setSelectedOrderStatus] = useState<OrderStatus | undefined>(undefined);
   const [selectedPaymentStatus, setSelectedPaymentStatus] = useState<PaymentStatus | undefined>(undefined);
   const [commissionSettings] = useLocalStorage<CommissionSetting[]>(COMMISSION_SETTINGS_STORAGE_KEY, DEFAULT_COMMISSION_SETTINGS);
-
+  
+  const [settings] = useLocalStorage<BusinessSettings>(BUSINESS_SETTINGS_STORAGE_KEY, DEFAULT_BUSINESS_SETTINGS);
+  const activeCurrency = settings.availableCurrencies.find(c => c.code === settings.defaultCurrencyCode) || settings.availableCurrencies[0] || { symbol: '?' };
+  const currencySymbol = activeCurrency.symbol;
 
   useEffect(() => {
     if (orderId) {
@@ -82,7 +85,7 @@ export default function AdminOrderDetailPage() {
 
   const calculateAndStorePlatformCommission = (currentOrder: Order): number => {
     if (!currentOrder || currentOrder.status !== 'delivered' || currentOrder.paymentStatus !== 'paid') {
-      return currentOrder.platformCommission || 0; // Return existing or 0 if not applicable
+      return currentOrder.platformCommission || 0; 
     }
     let totalCommission = 0;
     currentOrder.items.forEach(item => {
@@ -251,22 +254,22 @@ export default function AdminOrderDetailPage() {
               <Separator className="my-3"/>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Items Subtotal:</span>
-                <span className="font-medium">{CURRENCY_SYMBOL}{itemsSubtotal.toFixed(2)}</span>
+                <span className="font-medium">{currencySymbol}{itemsSubtotal.toFixed(2)}</span>
               </div>
               {order.deliveryChargeAmount !== undefined && order.deliveryChargeAmount >= 0 && (
                 <div className="flex justify-between">
                   <span className="text-muted-foreground flex items-center gap-1"><Truck className="h-4 w-4"/>Delivery Charge:</span>
-                  <span className="font-medium">{CURRENCY_SYMBOL}{order.deliveryChargeAmount.toFixed(2)}</span>
+                  <span className="font-medium">{currencySymbol}{order.deliveryChargeAmount.toFixed(2)}</span>
                 </div>
               )}
                <div className="flex justify-between font-bold text-lg pt-2 border-t">
                 <span>Order Total (Paid by Buyer):</span>
-                <span>{CURRENCY_SYMBOL}{order.totalAmount.toFixed(2)}</span>
+                <span>{currencySymbol}{order.totalAmount.toFixed(2)}</span>
               </div>
               {order.platformCommission !== undefined && order.platformCommission > 0 && (
                 <div className="flex justify-between mt-2 pt-2 border-t text-blue-600">
                   <span className="font-medium flex items-center gap-1"><Percent className="h-4 w-4"/>Platform Commission:</span>
-                  <span className="font-semibold">{CURRENCY_SYMBOL}{order.platformCommission.toFixed(2)}</span>
+                  <span className="font-semibold">{currencySymbol}{order.platformCommission.toFixed(2)}</span>
                 </div>
               )}
             </CardContent>
@@ -366,8 +369,8 @@ export default function AdminOrderDetailPage() {
                   <h3 className="text-lg font-semibold">{item.name}</h3>
                   <p className="text-sm text-muted-foreground">Product ID: {item.id}</p>
                   <p className="text-sm">Quantity: {item.quantity}</p>
-                  <p className="text-sm">Price per item: {CURRENCY_SYMBOL}{item.price.toFixed(2)}</p>
-                  <p className="text-md font-semibold">Subtotal: {CURRENCY_SYMBOL}{(item.price * item.quantity).toFixed(2)}</p>
+                  <p className="text-sm">Price per item: {currencySymbol}{item.price.toFixed(2)}</p>
+                  <p className="text-md font-semibold">Subtotal: {currencySymbol}{(item.price * item.quantity).toFixed(2)}</p>
                 </div>
               </div>
               {item.sellerDetails && (
@@ -385,5 +388,3 @@ export default function AdminOrderDetailPage() {
     </div>
   );
 }
-
-    

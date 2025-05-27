@@ -2,7 +2,7 @@
 "use client";
 import { useEffect, useState } from 'react';
 import { MOCK_PRODUCTS, MOCK_CATEGORIES, MOCK_SUBCATEGORIES, MOCK_BRANDS } from '@/lib/mock-data';
-import type { Product } from '@/lib/types'; // Category and Brand types are not directly used here
+import type { Product, BusinessSettings } from '@/lib/types'; 
 import { Button } from '@/components/ui/button';
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -11,10 +11,10 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Loader2, ListChecks, PlusCircle, Search, Filter, Edit3, Trash2 } from 'lucide-react';
 import Image from 'next/image';
-// Removed CATEGORIES, BRANDS import from constants, will use MOCK_ from mock-data
 import { format } from 'date-fns';
-import { useToast } from '@/hooks/use-toast'; // Added for future Add Product button
-import { CURRENCY_SYMBOL } from '@/lib/constants';
+import { useToast } from '@/hooks/use-toast'; 
+import useLocalStorage from '@/hooks/use-local-storage';
+import { BUSINESS_SETTINGS_STORAGE_KEY, DEFAULT_BUSINESS_SETTINGS } from '@/lib/constants';
 
 type ProductStatus = Product['status'] | 'all';
 
@@ -26,8 +26,12 @@ export default function AdminManageProductsPage() {
   
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<ProductStatus>('all');
-  const [categoryFilter, setCategoryFilter] = useState<string>('all'); // Stores category ID
-  const [brandFilter, setBrandFilter] = useState<string>('all'); // Stores brand ID
+  const [categoryFilter, setCategoryFilter] = useState<string>('all'); 
+  const [brandFilter, setBrandFilter] = useState<string>('all'); 
+
+  const [settings] = useLocalStorage<BusinessSettings>(BUSINESS_SETTINGS_STORAGE_KEY, DEFAULT_BUSINESS_SETTINGS);
+  const activeCurrency = settings.availableCurrencies.find(c => c.code === settings.defaultCurrencyCode) || settings.availableCurrencies[0] || { symbol: '?' };
+  const currencySymbol = activeCurrency.symbol;
 
   useEffect(() => {
     setIsLoading(true);
@@ -69,7 +73,7 @@ export default function AdminManageProductsPage() {
       const productIndex = MOCK_PRODUCTS.findIndex(p => p.id === productId);
       if (productIndex !== -1) {
         MOCK_PRODUCTS.splice(productIndex, 1);
-        setAllProducts([...MOCK_PRODUCTS]); // Update allProducts to trigger re-filter
+        setAllProducts([...MOCK_PRODUCTS]); 
         toast({ title: "Product Deleted", description: `Product ID ${productId} has been deleted.`, variant: "destructive" });
       }
     }
@@ -187,7 +191,7 @@ export default function AdminManageProductsPage() {
                     <div className="text-xs text-muted-foreground">ID: {product.id}</div>
                   </TableCell>
                   <TableCell>{product.sellerName || product.sellerId}</TableCell>
-                  <TableCell>{CURRENCY_SYMBOL}{product.price.toFixed(2)}</TableCell>
+                  <TableCell>{currencySymbol}{product.price.toFixed(2)}</TableCell>
                   <TableCell>{categoryName}</TableCell>
                   <TableCell>{subCategoryName}</TableCell>
                   <TableCell>{brandName}</TableCell>
@@ -211,5 +215,3 @@ export default function AdminManageProductsPage() {
     </div>
   );
 }
-
-    

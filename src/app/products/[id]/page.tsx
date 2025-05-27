@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
 import { MOCK_PRODUCTS, MOCK_CATEGORIES, MOCK_SUBCATEGORIES, MOCK_BRANDS } from '@/lib/mock-data';
-import type { Product } from '@/lib/types';
+import type { Product, BusinessSettings } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -13,8 +13,8 @@ import { QuantitySelector } from '@/components/quantity-selector';
 import React, { useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
-import { CURRENCY_SYMBOL } from '@/lib/constants';
-
+import useLocalStorage from '@/hooks/use-local-storage';
+import { BUSINESS_SETTINGS_STORAGE_KEY, DEFAULT_BUSINESS_SETTINGS } from '@/lib/constants';
 
 export default function ProductDetailPage() {
   const params = useParams();
@@ -26,6 +26,10 @@ export default function ProductDetailPage() {
   const [categoryName, setCategoryName] = useState<string>('');
   const [subCategoryName, setSubCategoryName] = useState<string | null>(null);
   const [brandName, setBrandName] = useState<string>('');
+
+  const [settings] = useLocalStorage<BusinessSettings>(BUSINESS_SETTINGS_STORAGE_KEY, DEFAULT_BUSINESS_SETTINGS);
+  const activeCurrency = settings.availableCurrencies.find(c => c.code === settings.defaultCurrencyCode) || settings.availableCurrencies[0] || { symbol: '?' };
+  const currencySymbol = activeCurrency.symbol;
 
   useEffect(() => {
     if (params.id) {
@@ -130,7 +134,7 @@ export default function ProductDetailPage() {
               </div>
 
               <p className="text-4xl font-extrabold text-primary mb-6">
-                {CURRENCY_SYMBOL}{product.price.toFixed(2)}
+                {currencySymbol}{product.price.toFixed(2)}
               </p>
             </CardContent>
 
@@ -148,5 +152,3 @@ export default function ProductDetailPage() {
     </div>
   );
 }
-
-    

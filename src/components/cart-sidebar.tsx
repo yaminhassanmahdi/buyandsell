@@ -4,20 +4,25 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { SheetHeader, SheetTitle, SheetFooter, SheetClose } from '@/components/ui/sheet'; // SheetClose for the X button
+import { SheetHeader, SheetTitle, SheetFooter, SheetClose } from '@/components/ui/sheet'; 
 import { useCart } from '@/contexts/cart-context';
-import { CartItem as CartItemComponent } from './cart-item'; // Renamed import to avoid conflict
+import { CartItem as CartItemComponent } from './cart-item'; 
 import { ShoppingCart, X as CloseIcon } from 'lucide-react';
 import React from 'react';
-import { CURRENCY_SYMBOL } from '@/lib/constants';
+import useLocalStorage from '@/hooks/use-local-storage';
+import type { BusinessSettings } from '@/lib/types';
+import { BUSINESS_SETTINGS_STORAGE_KEY, DEFAULT_BUSINESS_SETTINGS } from '@/lib/constants';
 
 interface CartSidebarProps {
-  onClose: () => void; // Callback to close the sidebar, passed from UserNav
+  onClose: () => void; 
 }
 
 export function CartSidebar({ onClose }: CartSidebarProps) {
   const { cartItems, getCartTotal, itemCount } = useCart();
   const subTotal = getCartTotal();
+  const [settings] = useLocalStorage<BusinessSettings>(BUSINESS_SETTINGS_STORAGE_KEY, DEFAULT_BUSINESS_SETTINGS);
+  const activeCurrency = settings.availableCurrencies.find(c => c.code === settings.defaultCurrencyCode) || settings.availableCurrencies[0] || { symbol: '?' };
+  const currencySymbol = activeCurrency.symbol;
 
   return (
     <>
@@ -50,9 +55,6 @@ export function CartSidebar({ onClose }: CartSidebarProps) {
           <ScrollArea className="flex-grow p-4">
             <div className="space-y-4">
               {cartItems.map(item => (
-                // Assuming CartItemComponent handles its own border/separator if needed
-                // Or we can add <Separator /> between items here if CartItemComponent doesn't.
-                // For now, relying on CartItemComponent's internal structure.
                 <CartItemComponent key={item.id} item={item} />
               ))}
             </div>
@@ -61,7 +63,7 @@ export function CartSidebar({ onClose }: CartSidebarProps) {
             <div className="w-full space-y-3">
               <div className="flex justify-between text-md font-medium">
                 <span>Subtotal</span>
-                <span>{CURRENCY_SYMBOL}{subTotal.toFixed(2)}</span>
+                <span>{currencySymbol}{subTotal.toFixed(2)}</span>
               </div>
               <SheetClose asChild>
                 <Button asChild size="lg" className="w-full" onClick={onClose}>
@@ -77,5 +79,3 @@ export function CartSidebar({ onClose }: CartSidebarProps) {
     </>
   );
 }
-
-    

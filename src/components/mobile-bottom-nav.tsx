@@ -8,9 +8,11 @@ import { cn } from '@/lib/utils';
 import { useCart } from '@/contexts/cart-context';
 import { useAuth } from '@/contexts/auth-context';
 import { Button } from '@/components/ui/button';
-import React, { useState } from 'react'; // Import useState
-import { MobileCategorySheet } from './mobile-category-sheet'; // New import
-import { CURRENCY_SYMBOL } from '@/lib/constants';
+import React, { useState } from 'react'; 
+import { MobileCategorySheet } from './mobile-category-sheet'; 
+import useLocalStorage from '@/hooks/use-local-storage';
+import type { BusinessSettings } from '@/lib/types';
+import { BUSINESS_SETTINGS_STORAGE_KEY, DEFAULT_BUSINESS_SETTINGS } from '@/lib/constants';
 
 export function MobileBottomNav() {
   const pathname = usePathname();
@@ -20,11 +22,14 @@ export function MobileBottomNav() {
   const [isClient, setIsClient] = React.useState(false);
   const [isCategorySheetOpen, setIsCategorySheetOpen] = useState(false); 
 
+  const [settings] = useLocalStorage<BusinessSettings>(BUSINESS_SETTINGS_STORAGE_KEY, DEFAULT_BUSINESS_SETTINGS);
+  const activeCurrency = settings.availableCurrencies.find(c => c.code === settings.defaultCurrencyCode) || settings.availableCurrencies[0] || { symbol: '?' };
+  const currencySymbol = activeCurrency.symbol;
+
   React.useEffect(() => {
     setIsClient(true);
   }, []);
 
-  // Define all navigation items, including "Sell"
   const navItems = [
     { href: '/', label: 'Home', icon: Home, id: 'home' },
     { href: '#', label: 'Categories', icon: LayoutGrid, id: 'categories' }, 
@@ -48,7 +53,7 @@ export function MobileBottomNav() {
                     Checkout
                   </span>
                   <span className="flex items-center justify-center px-2 sm:px-2.5 py-1 bg-primary/90 text-primary-foreground font-semibold text-xs sm:text-sm rounded-r-lg whitespace-nowrap">
-                    {CURRENCY_SYMBOL}{getCartTotal().toFixed(2)}
+                    {currencySymbol}{getCartTotal().toFixed(2)}
                   </span>
                 </Link>
               </Button>
@@ -107,5 +112,3 @@ export function MobileBottomNav() {
     </>
   );
 }
-
-    

@@ -2,8 +2,8 @@
 export type Category = {
   id: string;
   name: string;
-  imageUrl?: string; // Added for Category Bar redesign
-  imageHint?: string; // Added for Category Bar redesign
+  imageUrl?: string; 
+  imageHint?: string; 
 };
 
 export type SubCategory = {
@@ -46,9 +46,9 @@ export type ShippingAddress = {
   fullName: string;
   phoneNumber?: string;
   country: string; // Default to Bangladesh
-  division: string; // Selected Division Name
-  district: string; // Selected District Name
-  thana: string; // Selected Thana Name
+  division: string; 
+  district: string; 
+  thana: string; 
   houseAddress: string;
   roadNumber?: string;
 };
@@ -168,13 +168,20 @@ export type AdminNavItem = {
   subItems?: AdminNavItem[];
 };
 
-// New types for General Settings
+export type Currency = {
+  code: string; // e.g., "BDT", "USD"
+  symbol: string; // e.g., "৳", "$"
+  name: string; // e.g., "Bangladeshi Taka", "US Dollar"
+};
+
 export type BusinessSettings = {
   logoUrl?: string;
-  primaryColor?: string; // e.g., HSL string "217 91% 60%" or hex "#3B82F6"
-  secondaryColor?: string; // e.g., HSL string "216 34% 90%" or hex "#E0E7FF"
+  primaryColor?: string; 
+  secondaryColor?: string;
   faviconUrl?: string;
-  appName?: string; // Added for business name
+  appName?: string;
+  availableCurrencies: Currency[];
+  defaultCurrencyCode: string;
 };
 
 export type HeroBannerSlide = {
@@ -185,16 +192,16 @@ export type HeroBannerSlide = {
   description: string;
   buttonText: string;
   buttonLink: string;
-  bgColor?: string; // Optional background color for the slide overlay
-  textColor?: string; // Optional text color for the slide overlay
-  isActive: boolean; // To control if the slide is shown
+  bgColor?: string; 
+  textColor?: string; 
+  isActive: boolean; 
 };
 
 export type CustomPage = {
   id: string;
-  slug: string; // URL-friendly identifier (e.g., "privacy-policy")
-  title: string; // Page title
-  content: string; // HTML or Markdown content
+  slug: string; 
+  title: string; 
+  content: string; 
   createdAt: Date;
   updatedAt: Date;
 };

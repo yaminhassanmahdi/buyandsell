@@ -1,12 +1,13 @@
 
 "use client";
-import type { Order } from '@/lib/types';
+import type { Order, BusinessSettings } from '@/lib/types';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import Image from 'next/image';
 import { format } from 'date-fns';
 import { OrderStatusBadge } from './order-status-badge';
 import { CreditCard, CalendarDays } from 'lucide-react';
-import { CURRENCY_SYMBOL } from '@/lib/constants';
+import useLocalStorage from '@/hooks/use-local-storage';
+import { BUSINESS_SETTINGS_STORAGE_KEY, DEFAULT_BUSINESS_SETTINGS } from '@/lib/constants';
 
 interface OrderListItemProps {
   order: Order;
@@ -15,6 +16,10 @@ interface OrderListItemProps {
 export function OrderListItem({ order }: OrderListItemProps) {
   const { shippingAddress } = order;
   const displayAddress = `${shippingAddress.houseAddress}${shippingAddress.roadNumber ? `, ${shippingAddress.roadNumber}` : ''}, ${shippingAddress.thana}, ${shippingAddress.district}, ${shippingAddress.division}`;
+  
+  const [settings] = useLocalStorage<BusinessSettings>(BUSINESS_SETTINGS_STORAGE_KEY, DEFAULT_BUSINESS_SETTINGS);
+  const activeCurrency = settings.availableCurrencies.find(c => c.code === settings.defaultCurrencyCode) || settings.availableCurrencies[0] || { symbol: '?' };
+  const currencySymbol = activeCurrency.symbol;
 
   return (
     <Card className="mb-6 shadow-lg hover:shadow-xl transition-shadow duration-300">
@@ -41,7 +46,7 @@ export function OrderListItem({ order }: OrderListItemProps) {
               />
               <div>
                 <p className="font-medium">{item.name}</p>
-                <p className="text-sm text-muted-foreground">Qty: {item.quantity} &bull; Price: {CURRENCY_SYMBOL}{item.price.toFixed(2)}</p>
+                <p className="text-sm text-muted-foreground">Qty: {item.quantity} &bull; Price: {currencySymbol}{item.price.toFixed(2)}</p>
               </div>
             </div>
           ))}
@@ -56,11 +61,9 @@ export function OrderListItem({ order }: OrderListItemProps) {
       </CardContent>
       <CardFooter className="flex justify-between items-center">
         <div className="flex items-center font-semibold text-lg">
-            <CreditCard className="mr-2 h-5 w-5 text-primary" /> Total: {CURRENCY_SYMBOL}{order.totalAmount.toFixed(2)}
+            <CreditCard className="mr-2 h-5 w-5 text-primary" /> Total: {currencySymbol}{order.totalAmount.toFixed(2)}
         </div>
       </CardFooter>
     </Card>
   );
 }
-
-    

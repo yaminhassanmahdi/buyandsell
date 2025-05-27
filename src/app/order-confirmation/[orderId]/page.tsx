@@ -6,13 +6,14 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { MOCK_ORDERS, MOCK_USERS } from '@/lib/mock-data';
-import type { Order, User, CartItem } from '@/lib/types';
+import type { Order, User, CartItem, BusinessSettings } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Loader2, CheckCircle, ShoppingBag, HomeIcon } from 'lucide-react';
 import { format } from 'date-fns';
-import { CURRENCY_SYMBOL } from '@/lib/constants';
+import useLocalStorage from '@/hooks/use-local-storage';
+import { BUSINESS_SETTINGS_STORAGE_KEY, DEFAULT_BUSINESS_SETTINGS } from '@/lib/constants';
 
 export default function OrderConfirmationPage() {
   const params = useParams();
@@ -23,10 +24,14 @@ export default function OrderConfirmationPage() {
   const [buyer, setBuyer] = useState<User | null | undefined>(undefined);
   const [isLoading, setIsLoading] = useState(true);
 
+  const [settings] = useLocalStorage<BusinessSettings>(BUSINESS_SETTINGS_STORAGE_KEY, DEFAULT_BUSINESS_SETTINGS);
+  const activeCurrency = settings.availableCurrencies.find(c => c.code === settings.defaultCurrencyCode) || settings.availableCurrencies[0] || { symbol: '?' };
+  const currencySymbol = activeCurrency.symbol;
+
+
   useEffect(() => {
     if (orderId) {
       setIsLoading(true);
-      // Simulate fetching order
       setTimeout(() => {
         const foundOrder = MOCK_ORDERS.find(o => o.id === orderId);
         if (foundOrder) {
@@ -120,10 +125,10 @@ export default function OrderConfirmationPage() {
                   <div className="flex-grow">
                     <p className="font-medium text-sm">{item.name}</p>
                     <p className="text-xs text-muted-foreground">
-                      Quantity: {item.quantity} x {CURRENCY_SYMBOL}{item.price.toFixed(2)}
+                      Quantity: {item.quantity} x {currencySymbol}{item.price.toFixed(2)}
                     </p>
                   </div>
-                  <p className="text-sm font-semibold">{CURRENCY_SYMBOL}{(item.price * item.quantity).toFixed(2)}</p>
+                  <p className="text-sm font-semibold">{currencySymbol}{(item.price * item.quantity).toFixed(2)}</p>
                 </div>
               ))}
             </div>
@@ -132,17 +137,17 @@ export default function OrderConfirmationPage() {
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-muted-foreground">Items Subtotal:</span>
-              <span className="font-medium">{CURRENCY_SYMBOL}{itemsSubtotal.toFixed(2)}</span>
+              <span className="font-medium">{currencySymbol}{itemsSubtotal.toFixed(2)}</span>
             </div>
             {order.deliveryChargeAmount !== undefined && (
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Shipping & Handling:</span>
-                <span className="font-medium">{CURRENCY_SYMBOL}{order.deliveryChargeAmount.toFixed(2)}</span>
+                <span className="font-medium">{currencySymbol}{order.deliveryChargeAmount.toFixed(2)}</span>
               </div>
             )}
             <div className="flex justify-between text-lg font-bold pt-2 border-t mt-2">
               <span>Order Total:</span>
-              <span>{CURRENCY_SYMBOL}{order.totalAmount.toFixed(2)}</span>
+              <span>{currencySymbol}{order.totalAmount.toFixed(2)}</span>
             </div>
           </div>
         </CardContent>
@@ -162,5 +167,3 @@ export default function OrderConfirmationPage() {
     </div>
   );
 }
-
-    
