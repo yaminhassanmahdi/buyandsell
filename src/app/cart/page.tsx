@@ -21,7 +21,7 @@ interface SellerCartGroup {
   sellerAddress?: ShippingAddress | null;
   items: CartItem[];
   deliveryCharge: number | null;
-  deliveryMessage: string | null;
+  deliveryMessage: React.ReactNode | null; // Changed to React.ReactNode
 }
 
 export default function CartPage() {
@@ -34,7 +34,7 @@ export default function CartPage() {
 
   const [sellerCartGroups, setSellerCartGroups] = useState<SellerCartGroup[]>([]);
   const [totalDeliveryCharge, setTotalDeliveryCharge] = useState<number | null>(null);
-  const [overallDeliveryMessage, setOverallDeliveryMessage] = useState<string | null>("Calculating shipping...");
+  const [overallDeliveryMessage, setOverallDeliveryMessage] = useState<React.ReactNode | null>("Calculating shipping..."); // Changed to React.ReactNode
   const [isCalculating, setIsCalculating] = useState(true);
 
 
@@ -50,7 +50,11 @@ export default function CartPage() {
       }
 
       if (!isAuthenticated) {
-        setOverallDeliveryMessage("Login to see shipping costs.");
+        setOverallDeliveryMessage(
+          <>
+            <Link href="/login" className="underline hover:text-primary">Login</Link> to see shipping costs.
+          </>
+        );
         setSellerCartGroups([]);
         setTotalDeliveryCharge(null);
         setIsCalculating(false);
@@ -58,7 +62,11 @@ export default function CartPage() {
       }
 
       if (!currentUser?.defaultShippingAddress) {
-        setOverallDeliveryMessage("Add a shipping address in settings to see shipping costs.");
+        setOverallDeliveryMessage(
+          <>
+            Add a shipping address in <Link href="/account/settings" className="underline hover:text-primary">settings</Link> to see shipping costs.
+          </>
+        );
         setSellerCartGroups([]);
         setTotalDeliveryCharge(null);
         setIsCalculating(false);
@@ -101,7 +109,7 @@ export default function CartPage() {
         const group = groupedBySeller[sellerId];
         const sellerAddress = group.seller?.defaultShippingAddress;
         let charge: number | null = null;
-        let message: string | null = null;
+        let message: React.ReactNode | null = null; // Changed to React.ReactNode
 
         if (!sellerAddress) {
           charge = deliverySettings.interDistrict; // Fallback if seller address is missing
@@ -235,7 +243,7 @@ export default function CartPage() {
               ) : totalDeliveryCharge !== null ? (
                 <span>${totalDeliveryCharge.toFixed(2)}</span>
               ) : (
-                <span className="text-xs text-muted-foreground">{overallDeliveryMessage || "Unavailable"}</span>
+                <span className="text-xs text-muted-foreground">{typeof overallDeliveryMessage === 'string' ? overallDeliveryMessage : "Unavailable"}</span>
               )}
             </div>
             <div className="flex justify-between font-bold text-lg border-t pt-4">
@@ -257,7 +265,7 @@ export default function CartPage() {
           </CardFooter>
            {(isCalculating || (totalDeliveryCharge === null && itemCount > 0 && !overallDeliveryMessage)) && (
              <p className="text-xs text-muted-foreground text-center pt-2 px-2">
-                {isCalculating ? "Finalizing shipping costs..." : "Complete address or login to proceed."}
+                {isCalculating ? "Finalizing shipping costs..." : (typeof overallDeliveryMessage === 'string' ? overallDeliveryMessage : "Complete address or login to proceed.")}
              </p>
            )}
         </Card>
@@ -265,3 +273,4 @@ export default function CartPage() {
     </div>
   );
 }
+
