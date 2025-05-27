@@ -1,6 +1,6 @@
 
 import type { Product, User, Order, ShippingAddress, Category, SubCategory, WithdrawalRequest, CategoryAttributeType, CategoryAttributeValue } from './types';
-import { INITIAL_CATEGORIES, MOCK_CUSTOM_PAGES as DEFAULT_CUSTOM_PAGES } from './constants';
+import { INITIAL_CATEGORIES, MOCK_CUSTOM_PAGES as DEFAULT_PAGES_FROM_CONSTANTS } from './constants'; // Changed import name
 
 const createPastDate = (daysAgo: number): Date => {
   const date = new Date();
@@ -147,6 +147,7 @@ export let MOCK_PRODUCTS: Product[] = [
     name: 'Vintage Leather Jacket',
     description: 'A stylish vintage leather jacket, barely used. Size M.',
     price: 75,
+    stock: 5,
     imageUrl: 'https://placehold.co/600x400.png',
     imageHint: 'leather jacket',
     categoryId: 'fashion',
@@ -165,6 +166,7 @@ export let MOCK_PRODUCTS: Product[] = [
     name: 'Used iPhone X',
     description: 'Good condition iPhone X, 64GB, unlocked. Minor scratches on the back.',
     price: 250,
+    stock: 3,
     imageUrl: 'https://placehold.co/600x400.png',
     imageHint: 'smartphone electronics',
     categoryId: 'electronics',
@@ -183,12 +185,12 @@ export let MOCK_PRODUCTS: Product[] = [
     name: 'Bookshelf, Wooden',
     description: 'Solid wood bookshelf, 5 shelves. Excellent condition.',
     price: 50,
+    stock: 0, // Sold out example
     imageUrl: 'https://placehold.co/600x400.png',
     imageHint: 'bookshelf furniture',
     categoryId: 'home-garden',
     subCategoryId: 'sc_living_room',
-    // No specific attributes defined for home-garden yet in MOCK_CATEGORY_ATTRIBUTE_TYPES
-    selectedAttributes: [], 
+    selectedAttributes: [],
     sellerId: 'user1',
     sellerName: 'John Doe',
     status: 'pending',
@@ -199,6 +201,7 @@ export let MOCK_PRODUCTS: Product[] = [
     name: 'Gitanjali by Tagore',
     description: 'Collection of poems by Rabindranath Tagore.',
     price: 300,
+    stock: 10,
     imageUrl: 'https://placehold.co/600x400.png',
     imageHint: 'book poetry',
     categoryId: 'books',
@@ -209,7 +212,7 @@ export let MOCK_PRODUCTS: Product[] = [
     ],
     sellerId: 'user2',
     sellerName: 'Jane Smith',
-    status: 'sold',
+    status: 'sold', // Note: if status is 'sold', stock logic might also set it to 0
     createdAt: createPastDate(15),
   },
   {
@@ -217,6 +220,7 @@ export let MOCK_PRODUCTS: Product[] = [
     name: 'Red Cotton T-Shirt',
     description: 'Comfortable red cotton t-shirt, size L.',
     price: 40,
+    stock: 20,
     imageUrl: 'https://placehold.co/600x400.png',
     imageHint: 'red t-shirt',
     categoryId: 'fashion',
@@ -235,6 +239,7 @@ export let MOCK_PRODUCTS: Product[] = [
     name: 'Admission Guide - Physics',
     description: 'Comprehensive physics admission test preparation guide.',
     price: 20,
+    stock: 0, // Sold out example
     imageUrl: 'https://placehold.co/600x400.png',
     imageHint: 'physics guide book',
     categoryId: 'books',
@@ -244,7 +249,7 @@ export let MOCK_PRODUCTS: Product[] = [
     ],
     sellerId: 'user2',
     sellerName: 'Jane Smith',
-    status: 'rejected',
+    status: 'rejected', // Even if stock is 0, status can be rejected
     createdAt: createPastDate(1),
   },
 ];
@@ -265,14 +270,14 @@ export let MOCK_ORDERS: Order[] = [
     id: 'order1',
     userId: 'user1',
     items: [
-      { id: 'prod1', name: 'Vintage Leather Jacket', price: 75, imageUrl: 'https://placehold.co/100x100.png', quantity: 1, sellerId: 'user2' },
+      { id: 'prod1', name: 'Vintage Leather Jacket', price: 75, imageUrl: 'https://placehold.co/100x100.png', quantity: 1, sellerId: 'user2', stock: 5 },
     ],
-    totalAmount: 75 + 70, // item price + delivery
+    totalAmount: 75 + 70,
     deliveryChargeAmount: 70,
     shippingAddress: MOCK_USERS.find(u => u.id === 'user1')?.defaultShippingAddress || MOCK_SHIPPING_ADDRESS_BANGLADESH,
     status: 'delivered',
     paymentStatus: 'paid',
-    platformCommission: 7.5, // Assuming 10% commission on fashion for this example
+    platformCommission: 7.5,
     createdAt: createPastDate(7),
     updatedAt: createPastDate(3),
     selectedShippingMethodId: 'standard-delivery',
@@ -282,15 +287,15 @@ export let MOCK_ORDERS: Order[] = [
     id: 'order2',
     userId: 'user1',
     items: [
-      { id: 'prod2', name: 'Used iPhone X', price: 250, imageUrl: 'https://placehold.co/100x100.png', quantity: 1, sellerId: 'user2' },
-      { id: 'prod5', name: 'Red Cotton T-Shirt', price: 40, imageUrl: 'https://placehold.co/100x100.png', quantity: 1, sellerId: 'user1' },
+      { id: 'prod2', name: 'Used iPhone X', price: 250, imageUrl: 'https://placehold.co/100x100.png', quantity: 1, sellerId: 'user2', stock: 3 },
+      { id: 'prod5', name: 'Red Cotton T-Shirt', price: 40, imageUrl: 'https://placehold.co/100x100.png', quantity: 1, sellerId: 'user1', stock: 20 },
     ],
-    totalAmount: 290 + 130, // item prices + delivery
+    totalAmount: 290 + 130,
     deliveryChargeAmount: 130,
     shippingAddress: { ...(MOCK_USERS.find(u => u.id === 'user1')?.defaultShippingAddress || MOCK_SHIPPING_ADDRESS_BANGLADESH), fullName: 'John Doe Updated', district: 'Gazipur', thana: 'Gazipur Sadar' },
     status: 'delivered',
     paymentStatus: 'unpaid',
-    platformCommission: 0, // Not paid yet
+    platformCommission: 0,
     createdAt: createPastDate(3),
     updatedAt: createPastDate(1),
     selectedShippingMethodId: 'express-delivery',
@@ -300,9 +305,9 @@ export let MOCK_ORDERS: Order[] = [
     id: 'order3',
     userId: 'user2',
     items: [
-      { id: 'prod4', name: 'Gitanjali by Tagore', price: 300, imageUrl: 'https://placehold.co/100x100.png', quantity: 1, sellerId: 'user2' },
+      { id: 'prod4', name: 'Gitanjali by Tagore', price: 300, imageUrl: 'https://placehold.co/100x100.png', quantity: 1, sellerId: 'user2', stock: 10 },
     ],
-    totalAmount: 300 + 110, // item price + delivery
+    totalAmount: 300 + 110,
     deliveryChargeAmount: 110,
     shippingAddress: { ...MOCK_SHIPPING_ADDRESS_BANGLADESH, fullName: 'Jane Smith BD', division: 'Chittagong', district: 'Chittagong', thana: 'Kotwali (Chittagong)' },
     status: 'processing',
@@ -329,4 +334,4 @@ export let MOCK_WITHDRAWAL_REQUESTS: WithdrawalRequest[] = [
   }
 ];
 
-export let MOCK_CUSTOM_PAGES = [...DEFAULT_CUSTOM_PAGES];
+export let MOCK_CUSTOM_PAGES = [...DEFAULT_PAGES_FROM_CONSTANTS]; // Use the aliased import

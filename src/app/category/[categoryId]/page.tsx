@@ -20,7 +20,7 @@ const PRODUCTS_PER_SUB_CATEGORY_ROW = 4;
 
 export default function CategoryPage() {
   const params = useParams();
-  const searchParamsHook = useSearchParams(); 
+  const searchParamsHook = useSearchParams();
   const router = useRouter();
   const categoryId = params.categoryId as string;
 
@@ -43,10 +43,10 @@ export default function CategoryPage() {
   useEffect(() => {
     setIsLoading(true);
     if (categoryId) {
-      setTimeout(() => { 
+      setTimeout(() => {
         const foundCategory = MOCK_CATEGORIES.find(c => c.id === categoryId);
         if (!foundCategory) {
-          router.push('/'); 
+          router.push('/');
           return;
         }
         setCategory(foundCategory);
@@ -54,7 +54,7 @@ export default function CategoryPage() {
         const relatedSubCategories = MOCK_SUBCATEGORIES.filter(sc => sc.parentCategoryId === categoryId);
         setSubCategories(relatedSubCategories);
 
-        const categoryProducts = MOCK_PRODUCTS.filter(p => p.categoryId === categoryId && p.status === 'approved');
+        const categoryProducts = MOCK_PRODUCTS.filter(p => p.categoryId === categoryId && p.status === 'approved' && p.stock > 0); // Filter for in-stock
         setProducts(categoryProducts);
         setIsLoading(false);
       }, 500);
@@ -66,7 +66,7 @@ export default function CategoryPage() {
     const elementId = subCategoryId ? `subcategory-products-${subCategoryId}` : `category-products-all`;
     const element = document.getElementById(elementId);
     if (element) {
-        const headerOffset = 80; 
+        const headerOffset = 80;
         const elementPosition = element.getBoundingClientRect().top;
         const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
 
@@ -82,9 +82,9 @@ export default function CategoryPage() {
     return (
       <div className="container mx-auto px-4 py-8">
         <Skeleton className="h-10 w-1/3 mb-6" />
-        <Skeleton className="h-32 w-full mb-8" /> 
-        <Skeleton className="h-64 w-full mb-8" /> 
-        <Skeleton className="h-40 w-full mb-8" /> 
+        <Skeleton className="h-32 w-full mb-8" />
+        <Skeleton className="h-64 w-full mb-8" />
+        <Skeleton className="h-40 w-full mb-8" />
         {[1, 2].map(i => (
           <div key={i} className="mb-12">
             <Skeleton className="h-8 w-1/4 mb-6" />
@@ -113,10 +113,10 @@ export default function CategoryPage() {
   }
 
   const productsBySubCategory = (subCatId: string) => {
-    return products.filter(p => p.subCategoryId === subCatId).slice(0, PRODUCTS_PER_SUB_CATEGORY_ROW);
+    return products.filter(p => p.subCategoryId === subCatId && p.stock > 0).slice(0, PRODUCTS_PER_SUB_CATEGORY_ROW); // Ensure in-stock
   };
 
-  const allCategoryProducts = products.filter(p => !selectedSubCategoryIdForFilter || p.subCategoryId === selectedSubCategoryIdForFilter);
+  const allCategoryProducts = products.filter(p => (!selectedSubCategoryIdForFilter || p.subCategoryId === selectedSubCategoryIdForFilter) && p.stock > 0); // Ensure in-stock
 
 
   return (
@@ -143,12 +143,12 @@ export default function CategoryPage() {
       </section>
 
       {subCategories.map(subCat => (
-        <section key={subCat.id} id={`subcategory-products-${subCat.id}`} className="mb-10 md:mb-12 pt-6 -mt-6"> 
+        <section key={subCat.id} id={`subcategory-products-${subCat.id}`} className="mb-10 md:mb-12 pt-6 -mt-6">
           <div className="flex items-center justify-between mb-4 md:mb-6">
             <h2 className="text-2xl md:text-3xl font-bold">
               {subCat.name}
             </h2>
-            {products.filter(p => p.subCategoryId === subCat.id).length > PRODUCTS_PER_SUB_CATEGORY_ROW && (
+            {products.filter(p => p.subCategoryId === subCat.id && p.stock > 0).length > PRODUCTS_PER_SUB_CATEGORY_ROW && ( // Check in-stock count
               <Button variant="outline" asChild>
                 <Link href={`/?category=${category.id}&subcategory=${subCat.id}`}>
                   View All <ArrowRight className="ml-2 h-4 w-4" />
@@ -194,8 +194,6 @@ export default function CategoryPage() {
              )}
          </section>
       )}
-
-      {/* Removed global "Shop by Brand" section */}
     </div>
   );
 }

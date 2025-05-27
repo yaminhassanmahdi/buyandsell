@@ -2,25 +2,26 @@
 "use client";
 import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
-import { 
-    MOCK_PRODUCTS, 
-    MOCK_CATEGORIES, 
-    MOCK_SUBCATEGORIES, 
-    MOCK_CATEGORY_ATTRIBUTE_TYPES, 
-    MOCK_CATEGORY_ATTRIBUTE_VALUES 
+import {
+    MOCK_PRODUCTS,
+    MOCK_CATEGORIES,
+    MOCK_SUBCATEGORIES,
+    MOCK_CATEGORY_ATTRIBUTE_TYPES,
+    MOCK_CATEGORY_ATTRIBUTE_VALUES
 } from '@/lib/mock-data';
 import type { Product, BusinessSettings, CategoryAttributeType, CategoryAttributeValue } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useCart } from '@/contexts/cart-context';
-import { ArrowLeft, ShoppingCart, UserCircle, CalendarDays, Tag, Layers, Info } from 'lucide-react';
+import { ArrowLeft, ShoppingCart, UserCircle, CalendarDays, Tag, Layers, Info, PackageCheck } from 'lucide-react';
 import { QuantitySelector } from '@/components/quantity-selector';
 import React, { useEffect, useState, useMemo } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import useLocalStorage from '@/hooks/use-local-storage';
 import { BUSINESS_SETTINGS_STORAGE_KEY, DEFAULT_BUSINESS_SETTINGS } from '@/lib/constants';
+import { Alert, AlertTitle } from '@/components/ui/alert';
 
 interface DisplayAttribute {
   typeName: string;
@@ -30,7 +31,7 @@ interface DisplayAttribute {
 export default function ProductDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const { addToCart } = useCart();
+  const { cartItems, addToCart, updateQuantity } = useCart(); // Added cartItems and updateQuantity
   const [product, setProduct] = useState<Product | null | undefined>(undefined);
   const [quantity, setQuantity] = useState(1);
 
@@ -71,6 +72,9 @@ export default function ProductDetailPage() {
     }
   }, [params.id]);
 
+  const cartItem = cartItems.find(item => item.id === product?.id);
+  const currentQuantityInCart = cartItem ? cartItem.quantity : 0;
+
   if (product === undefined) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -100,10 +104,19 @@ export default function ProductDetailPage() {
       </div>
     );
   }
-  
+
   const handleAddToCart = () => {
-    addToCart(product, quantity);
+    if (product.stock > 0) {
+        if (currentQuantityInCart > 0) {
+            updateQuantity(product.id, currentQuantityInCart + quantity);
+        } else {
+            addToCart({ ...product, stock: product.stock }, quantity); // Pass stock with product
+        }
+        setQuantity(1); // Reset local quantity selector
+    }
   };
+
+  const isSoldOut = product.stock <= 0;
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -137,7 +150,7 @@ export default function ProductDetailPage() {
               </div>
               <CardTitle className="text-3xl font-bold">{product.name}</CardTitle>
             </CardHeader>
-            
+
             <CardContent className="p-0 flex-grow">
               <CardDescription className="text-base text-foreground/80 mb-4">
                 {product.description}
@@ -154,15 +167,20 @@ export default function ProductDetailPage() {
                   ))}
                 </div>
               )}
-              
+
               <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
                 <UserCircle className="h-4 w-4" />
                 <span>Sold by: {product.sellerName || 'Unknown Seller'}</span>
               </div>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
                 <CalendarDays className="h-4 w-4" />
                 <span>Listed on: {format(new Date(product.createdAt), 'MMMM d, yyyy')}</span>
               </div>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
+                <PackageCheck className="h-4 w-4" />
+                <span>Stock: {isSoldOut ? <span className="text-destructive font-semibold">Sold Out</span> : `${product.stock} available`}</span>
+              </div>
+
 
               <p className="text-4xl font-extrabold text-primary mb-6">
                 {currencySymbol}{product.price.toFixed(2)}
@@ -170,12 +188,19 @@ export default function ProductDetailPage() {
             </CardContent>
 
             <CardFooter className="p-0 mt-auto">
-              <div className="flex flex-col sm:flex-row gap-4 w-full">
-                <QuantitySelector quantity={quantity} setQuantity={setQuantity} maxQuantity={10} />
-                <Button size="lg" onClick={handleAddToCart} className="w-full sm:w-auto flex-grow">
-                  <ShoppingCart className="mr-2 h-5 w-5" /> Add to Cart
-                </Button>
-              </div>
+              {isSoldOut ? (
+                <Alert variant="destructive" className="w-full">
+                  <AlertTitle className="text-center font-semibold">Sold Out</AlertTitle>
+                  <CardDescription className="text-center">This item is currently unavailable.</CardDescription>
+                </Alert>
+              ) : (
+                <div className="flex flex-col sm:flex-row gap-4 w-full">
+                  <QuantitySelector quantity={quantity} setQuantity={setQuantity} maxQuantity={product.stock} />
+                  <Button size="lg" onClick={handleAddToCart} className="w-full sm:w-auto flex-grow">
+                    <ShoppingCart className="mr-2 h-5 w-5" /> Add to Cart
+                  </Button>
+                </div>
+              )}
             </CardFooter>
           </div>
         </div>

@@ -23,7 +23,8 @@ export default function SearchPage() {
       setTimeout(() => {
         const lowerCaseQuery = query.toLowerCase();
         const results = MOCK_PRODUCTS.filter(product =>
-          product.status === 'approved' && (
+          product.status === 'approved' &&
+          product.stock > 0 && ( // Filter for in-stock
             product.name.toLowerCase().includes(lowerCaseQuery) ||
             product.description.toLowerCase().includes(lowerCaseQuery) ||
             product.id.toLowerCase().includes(lowerCaseQuery)

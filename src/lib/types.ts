@@ -36,15 +36,15 @@ export type Product = {
   imageHint?: string;
   categoryId: string;
   subCategoryId?: string;
-  // brandId: string; // Removed global brandId
-  selectedAttributes?: Array<{ 
-    attributeTypeId: string; 
-    attributeValueId: string; 
-  }>; // Stores selected category-specific attributes
+  selectedAttributes?: Array<{
+    attributeTypeId: string;
+    attributeValueId: string;
+  }>;
   sellerId: string;
   sellerName?: string;
   status: 'pending' | 'approved' | 'rejected' | 'sold';
   createdAt: Date;
+  stock: number; // Added stock field
 };
 
 export type CartItem = {
@@ -54,6 +54,7 @@ export type CartItem = {
   imageUrl: string;
   quantity: number;
   sellerId?: string;
+  stock?: number; // Added stock to cart item for easier checking
 };
 
 export type ShippingAddress = {
@@ -124,7 +125,7 @@ export type User = {
 
 export type FilterValues = {
   category?: string;
-  brand?: string; // This might be deprecated or repurposed if brand filtering changes
+  brand?: string;
   searchTerm?: string;
   minPrice?: number;
   maxPrice?: number;
@@ -183,9 +184,9 @@ export type AdminNavItem = {
 };
 
 export type Currency = {
-  code: string; 
-  symbol: string; 
-  name: string; 
+  code: string;
+  symbol: string;
+  name: string;
 };
 
 export type BusinessSettings = {

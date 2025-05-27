@@ -37,10 +37,13 @@ import {
   CATEGORY_ATTRIBUTE_VALUES_STORAGE_KEY
 } from '@/lib/constants';
 
+const VALUE_FOR_NO_SUBCATEGORY_SELECTED = "__NONE__";
+
 const productSchema = z.object({
   name: z.string().min(3, "Product name must be at least 3 characters.").max(100),
   description: z.string().min(10, "Description must be at least 10 characters.").max(1000),
   price: z.coerce.number().min(0.01, "Price must be a positive number."),
+  stock: z.coerce.number().min(0, "Stock quantity cannot be negative.").default(0),
   categoryId: z.string().min(1, "Please select a parent category."),
   subCategoryId: z.string().optional(),
   dynamicAttributes: z.record(z.string().optional()),
@@ -48,7 +51,6 @@ const productSchema = z.object({
 
 type ProductFormData = z.infer<typeof productSchema>;
 
-const VALUE_FOR_NO_SUBCATEGORY_SELECTED = "__NONE__";
 
 export function ProductUploadForm() {
   const { currentUser } = useAuth();
@@ -60,14 +62,13 @@ export function ProductUploadForm() {
   const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
   const [availableSubCategories, setAvailableSubCategories] = useState<SubCategory[]>([]);
 
-  // Use localStorage for attribute types and values
   const [categoryAttributeTypes] = useLocalStorage<CategoryAttributeType[]>(
     CATEGORY_ATTRIBUTES_TYPES_STORAGE_KEY,
-    MOCK_CATEGORY_ATTRIBUTE_TYPES // Default from mock-data
+    MOCK_CATEGORY_ATTRIBUTE_TYPES
   );
   const [allAttributeValues] = useLocalStorage<CategoryAttributeValue[]>(
     CATEGORY_ATTRIBUTE_VALUES_STORAGE_KEY,
-    MOCK_CATEGORY_ATTRIBUTE_VALUES // Default from mock-data
+    MOCK_CATEGORY_ATTRIBUTE_VALUES
   );
 
   const [currentAttributeFields, setCurrentAttributeFields] = useState<CategoryAttributeType[]>([]);
@@ -82,6 +83,7 @@ export function ProductUploadForm() {
       name: "",
       description: "",
       price: 0,
+      stock: 1,
       categoryId: "",
       subCategoryId: VALUE_FOR_NO_SUBCATEGORY_SELECTED,
       dynamicAttributes: {},
@@ -91,7 +93,6 @@ export function ProductUploadForm() {
   useEffect(() => {
     setParentCategories([...MOCK_CATEGORIES]);
     setSubCategories([...MOCK_SUBCATEGORIES]);
-    // Attribute types and values are now loaded from localStorage by their hooks
   }, []);
 
   const watchedCategoryId = form.watch("categoryId");
@@ -148,6 +149,7 @@ export function ProductUploadForm() {
       name: values.name,
       description: values.description,
       price: values.price,
+      stock: values.stock,
       imageUrl: `https://placehold.co/600x400.png`,
       imageHint: `${values.name.substring(0,15)} product`,
       categoryId: values.categoryId,
@@ -200,6 +202,7 @@ export function ProductUploadForm() {
             </FormItem>
           )}
         />
+        <div className="grid grid-cols-2 gap-6">
         <FormField
           control={form.control}
           name="price"
@@ -213,6 +216,21 @@ export function ProductUploadForm() {
             </FormItem>
           )}
         />
+        <FormField
+            control={form.control}
+            name="stock"
+            render={({ field }) => (
+                <FormItem>
+                <FormLabel>Stock Quantity</FormLabel>
+                <FormControl>
+                    <Input type="number" placeholder="e.g., 10" {...field} />
+                </FormControl>
+                <FormMessage />
+                </FormItem>
+            )}
+            />
+        </div>
+
 
         <FormField
           control={form.control}
@@ -267,7 +285,7 @@ export function ProductUploadForm() {
 
         {currentAttributeFields.map(attrType => {
           const relevantValues = allAttributeValues
-            .filter(val => val.attributeTypeId === attrType.id && val.id && val.id.trim() !== ""); // Ensure val.id is not empty or just whitespace
+            .filter(val => val.attributeTypeId === attrType.id && val.id && val.id.trim() !== "");
           return (
             <FormField
               key={attrType.id}
@@ -287,7 +305,6 @@ export function ProductUploadForm() {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {/* No explicit "Select" item here; placeholder is handled by SelectValue. */}
                       {relevantValues.map(val => (
                         <SelectItem key={val.id} value={val.id}>{val.value}</SelectItem>
                       ))}
@@ -326,5 +343,3 @@ export function ProductUploadForm() {
     </Form>
   );
 }
-    
-    

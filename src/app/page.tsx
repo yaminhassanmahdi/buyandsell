@@ -32,20 +32,20 @@ export default function HomePage() {
   useEffect(() => {
     setLoading(true);
     setTimeout(() => {
-      const approved = MOCK_PRODUCTS
-        .filter(p => p.status === 'approved')
+      const approvedAndInStock = MOCK_PRODUCTS
+        .filter(p => p.status === 'approved' && p.stock > 0) // Filter for in-stock
         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-      setAllApprovedProducts(approved);
+      setAllApprovedProducts(approvedAndInStock);
       setLoading(false);
     }, 500);
   }, []);
 
   const productsByCategory: ProductGroup[] = useMemo(() => {
-    let baseProducts = allApprovedProducts;
+    let baseProducts = allApprovedProducts; // Already filtered for approved and in-stock
 
     if (selectedCategoryIdFromUrl) {
       const category = MOCK_CATEGORIES.find(c => c.id === selectedCategoryIdFromUrl);
-      if (!category) return []; 
+      if (!category) return [];
 
       let filteredProducts = baseProducts.filter(p => p.categoryId === selectedCategoryIdFromUrl);
       let title = `Products in ${category.name}`;
@@ -59,7 +59,7 @@ export default function HomePage() {
            title = `All ${category.name} (Subcategory not found)`;
         }
       }
-      
+
       return [{
         category,
         products: filteredProducts,
@@ -78,14 +78,13 @@ export default function HomePage() {
 
   return (
     <div>
-      {/* Only show CategoryBar and HeroBanner if not filtering by category/subcategory via URL */}
       {(!selectedCategoryIdFromUrl && !selectedSubCategoryIdFromUrl) && (
         <>
           <CategoryBar />
           <HeroBanner />
         </>
       )}
-      
+
       <div className="container mx-auto px-4 mt-6 md:mt-8">
         {loading ? (
           MOCK_CATEGORIES.map(category => (
@@ -105,7 +104,6 @@ export default function HomePage() {
                 <h2 className="text-2xl md:text-3xl font-bold">
                   {group.titleOverride || (selectedCategoryIdFromUrl ? `Products in ${group.category.name}` : `Latest in ${group.category.name}`)}
                 </h2>
-                {/* Show "View All" only on homepage default view and if there are more products */}
                 {!selectedCategoryIdFromUrl && allApprovedProducts.filter(p => p.categoryId === group.category.id).length > PRODUCTS_PER_CATEGORY_HOME && (
                    <Button variant="outline" asChild>
                     <Link href={`/category/${group.category.id}`}>
