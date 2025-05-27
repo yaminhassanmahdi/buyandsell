@@ -32,7 +32,7 @@ export default function AdminDivisionsPage() {
       setCurrentDivision({ ...division });
       setIsEditing(true);
     } else {
-      setCurrentDivision({ id: '', name: '' }); // ID will be generated on save for new
+      setCurrentDivision({ id: '', name: '' }); 
       setIsEditing(false);
     }
     setIsDialogOpen(true);
@@ -69,11 +69,15 @@ export default function AdminDivisionsPage() {
   };
 
   const handleDelete = (divisionId: string) => {
-    if (window.confirm("Are you sure you want to delete this division? This might affect districts and thanas under it.")) {
+    if (window.confirm("Are you sure you want to delete this division?")) {
       console.log("Attempting to delete division with ID:", divisionId);
       setDivisions(prevDivisions => {
         const updatedDivisions = prevDivisions.filter(d => d.id !== divisionId);
-        console.log("Previous divisions count:", prevDivisions.length, "New divisions count:", updatedDivisions.length);
+        if (prevDivisions.length === updatedDivisions.length) {
+            console.warn(`Division with ID ${divisionId} not found. No changes made.`);
+        } else {
+            console.log(`Division deleted. Old count: ${prevDivisions.length}, New count: ${updatedDivisions.length}.`);
+        }
         return updatedDivisions;
       });
       toast({ title: "Division Deleted", description: "The division has been deleted." });

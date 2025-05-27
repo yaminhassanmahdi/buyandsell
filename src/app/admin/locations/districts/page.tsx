@@ -80,11 +80,15 @@ export default function AdminDistrictsPage() {
   };
 
   const handleDelete = (districtId: string) => {
-    if (window.confirm("Are you sure you want to delete this district? This might affect thanas under it.")) {
+    if (window.confirm("Are you sure you want to delete this district?")) {
       console.log("Attempting to delete district with ID:", districtId);
       setDistricts(prevDistricts => {
         const updatedDistricts = prevDistricts.filter(d => d.id !== districtId);
-        console.log("Previous districts count:", prevDistricts.length, "New districts count:", updatedDistricts.length);
+         if (prevDistricts.length === updatedDistricts.length) {
+            console.warn(`District with ID ${districtId} not found. No changes made.`);
+        } else {
+            console.log(`District deleted. Old count: ${prevDistricts.length}, New count: ${updatedDistricts.length}.`);
+        }
         return updatedDistricts;
       });
       toast({ title: "District Deleted", description: "The district has been deleted." });
@@ -168,7 +172,6 @@ export default function AdminDistrictsPage() {
                 <Label htmlFor="name">District Name*</Label>
                 <Input id="name" name="name" value={currentDistrict.name || ''} onChange={handleInputChange} />
               </div>
-               {/* Division ID is set from selectedDivisionId, not directly editable here to maintain context */}
             </div>
             <DialogFooter>
               <DialogClose asChild><Button type="button" variant="outline" disabled={formSubmitting}>Cancel</Button></DialogClose>

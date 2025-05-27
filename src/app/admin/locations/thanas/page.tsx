@@ -39,7 +39,7 @@ export default function AdminThanasPage() {
   useEffect(() => {
     if (selectedDivisionId) {
       setAvailableDistricts(districts.filter(d => d.divisionId === selectedDivisionId));
-      setSelectedDistrictId(null); // Reset district when division changes
+      setSelectedDistrictId(null); 
       setFilteredThanas([]);
     } else {
       setAvailableDistricts([]);
@@ -103,7 +103,11 @@ export default function AdminThanasPage() {
       console.log("Attempting to delete thana with ID:", thanaId);
       setThanas(prevThanas => {
         const updatedThanas = prevThanas.filter(t => t.id !== thanaId);
-        console.log("Previous thanas count:", prevThanas.length, "New thanas count:", updatedThanas.length);
+        if (prevThanas.length === updatedThanas.length) {
+            console.warn(`Thana with ID ${thanaId} not found. No changes made.`);
+        } else {
+            console.log(`Thana deleted. Old count: ${prevThanas.length}, New count: ${updatedThanas.length}.`);
+        }
         return updatedThanas;
       });
       toast({ title: "Thana/Upazilla Deleted", description: "The Thana/Upazilla has been deleted." });
