@@ -76,7 +76,7 @@ export default function MyEarningsPage() {
           if (product && product.sellerId === currentUser.id) {
             const itemValue = item.price * item.quantity;
             const categoryCommissionSetting = commissionSettings.find(cs => cs.categoryId === product.categoryId);
-            const commissionPercentage = categoryCommissionSetting ? categoryCommissionSetting.percentage : 0;
+            const commissionPercentage = categoryCommissionSetting ? parseFloat(String(categoryCommissionSetting.percentage)) : 0;
             const commissionAmount = itemValue * (commissionPercentage / 100);
             earned += (itemValue - commissionAmount);
           }

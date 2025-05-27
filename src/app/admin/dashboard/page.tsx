@@ -15,7 +15,6 @@ export default function AdminDashboardPage() {
   );
   const [settings] = useLocalStorage<BusinessSettings>(BUSINESS_SETTINGS_STORAGE_KEY, DEFAULT_BUSINESS_SETTINGS);
 
-  // Safely determine active currency and symbol
   const safeAvailableCurrencies: Currency[] = settings?.availableCurrencies && Array.isArray(settings.availableCurrencies) && settings.availableCurrencies.length > 0
     ? settings.availableCurrencies
     : DEFAULT_BUSINESS_SETTINGS.availableCurrencies;
@@ -27,7 +26,7 @@ export default function AdminDashboardPage() {
   const activeCurrency: Currency =
     safeAvailableCurrencies.find(c => c.code === safeDefaultCurrencyCode) ||
     safeAvailableCurrencies[0] ||
-    { code: 'BDT', symbol: '৳', name: 'Bangladeshi Taka' }; // Absolute fallback
+    { code: 'BDT', symbol: '৳', name: 'Bangladeshi Taka' }; 
 
   const currencySymbol = activeCurrency.symbol;
 
@@ -50,16 +49,11 @@ export default function AdminDashboardPage() {
           const product = MOCK_PRODUCTS.find(p => p.id === item.id);
           if (product) {
             const categoryCommissionSetting = commissionSettings.find(cs => cs.categoryId === product.categoryId);
-            const commissionPercentage = categoryCommissionSetting ? categoryCommissionSetting.percentage : 0;
+            const commissionPercentage = categoryCommissionSetting ? parseFloat(String(categoryCommissionSetting.percentage)) : 0;
             orderCommission += (item.price * item.quantity) * (commissionPercentage / 100);
           }
         });
         totalPlatformCommission += orderCommission;
-
-        const orderInMock = MOCK_ORDERS.find(mo => mo.id === order.id);
-        if(orderInMock && orderInMock.platformCommission !== orderCommission) {
-            // orderInMock.platformCommission = parseFloat(orderCommission.toFixed(2));
-        }
       }
     });
 

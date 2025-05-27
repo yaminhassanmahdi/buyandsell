@@ -92,7 +92,7 @@ export default function AdminOrderDetailPage() {
       const product = MOCK_PRODUCTS.find(p => p.id === item.id);
       if (product) {
         const categoryCommissionSetting = commissionSettings.find(cs => cs.categoryId === product.categoryId);
-        const commissionPercentage = categoryCommissionSetting ? categoryCommissionSetting.percentage : 0;
+        const commissionPercentage = categoryCommissionSetting ? parseFloat(String(categoryCommissionSetting.percentage)) : 0;
         totalCommission += (item.price * item.quantity) * (commissionPercentage / 100);
       }
     });
@@ -100,7 +100,7 @@ export default function AdminOrderDetailPage() {
   };
 
   const handleStatusUpdate = async () => {
-    if (!order || !selectedOrderStatus || (selectedOrderStatus === order.status && selectedPaymentStatus === order.paymentStatus)) return;
+    if (!order || !selectedOrderStatus || !selectedPaymentStatus || (selectedOrderStatus === order.status && selectedPaymentStatus === order.paymentStatus)) return;
 
     setIsUpdatingStatus(true);
     await new Promise(resolve => setTimeout(resolve, 700));
