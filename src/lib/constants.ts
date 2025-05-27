@@ -80,7 +80,7 @@ export const DEFAULT_DISTRICTS: District[] = [
   { id: 'chandpur', name: 'Chandpur', divisionId: 'chittagong' },
   { id: 'chittagong_dist', name: 'Chittagong', divisionId: 'chittagong' },
   { id: 'comilla', name: 'Comilla', divisionId: 'chittagong' },
-  { id: 'coxs_bazar', name: 'Cox\'s Bazar', divisionId: 'chittagong' },
+  { id: 'coxs_bazar', name: "Cox's Bazar", divisionId: 'chittagong' },
   { id: 'feni', name: 'Feni', divisionId: 'chittagong' },
   { id: 'khagrachhari', name: 'Khagrachhari', divisionId: 'chittagong' },
   { id: 'lakshmipur', name: 'Lakshmipur', divisionId: 'chittagong' },
@@ -134,7 +134,7 @@ export const DEFAULT_DISTRICTS: District[] = [
   { id: 'sherpur', name: 'Sherpur', divisionId: 'mymensingh' },
 ];
 
-export const DEFAULT_UPAZILLAS: Thana[] = [ // Renaming to UPAZILLAS for clarity, type is Thana
+export const DEFAULT_UPAZILLAS: Thana[] = [
   // Dhaka District Upazillas
   { id: 'dhaka_city_north_upazilla', name: 'Dhaka City Corporation (North)', districtId: 'dhaka_dist' },
   { id: 'dhaka_city_south_upazilla', name: 'Dhaka City Corporation (South)', districtId: 'dhaka_dist' },
@@ -150,16 +150,21 @@ export const DEFAULT_UPAZILLAS: Thana[] = [ // Renaming to UPAZILLAS for clarity
   { id: 'sreepur_upazilla', name: 'Sreepur Upazila', districtId: 'gazipur' },
   { id: 'kaliganj_gazipur_upazilla', name: 'Kaliganj Upazila (Gazipur)', districtId: 'gazipur' },
   // Chittagong District Upazillas
-  { id: 'chittagong_sadar_upazilla', name: 'Chittagong Sadar Upazila', districtId: 'chittagong_dist' }, // Example, actual may vary
+  { id: 'chittagong_sadar_upazilla', name: 'Chittagong Sadar Upazila', districtId: 'chittagong_dist' },
   { id: 'sitakunda_upazilla', name: 'Sitakunda Upazila', districtId: 'chittagong_dist' },
   { id: 'mirsharai_upazilla', name: 'Mirsharai Upazila', districtId: 'chittagong_dist' },
   { id: 'patiya_upazilla', name: 'Patiya Upazila', districtId: 'chittagong_dist' },
-  // Add more representative upazillas for other districts as needed for demonstration
+  // Sylhet District Upazillas
   { id: 'sylhet_sadar_upazilla', name: 'Sylhet Sadar Upazila', districtId: 'sylhet_dist' },
+  // Rajshahi District Upazillas
   { id: 'rajshahi_sadar_upazilla', name: 'Rajshahi Sadar Upazila (Boalia)', districtId: 'rajshahi_dist' },
+  // Khulna District Upazillas
   { id: 'khulna_sadar_upazilla', name: 'Khulna Sadar Upazila', districtId: 'khulna_dist' },
+  // Barisal District Upazillas
   { id: 'barisal_sadar_upazilla', name: 'Barisal Sadar Upazila', districtId: 'barisal_dist' },
+  // Rangpur District Upazillas
   { id: 'rangpur_sadar_upazilla', name: 'Rangpur Sadar Upazila', districtId: 'rangpur_dist' },
+  // Mymensingh District Upazillas
   { id: 'mymensingh_sadar_upazilla', name: 'Mymensingh Sadar Upazila', districtId: 'mymensingh_dist' },
 ];
 
@@ -199,7 +204,7 @@ export const ADMIN_NAVIGATION: AdminNavItem[] = [
       { name: 'Countries', href: '/admin/locations/countries', icon: Globe },
       { name: 'Divisions', href: '/admin/locations/divisions', icon: Library },
       { name: 'Districts', href: '/admin/locations/districts', icon: MapPin },
-      { name: 'Upazillas', href: '/admin/locations/upazillas', icon: Home }, // Renamed
+      { name: 'Upazillas', href: '/admin/locations/upazillas', icon: Home }, // Ensured correct href
       { name: 'Delivery Charges', href: '/admin/locations/delivery-charges', icon: DollarSign },
       { name: 'Shipping Methods', href: '/admin/locations/shipping-methods', icon: Ship },
     ]
@@ -242,7 +247,7 @@ export const CUSTOM_PAGES_STORAGE_KEY = 'customPages';
 export const SHIPPING_METHODS_STORAGE_KEY = 'shippingMethods';
 export const CATEGORY_ATTRIBUTES_TYPES_STORAGE_KEY = 'categoryAttributeTypes';
 export const CATEGORY_ATTRIBUTE_VALUES_STORAGE_KEY = 'categoryAttributeValues';
-// Removed DIVISIONS_STORAGE_KEY, DISTRICTS_STORAGE_KEY, THANAS_STORAGE_KEY
+// Removed DIVISIONS_STORAGE_KEY, DISTRICTS_STORAGE_KEY, THANAS_STORAGE_KEY (now UPAZILLAS_STORAGE_KEY implicitly removed as they are static)
 
 
 // Default Values for Settings
@@ -262,8 +267,8 @@ export const DEFAULT_CURRENCIES: Currency[] = [
 export const DEFAULT_BUSINESS_SETTINGS: BusinessSettings = {
   appName: '2ndhandbajar.com',
   logoUrl: '/logo-placeholder.png',
-  primaryColor: '47 92% 52%', // Example: Tailwind orange-500
-  secondaryColor: '77 30% 60%', // Example: A complementary green
+  primaryColor: '47 92% 52%', 
+  secondaryColor: '77 30% 60%', 
   faviconUrl: '/favicon.ico',
   availableCurrencies: DEFAULT_CURRENCIES,
   defaultCurrencyCode: 'BDT',
