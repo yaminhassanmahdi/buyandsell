@@ -14,7 +14,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label"; // Added import
+import { Label } from "@/components/ui/label"; 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose, DialogFooter } from "@/components/ui/dialog";
@@ -22,7 +22,7 @@ import { Briefcase, Palette, Image as ImageIcon, Loader2, Save, PlusCircle, Tras
 import { useToast } from "@/hooks/use-toast";
 import useLocalStorage from "@/hooks/use-local-storage";
 import type { BusinessSettings, Currency } from "@/lib/types";
-import { DEFAULT_BUSINESS_SETTINGS, BUSINESS_SETTINGS_STORAGE_KEY } from "@/lib/constants";
+import { DEFAULT_BUSINESS_SETTINGS, BUSINESS_SETTINGS_STORAGE_KEY, DEFAULT_CURRENCIES } from "@/lib/constants";
 import { useEffect, useState } from "react";
 
 const currencySchema = z.object({
@@ -52,7 +52,14 @@ export default function AdminBusinessSettingsPage() {
   
   const form = useForm<BusinessSettingsFormData>({
     resolver: zodResolver(businessSettingsSchema),
-    defaultValues: settings,
+    // Ensure defaultValues always has availableCurrencies as an array
+    defaultValues: {
+      ...DEFAULT_BUSINESS_SETTINGS, // Start with defaults
+      ...settings, // Override with localStorage if present
+      availableCurrencies: settings?.availableCurrencies && Array.isArray(settings.availableCurrencies) 
+                           ? settings.availableCurrencies 
+                           : DEFAULT_BUSINESS_SETTINGS.availableCurrencies,
+    },
   });
 
   const { fields: currencyFields, append: appendCurrency, remove: removeCurrency } = useFieldArray({
@@ -64,7 +71,14 @@ export default function AdminBusinessSettingsPage() {
   const [newCurrency, setNewCurrency] = useState<Currency>({ code: '', symbol: '', name: '' });
 
   useEffect(() => {
-    form.reset(settings);
+    // When settings from localStorage change, reset the form with potentially merged values
+    form.reset({
+      ...DEFAULT_BUSINESS_SETTINGS,
+      ...settings,
+      availableCurrencies: settings?.availableCurrencies && Array.isArray(settings.availableCurrencies)
+                           ? settings.availableCurrencies
+                           : DEFAULT_BUSINESS_SETTINGS.availableCurrencies,
+    });
     if (settings.appName) {
         document.title = `${settings.appName} - Admin Business Settings`;
     }
@@ -97,7 +111,9 @@ export default function AdminBusinessSettingsPage() {
       toast({ title: "Error", description: "All currency fields are required.", variant: "destructive" });
       return;
     }
-    if (currencyFields.some(c => c.code === newCurrency.code.toUpperCase())) {
+    // Ensure currencyFields is an array before checking .some()
+    const currentFormCurrencies = form.getValues("availableCurrencies") || [];
+    if (currentFormCurrencies.some(c => c.code === newCurrency.code.toUpperCase())) {
       toast({ title: "Error", description: "Currency code already exists.", variant: "destructive" });
       return;
     }
@@ -106,7 +122,7 @@ export default function AdminBusinessSettingsPage() {
     setIsCurrencyDialogOpen(false);
   };
 
-  const watchedCurrencies = form.watch("availableCurrencies");
+  const watchedCurrencies = form.watch("availableCurrencies") || [];
 
   return (
     <div className="space-y-8 py-4">
@@ -261,4 +277,3 @@ export default function AdminBusinessSettingsPage() {
     </div>
   );
 }
-
