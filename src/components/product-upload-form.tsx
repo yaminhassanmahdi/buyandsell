@@ -11,17 +11,17 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-  FormDescription, // Added FormDescription
+  FormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { 
-    MOCK_PRODUCTS, 
-    MOCK_CATEGORIES, 
-    MOCK_SUBCATEGORIES, 
-    MOCK_CATEGORY_ATTRIBUTE_TYPES, 
-    MOCK_CATEGORY_ATTRIBUTE_VALUES 
+import {
+    MOCK_PRODUCTS,
+    MOCK_CATEGORIES,
+    MOCK_SUBCATEGORIES,
+    MOCK_CATEGORY_ATTRIBUTE_TYPES,
+    MOCK_CATEGORY_ATTRIBUTE_VALUES
 } from "@/lib/mock-data";
 import type { Product, Category, SubCategory, BusinessSettings, CategoryAttributeType, CategoryAttributeValue } from "@/lib/types";
 import { useAuth } from "@/contexts/auth-context";
@@ -30,7 +30,12 @@ import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
 import { Loader2, UploadCloud } from "lucide-react";
 import useLocalStorage from '@/hooks/use-local-storage';
-import { BUSINESS_SETTINGS_STORAGE_KEY, DEFAULT_BUSINESS_SETTINGS } from '@/lib/constants';
+import {
+  BUSINESS_SETTINGS_STORAGE_KEY,
+  DEFAULT_BUSINESS_SETTINGS,
+  CATEGORY_ATTRIBUTES_TYPES_STORAGE_KEY,
+  CATEGORY_ATTRIBUTE_VALUES_STORAGE_KEY
+} from '@/lib/constants';
 
 const productSchema = z.object({
   name: z.string().min(3, "Product name must be at least 3 characters.").max(100),
@@ -38,7 +43,7 @@ const productSchema = z.object({
   price: z.coerce.number().min(0.01, "Price must be a positive number."),
   categoryId: z.string().min(1, "Please select a parent category."),
   subCategoryId: z.string().optional(),
-  dynamicAttributes: z.record(z.string().optional()), // Stores { attributeTypeId: attributeValueId }
+  dynamicAttributes: z.record(z.string().optional()),
 });
 
 type ProductFormData = z.infer<typeof productSchema>;
@@ -54,10 +59,18 @@ export function ProductUploadForm() {
   const [parentCategories, setParentCategories] = useState<Category[]>([]);
   const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
   const [availableSubCategories, setAvailableSubCategories] = useState<SubCategory[]>([]);
-  
-  const [categoryAttributeTypes, setCategoryAttributeTypes] = useState<CategoryAttributeType[]>([]);
+
+  // Use localStorage for attribute types and values
+  const [categoryAttributeTypes] = useLocalStorage<CategoryAttributeType[]>(
+    CATEGORY_ATTRIBUTES_TYPES_STORAGE_KEY,
+    MOCK_CATEGORY_ATTRIBUTE_TYPES // Default from mock-data
+  );
+  const [allAttributeValues] = useLocalStorage<CategoryAttributeValue[]>(
+    CATEGORY_ATTRIBUTE_VALUES_STORAGE_KEY,
+    MOCK_CATEGORY_ATTRIBUTE_VALUES // Default from mock-data
+  );
+
   const [currentAttributeFields, setCurrentAttributeFields] = useState<CategoryAttributeType[]>([]);
-  const [allAttributeValues, setAllAttributeValues] = useState<CategoryAttributeValue[]>([]);
 
 
   const [settings] = useLocalStorage<BusinessSettings>(BUSINESS_SETTINGS_STORAGE_KEY, DEFAULT_BUSINESS_SETTINGS);
@@ -78,15 +91,13 @@ export function ProductUploadForm() {
   useEffect(() => {
     setParentCategories([...MOCK_CATEGORIES]);
     setSubCategories([...MOCK_SUBCATEGORIES]);
-    setCategoryAttributeTypes([...MOCK_CATEGORY_ATTRIBUTE_TYPES]);
-    setAllAttributeValues([...MOCK_CATEGORY_ATTRIBUTE_VALUES]);
+    // Attribute types and values are now loaded from localStorage by their hooks
   }, []);
 
   const watchedCategoryId = form.watch("categoryId");
 
   useEffect(() => {
     if (watchedCategoryId) {
-      // Filter sub-categories
       const filteredSubs = subCategories.filter(sc => sc.parentCategoryId === watchedCategoryId);
       setAvailableSubCategories(filteredSubs);
       const currentSubCategoryId = form.getValues("subCategoryId");
@@ -94,14 +105,12 @@ export function ProductUploadForm() {
         form.setValue("subCategoryId", VALUE_FOR_NO_SUBCATEGORY_SELECTED);
       }
 
-      // Filter and set dynamic attribute fields
       const relevantAttrTypes = categoryAttributeTypes.filter(attrType => attrType.categoryId === watchedCategoryId);
       setCurrentAttributeFields(relevantAttrTypes);
-      
-      // Reset dynamicAttributes in form state for newly selected category
+
       const newDynamicAttributes: Record<string, string | undefined> = {};
       relevantAttrTypes.forEach(attrType => {
-        newDynamicAttributes[attrType.id] = undefined; // Or a default value if applicable
+        newDynamicAttributes[attrType.id] = undefined;
       });
       form.setValue("dynamicAttributes", newDynamicAttributes);
 
@@ -128,7 +137,7 @@ export function ProductUploadForm() {
     if (values.dynamicAttributes) {
         for (const typeId in values.dynamicAttributes) {
             const valueId = values.dynamicAttributes[typeId];
-            if (valueId && valueId !== "") { // Only add if a value was selected and it's not the "-- Select --" option
+            if (valueId && valueId !== "") {
                 selectedAttrs.push({ attributeTypeId: typeId, attributeValueId: valueId });
             }
         }
@@ -151,7 +160,7 @@ export function ProductUploadForm() {
     };
 
     MOCK_PRODUCTS.push(newProduct);
-    
+
     toast({
       title: "Product Submitted!",
       description: `${newProduct.name} has been submitted for approval.`,
@@ -204,7 +213,7 @@ export function ProductUploadForm() {
             </FormItem>
           )}
         />
-        
+
         <FormField
           control={form.control}
           name="categoryId"
@@ -255,9 +264,10 @@ export function ProductUploadForm() {
             </FormItem>
           )}
         />
-        
+
         {currentAttributeFields.map(attrType => {
-          const relevantValues = allAttributeValues.filter(val => val.attributeTypeId === attrType.id);
+          const relevantValues = allAttributeValues
+            .filter(val => val.attributeTypeId === attrType.id && val.id && val.id.trim() !== ""); // Ensure val.id is not empty or just whitespace
           return (
             <FormField
               key={attrType.id}
@@ -266,9 +276,9 @@ export function ProductUploadForm() {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>{attrType.name}</FormLabel>
-                  <Select 
-                    onValueChange={field.onChange} 
-                    value={field.value || ""} 
+                  <Select
+                    onValueChange={field.onChange}
+                    value={field.value || ""}
                     disabled={relevantValues.length === 0}
                   >
                     <FormControl>
@@ -277,7 +287,7 @@ export function ProductUploadForm() {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                        <SelectItem value="">-- Select --</SelectItem> {/* Allow unselecting */}
+                      {/* No explicit "Select" item here; placeholder is handled by SelectValue. */}
                       {relevantValues.map(val => (
                         <SelectItem key={val.id} value={val.id}>{val.value}</SelectItem>
                       ))}
@@ -289,7 +299,7 @@ export function ProductUploadForm() {
             />
           );
         })}
-        
+
         <FormItem>
             <FormLabel>Product Image</FormLabel>
             <div className="flex items-center justify-center w-full">
@@ -316,3 +326,5 @@ export function ProductUploadForm() {
     </Form>
   );
 }
+    
+    
