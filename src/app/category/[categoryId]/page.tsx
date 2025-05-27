@@ -2,7 +2,7 @@
 "use client";
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
-import { MOCK_PRODUCTS, MOCK_CATEGORIES, MOCK_SUBCATEGORIES, MOCK_CATEGORY_ATTRIBUTE_TYPES, MOCK_CATEGORY_ATTRIBUTE_VALUES } from '@/lib/mock-data';
+import { MOCK_PRODUCTS, MOCK_CATEGORIES, MOCK_SUBCATEGORIES } from '@/lib/mock-data';
 import type { Product, Category as CategoryType, SubCategory, BusinessSettings } from '@/lib/types';
 import { ProductCard } from '@/components/product-card';
 import { HeroBanner } from '@/components/hero-banner';
@@ -20,7 +20,7 @@ const PRODUCTS_PER_SUB_CATEGORY_ROW = 4;
 
 export default function CategoryPage() {
   const params = useParams();
-  const searchParamsHook = useSearchParams();
+  const searchParamsHook = useSearchParams(); // Keep this for potential future use
   const router = useRouter();
   const categoryId = params.categoryId as string;
 
@@ -46,7 +46,7 @@ export default function CategoryPage() {
       setTimeout(() => {
         const foundCategory = MOCK_CATEGORIES.find(c => c.id === categoryId);
         if (!foundCategory) {
-          router.push('/');
+          router.push('/'); // Redirect if category not found
           return;
         }
         setCategory(foundCategory);
@@ -54,19 +54,21 @@ export default function CategoryPage() {
         const relatedSubCategories = MOCK_SUBCATEGORIES.filter(sc => sc.parentCategoryId === categoryId);
         setSubCategories(relatedSubCategories);
 
-        const categoryProducts = MOCK_PRODUCTS.filter(p => p.categoryId === categoryId && p.status === 'approved' && p.stock > 0); // Filter for in-stock
+        const categoryProducts = MOCK_PRODUCTS.filter(p => p.categoryId === categoryId && p.status === 'approved' && p.stock > 0);
         setProducts(categoryProducts);
         setIsLoading(false);
-      }, 500);
+      }, 300); // Simulate loading
     }
   }, [categoryId, router]);
 
   const handleSubCategorySelect = (subCategoryId: string | null) => {
     setSelectedSubCategoryIdForFilter(subCategoryId);
+    // Scroll to the top of the product grid for the selected subcategory or all products
     const elementId = subCategoryId ? `subcategory-products-${subCategoryId}` : `category-products-all`;
     const element = document.getElementById(elementId);
+    
     if (element) {
-        const headerOffset = 80;
+        const headerOffset = 80; // Adjust as needed for your sticky header height
         const elementPosition = element.getBoundingClientRect().top;
         const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
 
@@ -74,6 +76,16 @@ export default function CategoryPage() {
             top: offsetPosition,
             behavior: "smooth"
         });
+    } else if (!subCategoryId) { // If "All" is selected and its specific section doesn't exist, scroll to a general products area
+        const generalProductsArea = document.getElementById('all-products-section-for-category');
+        if (generalProductsArea) {
+             const headerOffset = 80;
+             const elementPosition = generalProductsArea.getBoundingClientRect().top;
+             const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+             window.scrollTo({ top: offsetPosition, behavior: "smooth"});
+        } else {
+            window.scrollTo({ top: 0, behavior: "smooth"}); // Fallback to top of page
+        }
     }
   };
 
@@ -82,9 +94,9 @@ export default function CategoryPage() {
     return (
       <div className="container mx-auto px-4 py-8">
         <Skeleton className="h-10 w-1/3 mb-6" />
-        <Skeleton className="h-32 w-full mb-8" />
-        <Skeleton className="h-64 w-full mb-8" />
-        <Skeleton className="h-40 w-full mb-8" />
+        <Skeleton className="h-32 w-full mb-8" /> {/* Placeholder for SubCategoryScroller */}
+        <Skeleton className="h-64 w-full mb-8" /> {/* Placeholder for HeroBanner */}
+        <Skeleton className="h-40 w-full mb-8" /> {/* Placeholder for Shop by Style */}
         {[1, 2].map(i => (
           <div key={i} className="mb-12">
             <Skeleton className="h-8 w-1/4 mb-6" />
@@ -113,26 +125,32 @@ export default function CategoryPage() {
   }
 
   const productsBySubCategory = (subCatId: string) => {
-    return products.filter(p => p.subCategoryId === subCatId && p.stock > 0).slice(0, PRODUCTS_PER_SUB_CATEGORY_ROW); // Ensure in-stock
+    return products.filter(p => p.subCategoryId === subCatId && p.stock > 0).slice(0, PRODUCTS_PER_SUB_CATEGORY_ROW);
   };
 
-  const allCategoryProducts = products.filter(p => (!selectedSubCategoryIdForFilter || p.subCategoryId === selectedSubCategoryIdForFilter) && p.stock > 0); // Ensure in-stock
-
+  // Filtered products to display either all for the category or for a selected sub-category
+  const displayedProducts = selectedSubCategoryIdForFilter
+    ? products.filter(p => p.subCategoryId === selectedSubCategoryIdForFilter && p.stock > 0)
+    : products.filter(p => p.stock > 0);
 
   return (
     <div className="container mx-auto px-4 py-2">
       <h1 className="text-3xl md:text-4xl font-bold my-6 text-center">{category.name}</h1>
 
       {subCategories.length > 0 && (
-        <SubCategoryScroller subCategories={subCategories} parentCategoryId={category.id} onSubCategorySelect={handleSubCategorySelect} />
+        <SubCategoryScroller 
+            subCategories={subCategories} 
+            parentCategoryId={category.id} 
+            onSubCategorySelect={handleSubCategorySelect}
+        />
       )}
 
       <HeroBanner />
 
       <section className="my-8 md:my-12">
-        <h2 className="text-2xl font-semibold mb-6 text-center">Shop by Style</h2>
+        <h2 className="text-2xl md:text-3xl font-bold mb-4 md:mb-6 text-center">Shop by Style</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 justify-items-center">
-          {[1, 2, 3, 4].map(i => (
+          {[1, 2, 3, 4].map(i => ( // Placeholder content for "Shop by Style"
             <Link key={i} href="#" className="group block">
               <div className="aspect-square w-full max-w-[200px] md:max-w-[250px] bg-muted rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow">
                 <Image src={`https://placehold.co/300x300.png`} alt={`Featured Style ${i}`} width={300} height={300} className="object-cover w-full h-full group-hover:scale-105 transition-transform" data-ai-hint="style fashion" />
@@ -142,17 +160,46 @@ export default function CategoryPage() {
         </div>
       </section>
 
-      {subCategories.map(subCat => (
+      {/* Display logic for products */}
+      <section id="all-products-section-for-category" className="mb-10 md:mb-12 pt-6 -mt-6">
+        <div className="flex items-center justify-between mb-4 md:mb-6">
+          <h2 className="text-2xl md:text-3xl font-bold">
+            {selectedSubCategoryIdForFilter 
+              ? subCategories.find(sc => sc.id === selectedSubCategoryIdForFilter)?.name || category.name 
+              : `All Products in ${category.name}`}
+          </h2>
+          {/* "View All" button logic might need adjustment if this section shows ALL products already */}
+        </div>
+        {displayedProducts.length > 0 ? (
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+            {displayedProducts.map(product => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+        ) : (
+          <Alert variant="default" className="mt-4">
+            <SearchX className="h-5 w-5" />
+            <AlertTitle>No Products Yet</AlertTitle>
+            <AlertDescription>
+              There are currently no products listed for {selectedSubCategoryIdForFilter ? subCategories.find(sc => sc.id === selectedSubCategoryIdForFilter)?.name : category.name}. Check back soon!
+            </AlertDescription>
+          </Alert>
+        )}
+      </section>
+
+      {/* Optionally, if you still want to show individual sub-category rows when "All" is NOT selected */}
+      {!selectedSubCategoryIdForFilter && subCategories.map(subCat => (
         <section key={subCat.id} id={`subcategory-products-${subCat.id}`} className="mb-10 md:mb-12 pt-6 -mt-6">
           <div className="flex items-center justify-between mb-4 md:mb-6">
             <h2 className="text-2xl md:text-3xl font-bold">
               {subCat.name}
             </h2>
-            {products.filter(p => p.subCategoryId === subCat.id && p.stock > 0).length > PRODUCTS_PER_SUB_CATEGORY_ROW && ( // Check in-stock count
+            {products.filter(p => p.subCategoryId === subCat.id && p.stock > 0).length > PRODUCTS_PER_SUB_CATEGORY_ROW && (
               <Button variant="outline" asChild>
-                <Link href={`/?category=${category.id}&subcategory=${subCat.id}`}>
+                {/* This link should ideally filter the main product grid by this subcategory */}
+                <button onClick={() => handleSubCategorySelect(subCat.id)} className="flex items-center">
                   View All <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
+                </button>
               </Button>
             )}
           </div>
@@ -174,26 +221,6 @@ export default function CategoryPage() {
         </section>
       ))}
 
-      {subCategories.length === 0 && (
-         <section id={`category-products-all`} className="mb-10 md:mb-12 pt-6 -mt-6">
-            <h2 className="text-2xl md:text-3xl font-bold mb-4 md:mb-6">All Products in {category.name}</h2>
-             {allCategoryProducts.length > 0 ? (
-                 <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-                 {allCategoryProducts.map(product => (
-                     <ProductCard key={product.id} product={product} />
-                 ))}
-                 </div>
-             ) : (
-                 <Alert variant="default">
-                     <SearchX className="h-5 w-5" />
-                     <AlertTitle>No Products Yet</AlertTitle>
-                     <AlertDescription>
-                     There are currently no products listed for {category.name}. Check back soon!
-                     </AlertDescription>
-                 </Alert>
-             )}
-         </section>
-      )}
     </div>
   );
 }
@@ -210,3 +237,4 @@ const ProductCardSkeleton = () => (
     </div>
   </div>
 );
+
