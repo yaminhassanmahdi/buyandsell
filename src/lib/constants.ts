@@ -7,7 +7,7 @@ import {
   Handshake as HandshakeIcon,
   LayoutDashboard, CheckSquare, ShoppingCart, Users,
   ListChecks, FolderTree, Tags as TagsIcon, Settings2 as SettingsIcon,
-  Globe, Library, MapPin, Home, DollarSign, Briefcase, Edit, Trash2, CreditCard, PieChart, FileText, TrendingUp, Percent, ImageIcon, FileType, Ship, Landmark, ListFilter
+  Globe, Library, MapPin, Home, DollarSign, Briefcase, Edit, Trash2, CreditCard, PieChart, FileText, TrendingUp, Percent, ImageIcon, FileType, Ship, Landmark, ListFilter, Banknote
 } from 'lucide-react';
 
 export let APP_NAME = '2ndhandbajar.com';
@@ -95,6 +95,7 @@ export const ADMIN_NAVIGATION: AdminNavItem[] = [
     subItems: [
       { name: 'Withdrawal Requests', href: '/admin/financials/withdrawal-requests', icon: CreditCard },
       { name: 'Commissions', href: '/admin/financials/commissions', icon: Percent },
+      { name: 'Cash in Hand', href: '/admin/financials/cash-in-hand', icon: Banknote },
     ]
   },
   {
@@ -178,7 +179,7 @@ export const HERO_BANNERS_STORAGE_KEY = 'heroBannerSlides';
 export const CUSTOM_PAGES_STORAGE_KEY = 'customPages';
 export const SHIPPING_METHODS_STORAGE_KEY = 'shippingMethods';
 export const CATEGORY_ATTRIBUTES_TYPES_STORAGE_KEY = 'categoryAttributeTypes';
-export const CATEGORY_ATTRIBUTE_VALUES_STORAGE_KEY = 'categoryAttributeValues'; // New key
+export const CATEGORY_ATTRIBUTE_VALUES_STORAGE_KEY = 'categoryAttributeValues';
 
 export const DEFAULT_CURRENCIES: Currency[] = [
   { code: 'BDT', symbol: '৳', name: 'Bangladeshi Taka' },
@@ -257,3 +258,5 @@ export const DEFAULT_SHIPPING_METHODS: ShippingMethod[] = [
   { id: 'standard-delivery', name: 'Standard Delivery' },
   { id: 'express-delivery', name: 'Express Delivery (Next Day)' },
 ];
+
+    
