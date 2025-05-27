@@ -13,66 +13,68 @@ import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbP
 import Link from 'next/link';
 
 export default function BrowsePage() {
-  const searchParams = useSearchParams();
+  const searchParams = useSearchParams(); // Use the hook directly
   const [isLoading, setIsLoading] = useState(true);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   
   const [currentCategory, setCurrentCategory] = useState<Category | undefined>(undefined);
-  const [subCategoriesForFilter, setSubCategoriesForFilter] = useState<SubCategory[]>([]);
-  const [attributeTypesForFilter, setAttributeTypesForFilter] = useState<CategoryAttributeType[]>([]);
-
+  
   const categoryId = searchParams.get('categoryId');
-  const selectedSubCategoryIds = searchParams.getAll('subCategoryId');
-  const minPrice = searchParams.get('minPrice');
-  const maxPrice = searchParams.get('maxPrice');
 
-  const dynamicAttributeFilters: Record<string, string[]> = useMemo(() => {
-    const attrs: Record<string, string[]> = {};
+  // Memoize derived props for ProductListFilters
+  const subCategoriesForFilter = useMemo(() => {
+    if (!categoryId) return [];
+    return MOCK_SUBCATEGORIES.filter(sc => sc.parentCategoryId === categoryId);
+  }, [categoryId]);
+
+  const attributeTypesForFilter = useMemo(() => {
+    if (!categoryId) return [];
+    // Ensure MOCK_CATEGORY_ATTRIBUTE_TYPES is treated as stable or memoize its derivation if complex
+    return MOCK_CATEGORY_ATTRIBUTE_TYPES.filter(at => at.categoryId === categoryId);
+  }, [categoryId]);
+
+  // Effect to set currentCategory and then filter products
+  useEffect(() => {
+    setIsLoading(true);
+    // searchParams from the hook is stable and will trigger effect when URL changes
+    const activeCategoryId = searchParams.get('categoryId'); 
+    const activeSubCategoryIds = searchParams.getAll('subCategoryId');
+    const activeMinPrice = searchParams.get('minPrice');
+    const activeMaxPrice = searchParams.get('maxPrice');
+
+    const activeDynamicAttributeFilters: Record<string, string[]> = {};
     MOCK_CATEGORY_ATTRIBUTE_TYPES.forEach(attrType => {
       const values = searchParams.getAll(attrType.id);
       if (values.length > 0) {
-        attrs[attrType.id] = values;
+        activeDynamicAttributeFilters[attrType.id] = values;
       }
     });
-    return attrs;
-  }, [searchParams]);
 
-  useEffect(() => {
-    setIsLoading(true);
-    if (categoryId) {
-      const foundCategory = MOCK_CATEGORIES.find(c => c.id === categoryId);
+    if (activeCategoryId) {
+      const foundCategory = MOCK_CATEGORIES.find(c => c.id === activeCategoryId);
       setCurrentCategory(foundCategory);
-      if (foundCategory) {
-        setSubCategoriesForFilter(MOCK_SUBCATEGORIES.filter(sc => sc.parentCategoryId === categoryId));
-        setAttributeTypesForFilter(MOCK_CATEGORY_ATTRIBUTE_TYPES.filter(at => at.categoryId === categoryId));
-      } else {
-        setSubCategoriesForFilter([]);
-        setAttributeTypesForFilter([]);
-      }
     } else {
       setCurrentCategory(undefined);
-      setSubCategoriesForFilter([]);
-      setAttributeTypesForFilter([]);
     }
 
     let products = MOCK_PRODUCTS.filter(p => p.status === 'approved' && p.stock > 0);
 
-    if (categoryId) {
-      products = products.filter(p => p.categoryId === categoryId);
+    if (activeCategoryId) {
+      products = products.filter(p => p.categoryId === activeCategoryId);
     }
 
-    if (selectedSubCategoryIds.length > 0) {
-      products = products.filter(p => p.subCategoryId && selectedSubCategoryIds.includes(p.subCategoryId));
+    if (activeSubCategoryIds.length > 0) {
+      products = products.filter(p => p.subCategoryId && activeSubCategoryIds.includes(p.subCategoryId));
     }
     
-    if (minPrice) {
-      products = products.filter(p => p.price >= parseFloat(minPrice));
+    if (activeMinPrice) {
+      products = products.filter(p => p.price >= parseFloat(activeMinPrice));
     }
-    if (maxPrice) {
-      products = products.filter(p => p.price <= parseFloat(maxPrice));
+    if (activeMaxPrice) {
+      products = products.filter(p => p.price <= parseFloat(activeMaxPrice));
     }
 
-    Object.entries(dynamicAttributeFilters).forEach(([attrTypeId, valueIds]) => {
+    Object.entries(activeDynamicAttributeFilters).forEach(([attrTypeId, valueIds]) => {
       if (valueIds.length > 0) {
         products = products.filter(p => 
           p.selectedAttributes?.some(selAttr => 
@@ -84,18 +86,25 @@ export default function BrowsePage() {
     
     setFilteredProducts(products.sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
     setIsLoading(false);
-  }, [categoryId, selectedSubCategoryIds, minPrice, maxPrice, dynamicAttributeFilters]);
+  }, [searchParams]); // Depend directly on searchParams from the hook
 
   const getPageTitle = () => {
+    const selectedSubCategoryIdsFromUrl = searchParams.getAll('subCategoryId');
     if (!currentCategory) return "Browse Products";
-    if (selectedSubCategoryIds.length === 1) {
-      const subCat = MOCK_SUBCATEGORIES.find(sc => sc.id === selectedSubCategoryIds[0]);
+    if (selectedSubCategoryIdsFromUrl.length === 1) {
+      const subCat = MOCK_SUBCATEGORIES.find(sc => sc.id === selectedSubCategoryIdsFromUrl[0]);
       return subCat ? `${subCat.name} in ${currentCategory.name}` : currentCategory.name;
     }
     return currentCategory.name;
   };
   
-  const breadcrumbSubCategory = selectedSubCategoryIds.length === 1 ? MOCK_SUBCATEGORIES.find(sc => sc.id === selectedSubCategoryIds[0]) : null;
+  const breadcrumbSubCategory = useMemo(() => {
+    const subCategoryIds = searchParams.getAll('subCategoryId');
+    if (subCategoryIds.length === 1) {
+      return MOCK_SUBCATEGORIES.find(sc => sc.id === subCategoryIds[0]);
+    }
+    return null;
+  }, [searchParams]);
 
   return (
     <div className="container mx-auto px-4 py-6">
@@ -109,7 +118,8 @@ export default function BrowsePage() {
             <>
               <BreadcrumbItem>
                 <BreadcrumbLink asChild>
-                  <Link href={`/category/${currentCategory.id}`}>{currentCategory.name}</Link>
+                  {/* Link to /browse to allow filtering from parent category */}
+                  <Link href={`/browse?categoryId=${currentCategory.id}`}>{currentCategory.name}</Link>
                 </BreadcrumbLink>
               </BreadcrumbItem>
               {breadcrumbSubCategory && (
@@ -120,7 +130,7 @@ export default function BrowsePage() {
                   </BreadcrumbItem>
                 </>
               )}
-               {!breadcrumbSubCategory && selectedSubCategoryIds.length > 0 && (
+               {!breadcrumbSubCategory && searchParams.getAll('subCategoryId').length > 0 && (
                  <>
                   <BreadcrumbSeparator />
                   <BreadcrumbItem>
@@ -131,7 +141,7 @@ export default function BrowsePage() {
             </>
           ) : (
             <BreadcrumbItem>
-              <BreadcrumbPage>Browse</BreadcrumbPage>
+              <BreadcrumbPage>Browse All Products</BreadcrumbPage>
             </BreadcrumbItem>
           )}
         </BreadcrumbList>
@@ -140,7 +150,7 @@ export default function BrowsePage() {
       <div className="flex flex-col md:flex-row gap-8">
         <div className="w-full md:w-72 lg:w-80 shrink-0">
           <ProductListFilters
-            currentCategory={currentCategory}
+            currentCategory={currentCategory} 
             subCategoriesForCurrentCategory={subCategoriesForFilter}
             attributeTypesForCurrentCategory={attributeTypesForFilter}
             allAttributeValues={MOCK_CATEGORY_ATTRIBUTE_VALUES}
@@ -186,4 +196,3 @@ const ProductCardSkeleton = () => (
     </div>
   </div>
 );
-
