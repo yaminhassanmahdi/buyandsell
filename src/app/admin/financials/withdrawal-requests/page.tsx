@@ -2,18 +2,17 @@
 "use client";
 import { useEffect, useState } from 'react';
 import { MOCK_WITHDRAWAL_REQUESTS } from '@/lib/mock-data';
-import type { WithdrawalRequest, WithdrawalRequestStatus, BusinessSettings } from '@/lib/types';
+import type { WithdrawalRequest, WithdrawalRequestStatus, BusinessSettings, Currency } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogClose } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogClose, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, CheckCircle, XCircle, Edit, CreditCard, FileText } from 'lucide-react';
 import { format } from 'date-fns';
-import { Label } from '@/components/ui/label'; 
-import { DialogFooter } from '@/components/ui/dialog'; 
+import { Label } from '@/components/ui/label';
 import useLocalStorage from '@/hooks/use-local-storage';
 import { BUSINESS_SETTINGS_STORAGE_KEY, DEFAULT_BUSINESS_SETTINGS } from '@/lib/constants';
 
@@ -28,9 +27,27 @@ export default function AdminWithdrawalRequestsPage() {
   const [actionType, setActionType] = useState<'approve' | 'reject' | null>(null);
   const [formSubmitting, setFormSubmitting] = useState(false);
 
-  const [settings] = useLocalStorage<BusinessSettings>(BUSINESS_SETTINGS_STORAGE_KEY, DEFAULT_BUSINESS_SETTINGS);
-  const activeCurrency = settings.availableCurrencies.find(c => c.code === settings.defaultCurrencyCode) || settings.availableCurrencies[0] || { symbol: '?' };
+  const [settings] = useLocalStorage<BusinessSettings>(
+    BUSINESS_SETTINGS_STORAGE_KEY,
+    DEFAULT_BUSINESS_SETTINGS
+  );
+
+  // Safely determine active currency and symbol
+  const safeAvailableCurrencies: Currency[] = settings?.availableCurrencies && Array.isArray(settings.availableCurrencies) && settings.availableCurrencies.length > 0
+    ? settings.availableCurrencies
+    : DEFAULT_BUSINESS_SETTINGS.availableCurrencies;
+
+  const safeDefaultCurrencyCode: string = settings?.defaultCurrencyCode
+    ? settings.defaultCurrencyCode
+    : DEFAULT_BUSINESS_SETTINGS.defaultCurrencyCode;
+
+  const activeCurrency: Currency =
+    safeAvailableCurrencies.find(c => c.code === safeDefaultCurrencyCode) ||
+    safeAvailableCurrencies[0] || // Fallback to the first currency in the safe list
+    { code: 'BDT', symbol: '৳', name: 'Bangladeshi Taka' }; // Absolute fallback
+
   const currencySymbol = activeCurrency.symbol;
+
 
   useEffect(() => {
     setIsLoading(true);
