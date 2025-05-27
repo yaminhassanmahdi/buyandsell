@@ -15,7 +15,7 @@ import {
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from '@/contexts/auth-context';
 import { USER_NAVIGATION, ADMIN_NAVIGATION } from '@/lib/constants';
-import { ShoppingCart, UserCircle, LogIn, LogOut, UserPlus, CreditCard, LayoutDashboard, DollarSign, Settings2, Briefcase, TrendingUp } from 'lucide-react';
+import { ShoppingCart, UserCircle, LogIn, LogOut, Settings2, Briefcase, TrendingUp, DollarSign } from 'lucide-react'; // Removed UserPlus, CreditCard, LayoutDashboard as they might not be directly used or are part of item.icon
 import { useCart } from '@/contexts/cart-context';
 import React, { useState, useEffect } from 'react';
 import { CartSidebar } from './cart-sidebar';
@@ -30,7 +30,21 @@ export function UserNav() {
     setIsClient(true);
   }, []);
 
-  // Determine the main div class name consistently
+  if (!isClient) {
+    // Render a consistent, minimal placeholder for SSR and initial client render
+    return (
+      <div className="flex items-center gap-2"> {/* Base class, won't change based on auth status here */}
+        <Button variant="ghost" size="icon" aria-label="Shopping Cart" className="relative" disabled style={{ visibility: 'hidden' }}>
+          <ShoppingCart className="h-5 w-5" />
+        </Button>
+        <Button variant="ghost" className="relative h-9 w-9 rounded-full" disabled style={{ visibility: 'hidden' }}>
+          <UserCircle className="h-7 w-7" />
+        </Button>
+      </div>
+    );
+  }
+
+  // If isClient is true, render the actual dynamic UI
   const mainDivClassName = currentUser ? "flex items-center gap-2 md:gap-4" : "flex items-center gap-2";
 
   if (currentUser) {
@@ -40,7 +54,7 @@ export function UserNav() {
           <SheetTrigger asChild>
             <Button variant="ghost" size="icon" aria-label="Shopping Cart" className="relative">
               <ShoppingCart className="h-5 w-5" />
-              {isClient && itemCount > 0 && (
+              {itemCount > 0 && (
                 <span className="absolute -top-1 -right-1 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-red-100 bg-red-600 rounded-full">
                   {itemCount}
                 </span>
@@ -51,6 +65,7 @@ export function UserNav() {
             <CartSidebar onClose={() => setIsCartSidebarOpen(false)} />
           </SheetContent>
         </Sheet>
+        
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="relative h-9 w-9 rounded-full">
@@ -117,70 +132,41 @@ export function UserNav() {
     );
   }
 
-  // Unauthenticated user view
+  // Unauthenticated user view (when isClient is true)
   return (
-    <div className={mainDivClassName}>
-      {isClient && (
-        <Sheet open={isCartSidebarOpen} onOpenChange={setIsCartSidebarOpen}>
-          <SheetTrigger asChild>
-            <Button variant="ghost" size="icon" aria-label="Shopping Cart" className="relative">
-              <ShoppingCart className="h-5 w-5" />
-              {itemCount > 0 && (
-              <span className="absolute -top-1 -right-1 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-red-100 bg-red-600 rounded-full">
-                  {itemCount}
-              </span>
-              )}
-            </Button>
-          </SheetTrigger>
-          <SheetContent className="w-[350px] sm:w-[400px] p-0 flex flex-col" side="right">
-            <CartSidebar onClose={() => setIsCartSidebarOpen(false)} />
-          </SheetContent>
-        </Sheet>
-      )}
-      {!isClient && ( // Render a placeholder for the cart icon on SSR for unauthenticated users
-        <Button variant="ghost" size="icon" aria-label="Shopping Cart" className="relative" type="button">
-          <ShoppingCart className="h-5 w-5" />
+    <div className={mainDivClassName}> {/* mainDivClassName will be "flex items-center gap-2" */}
+      <Sheet open={isCartSidebarOpen} onOpenChange={setIsCartSidebarOpen}>
+        <SheetTrigger asChild>
+          <Button variant="ghost" size="icon" aria-label="Shopping Cart" className="relative">
+            <ShoppingCart className="h-5 w-5" />
+            {itemCount > 0 && (
+            <span className="absolute -top-1 -right-1 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-red-100 bg-red-600 rounded-full">
+                {itemCount}
+            </span>
+            )}
+          </Button>
+        </SheetTrigger>
+        <SheetContent className="w-[350px] sm:w-[400px] p-0 flex flex-col" side="right">
+          <CartSidebar onClose={() => setIsCartSidebarOpen(false)} />
+        </SheetContent>
+      </Sheet>
+      
+      <Link href="/login" passHref className="hidden md:inline-flex">
+        <Button variant="ghost" type="button">
+          <UserCircle className="mr-2 h-4 w-4" /> Login
         </Button>
-      )}
-
-      {isClient ? (
-        <>
-          <Link href="/login" passHref className="hidden md:inline-flex">
-            <Button variant="ghost" type="button">
-              <UserCircle className="mr-2 h-4 w-4" /> Login
-            </Button>
-          </Link>
-          <Link href="/sell" passHref className="hidden md:inline-flex">
-            <Button variant="outline" type="button">
-              <DollarSign className="mr-2 h-4 w-4" /> Sell Your Item
-            </Button>
-          </Link>
-          <Link href="/login" passHref className="md:hidden">
-            <Button variant="ghost" size="icon" type="button">
-                <UserCircle className="h-5 w-5" />
-                <span className="sr-only">Login</span>
-            </Button>
-         </Link>
-        </>
-      ) : ( // SSR placeholders for login/sell buttons to maintain structure
-        <>
-          <div className="hidden md:inline-flex"> 
-            <Button variant="ghost" disabled style={{ visibility: 'hidden' }} type="button">
-              <UserCircle className="mr-2 h-4 w-4" /> Login
-            </Button>
-          </div>
-           <div className="hidden md:inline-flex"> 
-            <Button variant="outline" disabled style={{ visibility: 'hidden' }} type="button">
-              <DollarSign className="mr-2 h-4 w-4" /> Sell Your Item
-            </Button>
-          </div>
-          <div className="md:hidden"> 
-            <Button variant="ghost" size="icon" disabled style={{ visibility: 'hidden' }} type="button">
-                <UserCircle className="h-5 w-5" />
-            </Button>
-          </div>
-        </>
-      )}
+      </Link>
+      <Link href="/sell" passHref className="hidden md:inline-flex">
+        <Button variant="outline" type="button">
+          <DollarSign className="mr-2 h-4 w-4" /> Sell Your Item
+        </Button>
+      </Link>
+      <Link href="/login" passHref className="md:hidden">
+        <Button variant="ghost" size="icon" type="button">
+            <UserCircle className="h-5 w-5" />
+            <span className="sr-only">Login</span>
+        </Button>
+     </Link>
     </div>
   );
 }
