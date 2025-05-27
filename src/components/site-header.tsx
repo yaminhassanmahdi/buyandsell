@@ -4,18 +4,35 @@ import { Logo } from '@/components/logo';
 import { UserNav } from '@/components/user-nav';
 import { Button } from './ui/button';
 import Link from 'next/link';
-import { PlusCircle, Search, Menu } from 'lucide-react';
+import { PlusCircle, Search, Menu, Handshake } from 'lucide-react'; // Added Handshake
 import { Input } from './ui/input';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { MOCK_CATEGORIES } from '@/lib/mock-data';
 import { useAuth } from '@/contexts/auth-context';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react'; // Added useEffect
 import { useRouter } from 'next/navigation';
+import Image from 'next/image'; // Added Image
+import useLocalStorage from '@/hooks/use-local-storage'; // Added useLocalStorage
+import type { BusinessSettings } from '@/lib/types'; // Added BusinessSettings
+import { BUSINESS_SETTINGS_STORAGE_KEY, DEFAULT_BUSINESS_SETTINGS, APP_NAME } from '@/lib/constants'; // Added constants
 
 export function SiteHeader() {
   const { isAuthenticated } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const router = useRouter();
+
+  const [storedSettings] = useLocalStorage<BusinessSettings>(
+    BUSINESS_SETTINGS_STORAGE_KEY,
+    DEFAULT_BUSINESS_SETTINGS
+  );
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  const appNameToUse = isClient ? storedSettings.appName || APP_NAME : APP_NAME;
+  const faviconUrl = isClient ? storedSettings.faviconUrl : null;
 
   const handleSearchSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -26,7 +43,7 @@ export function SiteHeader() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 max-w-screen-2xl items-center"> {/* Removed px-2 sm:px-4 */}
+      <div className="container flex h-16 max-w-screen-2xl items-center">
         {/* Mobile Menu */}
         <div className="md:hidden mr-2 sm:mr-4">
           <Sheet>
@@ -39,6 +56,7 @@ export function SiteHeader() {
             <SheetContent side="left" className="w-3/4 sm:w-1/2">
               <div className="py-6">
                 <div className="px-4 mb-6">
+                  {/* Display full logo in mobile sheet header for branding */}
                   <Logo />
                 </div>
                 <nav className="grid gap-2 px-4">
@@ -58,10 +76,11 @@ export function SiteHeader() {
                      <>
                       <div className="pt-4 mt-4 border-t">
                         <h3 className="mb-2 px-0 text-lg font-semibold tracking-tight">My Account</h3>
-                        <Link href="/account/orders" className="block py-2 text-muted-foreground hover:text-primary">My Orders</Link>
-                        <Link href="/account/my-products" className="block py-2 text-muted-foreground hover:text-primary">My Products</Link>
-                        <Link href="/account/my-earnings" className="block py-2 text-muted-foreground hover:text-primary">My Earnings</Link>
-                        <Link href="/account/settings" className="block py-2 text-muted-foreground hover:text-primary">Account Settings</Link>
+                        {USER_NAVIGATION.map(item => (
+                           <Link href={item.href} key={item.name} passHref>
+                             <div className="block py-2 text-muted-foreground hover:text-primary cursor-pointer">{item.name}</div>
+                           </Link>
+                        ))}
                       </div>
                      </>
                    )}
@@ -71,13 +90,30 @@ export function SiteHeader() {
           </Sheet>
         </div>
         
-        {/* Logo - always visible after mobile menu toggle */}
-        <div className="flex-shrink-0">
-          <Logo />
-        </div>
+        {/* Logo / Favicon Section */}
+        <Link href="/" className="flex items-center flex-shrink-0 text-primary hover:text-primary/90 transition-colors mr-2 sm:mr-4">
+          {/* Desktop: Render the full Logo component */}
+          <div className="hidden md:block">
+            <Logo />
+          </div>
+          {/* Mobile: Render Favicon */}
+          <div className="block md:hidden h-8 w-8 flex items-center justify-center">
+            {isClient && faviconUrl ? (
+              <Image
+                src={faviconUrl}
+                alt={`${appNameToUse} Favicon`}
+                width={28}
+                height={28}
+                className="object-contain"
+              />
+            ) : (
+              <Handshake className="h-7 w-7" /> // Fallback icon
+            )}
+          </div>
+        </Link>
 
         {/* Search Bar Wrapper - Takes available space and centers the form */}
-        <div className="flex-1 flex justify-center items-center mx-2 sm:mx-4">
+        <div className="flex-1 flex justify-center items-center mx-1 sm:mx-2">
           <form onSubmit={handleSearchSubmit} className="relative w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />
             <Input
@@ -98,7 +134,7 @@ export function SiteHeader() {
                     variant="default"
                     className="bg-accent hover:bg-accent/90 text-accent-foreground px-2 sm:px-3 h-10"
                 >
-                    <PlusCircle className="h-5 w-5 sm:mr-1" /> {/* Keep margin on larger screens */}
+                    <PlusCircle className="h-5 w-5 sm:mr-1" />
                     <span className="hidden sm:inline">Sell Now</span>
                 </Button>
             </Link>
