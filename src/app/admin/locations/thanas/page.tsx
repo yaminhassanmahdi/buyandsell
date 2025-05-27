@@ -82,7 +82,7 @@ export default function AdminThanasPage() {
     await new Promise(resolve => setTimeout(resolve, 500));
 
     if (isEditing && currentThana.id) {
-      setThanas(thanas.map(t => t.id === currentThana.id ? (currentThana as Thana) : t));
+      setThanas(prevThanas => prevThanas.map(t => t.id === currentThana.id ? (currentThana as Thana) : t));
       toast({ title: "Thana/Upazilla Updated", description: "The Thana/Upazilla has been updated." });
     } else {
       const newThana: Thana = {
@@ -90,7 +90,7 @@ export default function AdminThanasPage() {
         name: currentThana.name.trim(),
         districtId: currentThana.districtId,
       };
-      setThanas([...thanas, newThana]);
+      setThanas(prevThanas => [...prevThanas, newThana]);
       toast({ title: "Thana/Upazilla Added", description: `"${newThana.name}" has been added.` });
     }
     setFormSubmitting(false);
@@ -100,7 +100,7 @@ export default function AdminThanasPage() {
 
   const handleDelete = (thanaId: string) => {
     if (window.confirm("Are you sure you want to delete this Thana/Upazilla?")) {
-      setThanas(thanas.filter(t => t.id !== thanaId));
+      setThanas(prevThanas => prevThanas.filter(t => t.id !== thanaId));
       toast({ title: "Thana/Upazilla Deleted", description: "The Thana/Upazilla has been deleted." });
     }
   };
@@ -152,7 +152,7 @@ export default function AdminThanasPage() {
                 disabled={!selectedDivisionId || availableDistricts.length === 0}
               >
                 <SelectTrigger id="district-select">
-                  <SelectValue placeholder={!selectedDivisionId ? "Select division first" : "Select a district"} />
+                  <SelectValue placeholder={!selectedDivisionId ? "Select division first" : (availableDistricts.length === 0 ? "No districts available" : "Select a district")} />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">-- Select District --</SelectItem>

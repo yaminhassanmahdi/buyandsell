@@ -63,7 +63,7 @@ export default function AdminDistrictsPage() {
     await new Promise(resolve => setTimeout(resolve, 500));
 
     if (isEditing && currentDistrict.id) {
-      setDistricts(districts.map(d => d.id === currentDistrict.id ? (currentDistrict as District) : d));
+      setDistricts(prevDistricts => prevDistricts.map(d => d.id === currentDistrict.id ? (currentDistrict as District) : d));
       toast({ title: "District Updated", description: "The district has been updated." });
     } else {
       const newDistrict: District = {
@@ -71,7 +71,7 @@ export default function AdminDistrictsPage() {
         name: currentDistrict.name.trim(),
         divisionId: currentDistrict.divisionId,
       };
-      setDistricts([...districts, newDistrict]);
+      setDistricts(prevDistricts => [...prevDistricts, newDistrict]);
       toast({ title: "District Added", description: `District "${newDistrict.name}" has been added.` });
     }
     setFormSubmitting(false);
@@ -80,9 +80,8 @@ export default function AdminDistrictsPage() {
   };
 
   const handleDelete = (districtId: string) => {
-    // In a real app, check for associated thanas before deleting.
     if (window.confirm("Are you sure you want to delete this district? This might affect thanas under it.")) {
-      setDistricts(districts.filter(d => d.id !== districtId));
+      setDistricts(prevDistricts => prevDistricts.filter(d => d.id !== districtId));
       toast({ title: "District Deleted", description: "The district has been deleted." });
     }
   };

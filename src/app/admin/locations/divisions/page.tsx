@@ -53,14 +53,14 @@ export default function AdminDivisionsPage() {
     await new Promise(resolve => setTimeout(resolve, 500));
 
     if (isEditing && currentDivision.id) {
-      setDivisions(divisions.map(d => d.id === currentDivision.id ? (currentDivision as Division) : d));
+      setDivisions(prevDivisions => prevDivisions.map(d => d.id === currentDivision.id ? (currentDivision as Division) : d));
       toast({ title: "Division Updated", description: "The division has been updated." });
     } else {
       const newDivision: Division = {
         id: generateId(),
         name: currentDivision.name.trim(),
       };
-      setDivisions([...divisions, newDivision]);
+      setDivisions(prevDivisions => [...prevDivisions, newDivision]);
       toast({ title: "Division Added", description: `Division "${newDivision.name}" has been added.` });
     }
     setFormSubmitting(false);
@@ -69,9 +69,8 @@ export default function AdminDivisionsPage() {
   };
 
   const handleDelete = (divisionId: string) => {
-    // In a real app, check for associated districts/thanas before deleting.
     if (window.confirm("Are you sure you want to delete this division? This might affect districts and thanas under it.")) {
-      setDivisions(divisions.filter(d => d.id !== divisionId));
+      setDivisions(prevDivisions => prevDivisions.filter(d => d.id !== divisionId));
       toast({ title: "Division Deleted", description: "The division has been deleted." });
     }
   };
@@ -138,7 +137,7 @@ export default function AdminDivisionsPage() {
             </div>
             <DialogFooter>
               <DialogClose asChild><Button type="button" variant="outline" disabled={formSubmitting}>Cancel</Button></DialogClose>
-              <Button onClick={handleSubmit} disabled={formSubmitting}>
+              <Button onClick={handleSubmit} disabled={formSubmitting || !currentDivision?.name?.trim()}>
                 {formSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {isEditing ? "Save Changes" : "Add Division"}
               </Button>
