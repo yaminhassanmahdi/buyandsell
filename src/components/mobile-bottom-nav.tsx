@@ -8,23 +8,38 @@ import { cn } from '@/lib/utils';
 import { useCart } from '@/contexts/cart-context';
 import { useAuth } from '@/contexts/auth-context';
 import { Button } from '@/components/ui/button';
-import React, { useState } from 'react'; 
-import { MobileCategorySheet } from './mobile-category-sheet'; 
+import React, { useState } from 'react';
+import { MobileCategorySheet } from './mobile-category-sheet';
 import useLocalStorage from '@/hooks/use-local-storage';
-import type { BusinessSettings } from '@/lib/types';
+import type { BusinessSettings, Currency } from '@/lib/types';
 import { BUSINESS_SETTINGS_STORAGE_KEY, DEFAULT_BUSINESS_SETTINGS } from '@/lib/constants';
 
 export function MobileBottomNav() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { itemCount, getCartTotal } = useCart();
-  const { isAuthenticated } = useAuth(); 
+  const { isAuthenticated } = useAuth();
   const [isClient, setIsClient] = React.useState(false);
-  const [isCategorySheetOpen, setIsCategorySheetOpen] = useState(false); 
+  const [isCategorySheetOpen, setIsCategorySheetOpen] = useState(false);
 
   const [settings] = useLocalStorage<BusinessSettings>(BUSINESS_SETTINGS_STORAGE_KEY, DEFAULT_BUSINESS_SETTINGS);
-  const activeCurrency = settings.availableCurrencies.find(c => c.code === settings.defaultCurrencyCode) || settings.availableCurrencies[0] || { symbol: '?' };
+
+  // Safely determine active currency and symbol
+  const safeAvailableCurrencies: Currency[] = settings?.availableCurrencies && Array.isArray(settings.availableCurrencies) && settings.availableCurrencies.length > 0
+    ? settings.availableCurrencies
+    : DEFAULT_BUSINESS_SETTINGS.availableCurrencies;
+
+  const safeDefaultCurrencyCode: string = settings?.defaultCurrencyCode
+    ? settings.defaultCurrencyCode
+    : DEFAULT_BUSINESS_SETTINGS.defaultCurrencyCode;
+
+  const activeCurrency: Currency =
+    safeAvailableCurrencies.find(c => c.code === safeDefaultCurrencyCode) ||
+    safeAvailableCurrencies[0] ||
+    { code: 'BDT', symbol: '৳', name: 'Bangladeshi Taka' }; // Absolute fallback
+
   const currencySymbol = activeCurrency.symbol;
+
 
   React.useEffect(() => {
     setIsClient(true);
@@ -32,11 +47,11 @@ export function MobileBottomNav() {
 
   const navItems = [
     { href: '/', label: 'Home', icon: Home, id: 'home' },
-    { href: '#', label: 'Categories', icon: LayoutGrid, id: 'categories' }, 
+    { href: '#', label: 'Categories', icon: LayoutGrid, id: 'categories' },
     { href: '/sell', label: 'Sell', icon: PlusCircle, id: 'sell' },
   ];
 
-  const hiddenOnRoutes = ['/admin', '/login', '/register', '/checkout'];
+  const hiddenOnRoutes = ['/admin', '/login', '/register', '/checkout', '/order-confirmation']; // Added order-confirmation
   if (hiddenOnRoutes.some(routePrefix => pathname.startsWith(routePrefix))) {
     return null;
   }
@@ -64,7 +79,7 @@ export function MobileBottomNav() {
             "flex justify-around items-center h-full",
             (itemCount > 0 && isClient) ? "w-2/5" : "w-full"
           )}>
-            {navItems.map((item) => { 
+            {navItems.map((item) => {
               let isActive = false;
               if (item.id === 'home') {
                 isActive = pathname === '/' && !searchParams.has('category') && !searchParams.has('subcategory');
