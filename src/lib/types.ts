@@ -7,7 +7,7 @@ export type Category = {
 };
 
 export type SubCategory = {
-  id: string;
+  id:string;
   name: string;
   parentCategoryId: string;
   imageUrl?: string;
@@ -206,4 +206,14 @@ export type CustomPage = {
   content: string;
   createdAt: Date;
   updatedAt: Date;
+};
+
+// For the category page
+export type CategoryPageData = {
+  category: Category;
+  subCategories: SubCategory[];
+  // products: Product[]; // Or group products by subcategory
+  // featuredBrands: Brand[];
+  // sliderSlides: HeroBannerSlide[]; // Category specific slides
+  // fixedSquareImages: { imageUrl: string; link: string; imageHint: string }[];
 };

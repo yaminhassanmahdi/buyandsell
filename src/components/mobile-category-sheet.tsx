@@ -23,7 +23,6 @@ export function MobileCategorySheet({ isOpen, onOpenChange }: MobileCategoryShee
 
   useEffect(() => {
     if (!isOpen) {
-      // Reset view when sheet is closed, with a delay for animation
       const timer = setTimeout(() => {
         setView('categories');
         setSelectedParentCategory(null);
@@ -46,12 +45,15 @@ export function MobileCategorySheet({ isOpen, onOpenChange }: MobileCategoryShee
   };
 
   const handleNavigation = (categoryId: string, subCategoryId?: string) => {
-    let path = `/?category=${categoryId}`;
+    let path = `/category/${categoryId}`; // Navigate to the new dynamic category page
     if (subCategoryId) {
-      path += `&subcategory=${subCategoryId}`;
+      // For now, clicking a subcategory in the sheet still goes to the parent category page.
+      // The subcategory scroller on that page can then handle filtering/scrolling.
+      // Or, we could append a query param if the category page handles it: path += `?subcategory=${subCategoryId}`;
+      // For now, let's keep it simple and navigate to the parent category page, the sub-category scroller there will handle it.
     }
     router.push(path);
-    onOpenChange(false); // Close the sheet after navigation
+    onOpenChange(false); 
   };
 
   const renderHeader = () => {
@@ -97,7 +99,6 @@ export function MobileCategorySheet({ isOpen, onOpenChange }: MobileCategoryShee
                       className="h-auto py-4 flex flex-col items-center justify-center text-center shadow-sm hover:shadow-md focus:ring-2 focus:ring-primary transition-all duration-150 ease-in-out"
                       onClick={() => handleParentCategorySelect(category)}
                     >
-                      {/* Future: Add category icon here */}
                       <span className="text-sm font-medium text-foreground">{category.name}</span>
                     </Button>
                   ))}
@@ -110,7 +111,7 @@ export function MobileCategorySheet({ isOpen, onOpenChange }: MobileCategoryShee
                 <Button
                   variant="secondary"
                   className="w-full justify-start py-3 text-left text-sm h-auto focus:ring-2 focus:ring-primary"
-                  onClick={() => handleNavigation(selectedParentCategory.id)}
+                  onClick={() => handleNavigation(selectedParentCategory.id)} // View all for parent category
                 >
                   All {selectedParentCategory.name}
                 </Button>
@@ -120,6 +121,7 @@ export function MobileCategorySheet({ isOpen, onOpenChange }: MobileCategoryShee
                       key={subcategory.id}
                       variant="ghost"
                       className="w-full justify-start py-3 text-left text-sm h-auto text-muted-foreground hover:text-foreground focus:ring-2 focus:ring-primary"
+                      // Clicking subcategory from sheet also goes to parent category page; filtering happens on that page
                       onClick={() => handleNavigation(selectedParentCategory.id, subcategory.id)}
                     >
                       {subcategory.name}

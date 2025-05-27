@@ -7,7 +7,6 @@ import type { Product, Category as CategoryType } from '@/lib/types';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { SearchX, ArrowRight } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { CategoryBar } from '@/components/category-bar';
@@ -24,8 +23,8 @@ interface ProductGroup {
 
 export default function HomePage() {
   const searchParams = useSearchParams();
-  const selectedCategoryId = searchParams.get('category');
-  const selectedSubCategoryId = searchParams.get('subcategory'); // New
+  const selectedCategoryIdFromUrl = searchParams.get('category');
+  const selectedSubCategoryIdFromUrl = searchParams.get('subcategory');
 
   const [allApprovedProducts, setAllApprovedProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -44,22 +43,19 @@ export default function HomePage() {
   const productsByCategory: ProductGroup[] = useMemo(() => {
     let baseProducts = allApprovedProducts;
 
-    if (selectedCategoryId) {
-      const category = MOCK_CATEGORIES.find(c => c.id === selectedCategoryId);
-      if (!category) return []; // No such category found
+    if (selectedCategoryIdFromUrl) {
+      const category = MOCK_CATEGORIES.find(c => c.id === selectedCategoryIdFromUrl);
+      if (!category) return []; 
 
-      let filteredProducts = baseProducts.filter(p => p.categoryId === selectedCategoryId);
+      let filteredProducts = baseProducts.filter(p => p.categoryId === selectedCategoryIdFromUrl);
       let title = `Products in ${category.name}`;
 
-      if (selectedSubCategoryId) {
-        filteredProducts = filteredProducts.filter(p => p.subCategoryId === selectedSubCategoryId);
-        const subCategory = MOCK_SUBCATEGORIES.find(sc => sc.id === selectedSubCategoryId && sc.parentCategoryId === selectedCategoryId);
+      if (selectedSubCategoryIdFromUrl) {
+        filteredProducts = filteredProducts.filter(p => p.subCategoryId === selectedSubCategoryIdFromUrl);
+        const subCategory = MOCK_SUBCATEGORIES.find(sc => sc.id === selectedSubCategoryIdFromUrl && sc.parentCategoryId === selectedCategoryIdFromUrl);
         if (subCategory) {
           title = `${subCategory.name} in ${category.name}`;
         } else {
-           // Subcategory ID provided but not valid for this parent, or not found
-           // Show all products from parent category as a fallback, or an empty list
-           // For now, let's show parent category products if subcategory is invalid
            title = `All ${category.name} (Subcategory not found)`;
         }
       }
@@ -71,19 +67,24 @@ export default function HomePage() {
       }];
     }
 
-    // Default view: Group products by category for display
+    // Default view on homepage: Group products by category
     return MOCK_CATEGORIES.map(category => ({
       category,
       products: baseProducts
         .filter(product => product.categoryId === category.id)
         .slice(0, PRODUCTS_PER_CATEGORY_HOME),
     })).filter(group => group.products.length > 0);
-  }, [allApprovedProducts, selectedCategoryId, selectedSubCategoryId]);
+  }, [allApprovedProducts, selectedCategoryIdFromUrl, selectedSubCategoryIdFromUrl]);
 
   return (
     <div>
-      <CategoryBar />
-      <HeroBanner />
+      {/* Only show CategoryBar and HeroBanner if not filtering by category/subcategory via URL */}
+      {(!selectedCategoryIdFromUrl && !selectedSubCategoryIdFromUrl) && (
+        <>
+          <CategoryBar />
+          <HeroBanner />
+        </>
+      )}
       
       <div className="container mx-auto px-4 mt-6 md:mt-8">
         {loading ? (
@@ -92,31 +93,22 @@ export default function HomePage() {
               <Skeleton className="h-8 w-1/2 md:w-1/4 mb-6" />
               <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
                 {[...Array(PRODUCTS_PER_CATEGORY_HOME)].map((_, i) => (
-                  <Card key={i} className="flex flex-col overflow-hidden rounded-lg">
-                    <Skeleton className="aspect-[4/3] w-full" />
-                    <CardContent className="p-3 flex-grow">
-                      <Skeleton className="h-5 w-3/4 mb-1" /> {/* Adjusted for smaller text */}
-                      <Skeleton className="h-4 w-2/3 mb-2" /> {/* Adjusted for smaller text */}
-                      <Skeleton className="h-7 w-1/3" /> {/* Price */}
-                    </CardContent>
-                    <CardFooter className="p-3 border-t">
-                      <Skeleton className="h-9 w-full" />
-                    </CardFooter>
-                  </Card>
+                  <ProductCardSkeleton key={i} />
                 ))}
               </div>
             </div>
           ))
         ) : productsByCategory.length > 0 ? (
-          productsByCategory.map((group) => ( // Changed to 'group'
+          productsByCategory.map((group) => (
             <section key={group.category.id} className="mb-10 md:mb-12">
               <div className="flex items-center justify-between mb-4 md:mb-6">
                 <h2 className="text-2xl md:text-3xl font-bold">
-                  {group.titleOverride || (selectedCategoryId ? `Products in ${group.category.name}` : `Latest in ${group.category.name}`)}
+                  {group.titleOverride || (selectedCategoryIdFromUrl ? `Products in ${group.category.name}` : `Latest in ${group.category.name}`)}
                 </h2>
-                {!selectedCategoryId && group.products.length >= PRODUCTS_PER_CATEGORY_HOME && (
+                {/* Show "View All" only on homepage default view and if there are more products */}
+                {!selectedCategoryIdFromUrl && allApprovedProducts.filter(p => p.categoryId === group.category.id).length > PRODUCTS_PER_CATEGORY_HOME && (
                    <Button variant="outline" asChild>
-                    <Link href={`/?category=${group.category.id}`}>
+                    <Link href={`/category/${group.category.id}`}>
                       View All <ArrowRight className="ml-2 h-4 w-4" />
                     </Link>
                   </Button>
@@ -154,3 +146,17 @@ export default function HomePage() {
     </div>
   );
 }
+
+
+const ProductCardSkeleton = () => (
+  <div className="flex flex-col overflow-hidden rounded-lg border shadow-lg">
+    <Skeleton className="aspect-[4/3] w-full" />
+    <div className="p-3 flex-grow">
+      <Skeleton className="h-5 w-3/4 mb-1" />
+      <Skeleton className="h-7 w-1/3" />
+    </div>
+    <div className="p-3 border-t mt-auto">
+      <Skeleton className="h-9 w-full" />
+    </div>
+  </div>
+);

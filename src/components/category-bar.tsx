@@ -13,7 +13,7 @@ export function CategoryBar() {
           {MOCK_CATEGORIES.map((category) => (
             <Link
               key={category.id}
-              href={`/?category=${category.id}`}
+              href={`/category/${category.id}`} // Updated Link
               className="flex flex-col items-center justify-start group w-20 min-w-[80px] text-center"
             >
               <div className="relative w-16 h-16 mb-1.5 rounded-full overflow-hidden border-2 border-border group-hover:border-primary transition-all duration-200 ease-in-out">
@@ -22,7 +22,7 @@ export function CategoryBar() {
                     src={category.imageUrl}
                     alt={category.name}
                     fill
-                    sizes="64px" // Equivalent to w-16
+                    sizes="64px"
                     className="object-cover group-hover:scale-105 transition-transform duration-200 ease-in-out"
                     data-ai-hint={category.imageHint || category.name.toLowerCase().split(" ")[0] || "category"}
                   />
