@@ -10,7 +10,7 @@ import { CartItem as CartItemComponent } from './cart-item';
 import { ShoppingCart, X as CloseIcon } from 'lucide-react';
 import React from 'react';
 import useLocalStorage from '@/hooks/use-local-storage';
-import type { BusinessSettings } from '@/lib/types';
+import type { BusinessSettings, Currency } from '@/lib/types';
 import { BUSINESS_SETTINGS_STORAGE_KEY, DEFAULT_BUSINESS_SETTINGS } from '@/lib/constants';
 
 interface CartSidebarProps {
@@ -21,7 +21,21 @@ export function CartSidebar({ onClose }: CartSidebarProps) {
   const { cartItems, getCartTotal, itemCount } = useCart();
   const subTotal = getCartTotal();
   const [settings] = useLocalStorage<BusinessSettings>(BUSINESS_SETTINGS_STORAGE_KEY, DEFAULT_BUSINESS_SETTINGS);
-  const activeCurrency = settings.availableCurrencies.find(c => c.code === settings.defaultCurrencyCode) || settings.availableCurrencies[0] || { symbol: '?' };
+
+  // Safely determine active currency and symbol
+  const safeAvailableCurrencies: Currency[] = settings?.availableCurrencies && Array.isArray(settings.availableCurrencies) && settings.availableCurrencies.length > 0
+    ? settings.availableCurrencies
+    : DEFAULT_BUSINESS_SETTINGS.availableCurrencies;
+
+  const safeDefaultCurrencyCode: string = settings?.defaultCurrencyCode
+    ? settings.defaultCurrencyCode
+    : DEFAULT_BUSINESS_SETTINGS.defaultCurrencyCode;
+  
+  const activeCurrency: Currency =
+    safeAvailableCurrencies.find(c => c.code === safeDefaultCurrencyCode) ||
+    safeAvailableCurrencies[0] ||
+    { code: 'BDT', symbol: '৳', name: 'Bangladeshi Taka' }; // Absolute fallback
+
   const currencySymbol = activeCurrency.symbol;
 
   return (
