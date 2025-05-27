@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Logo } from '@/components/logo';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'; // Added SheetHeader, SheetTitle
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const { currentUser, isAdmin, loading: authLoading } = useAuth();
@@ -83,9 +83,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   </Button>
                 </SheetTrigger>
                 <SheetContent side="left" className="w-64 p-0">
-                  <div className="flex h-16 items-center border-b px-6">
-                    <Logo />
-                  </div>
+                  <SheetHeader className="border-b">
+                    <div className="flex h-16 items-center px-6">
+                      <Logo />
+                    </div>
+                    {/* You can add a SheetTitle here if needed, or keep it visually clean */}
+                    {/* <SheetTitle className="sr-only">Admin Navigation</SheetTitle> */}
+                  </SheetHeader>
                   <ScrollArea className="flex-1 py-4">
                     <div className="px-4">
                       <AdminNav />
