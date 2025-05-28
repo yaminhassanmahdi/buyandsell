@@ -1,5 +1,4 @@
 
-
 export type Category = {
   id: string;
   name: string;
@@ -25,6 +24,8 @@ export type CategoryAttributeValue = {
   id: string;
   attributeTypeId: string; // Links to CategoryAttributeType.id
   value: string; // e.g., "Mr. Rahim", "Red", "Cotton"
+  imageUrl?: string;
+  imageHint?: string;
 };
 
 export type Product = {
@@ -65,13 +66,13 @@ export type Division = {
 export type District = {
   id: string;
   name: string;
-  divisionId: string; 
+  divisionId: string;
 };
 
 export type Thana = { // Also used as Upazilla
   id: string;
   name: string;
-  districtId: string; 
+  districtId: string;
 };
 
 export type ShippingAddress = {
@@ -85,12 +86,12 @@ export type ShippingAddress = {
   roadNumber?: string;
 };
 
-export type SortByType = 
-  | 'date_desc' 
-  | 'date_asc' 
-  | 'price_asc' 
-  | 'price_desc' 
-  | 'name_asc' 
+export type SortByType =
+  | 'date_desc'
+  | 'date_asc'
+  | 'price_asc'
+  | 'price_desc'
+  | 'name_asc'
   | 'name_desc';
 
 export type OrderStatus = 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'accepted' | 'handed_over' | 'in_shipping';
@@ -147,10 +148,6 @@ export type User = {
   defaultShippingAddress?: ShippingAddress | null;
   withdrawalMethods?: WithdrawalMethod[];
 };
-
-// FilterValues removed as ProductListFilters handles its own state now
-// export type FilterValues = { ... } 
-
 
 export type AdminNavItem = {
   name: string;
@@ -220,4 +217,3 @@ export type DeliveryChargeSettings = {
   intraDistrict: number; // Seller and buyer in same District, different Thana/Upazilla
   interDistrict: number; // Seller and buyer in different Districts
 };
-

@@ -10,67 +10,76 @@ import { useToast } from '@/hooks/use-toast';
 import { MOCK_CATEGORIES } from '@/lib/mock-data';
 import type { Category } from '@/lib/types';
 import { FolderTree, PlusCircle, Trash2, Edit3, Loader2, Image as ImageIcon } from 'lucide-react';
-import Image from 'next/image';
+import Image from 'next/image'; // For Next.js optimized images
+import useLocalStorage from '@/hooks/use-local-storage'; // Assuming you have this hook
+import { CATEGORIES_STORAGE_KEY, INITIAL_CATEGORIES } from '@/lib/constants'; // For localStorage
+
+const generateId = () => `cat-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
 
 export default function AdminManageCategoriesPage() {
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [newCategoryName, setNewCategoryName] = useState('');
-  const [newCategoryImageUrl, setNewCategoryImageUrl] = useState('');
-  const [newCategoryImageHint, setNewCategoryImageHint] = useState('');
+  const [categories, setCategories] = useLocalStorage<Category[]>(
+    CATEGORIES_STORAGE_KEY,
+    INITIAL_CATEGORIES
+  );
+  const [isLoading, setIsLoading] = useState(true); // For initial load simulation
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [currentCategory, setCurrentCategory] = useState<Partial<Category>>({});
+  const [isEditing, setIsEditing] = useState(false);
   const [formSubmitting, setFormSubmitting] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
-    setIsLoading(true);
-    setTimeout(() => {
-      setCategories([...MOCK_CATEGORIES]);
-      setIsLoading(false);
-    }, 300);
+    setIsLoading(false); // Simulate loading categories
   }, []);
 
-  const handleAddCategory = async () => {
-    if (!newCategoryName.trim()) {
+  const openDialog = (category?: Category) => {
+    if (category) {
+      setCurrentCategory({ ...category });
+      setIsEditing(true);
+    } else {
+      setCurrentCategory({ name: '', imageUrl: 'https://placehold.co/80x80.png', imageHint: '' });
+      setIsEditing(false);
+    }
+    setIsDialogOpen(true);
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setCurrentCategory(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSaveCategory = async () => {
+    if (!currentCategory.name?.trim()) {
       toast({ title: "Error", description: "Category name cannot be empty.", variant: "destructive" });
       return;
     }
     setFormSubmitting(true);
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise(resolve => setTimeout(resolve, 500)); // Simulate API call
 
-    const newCategory: Category = {
-      id: `cat-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-      name: newCategoryName.trim(),
-      imageUrl: newCategoryImageUrl.trim() || undefined,
-      imageHint: newCategoryImageHint.trim() || undefined,
-    };
-    MOCK_CATEGORIES.push(newCategory);
-    setCategories([...MOCK_CATEGORIES]);
-
-    toast({ title: "Category Added", description: `Category "${newCategory.name}" has been added.` });
-    setNewCategoryName('');
-    setNewCategoryImageUrl('');
-    setNewCategoryImageHint('');
-    setIsAddDialogOpen(false);
+    if (isEditing && currentCategory.id) {
+      setCategories(prev => prev.map(cat => cat.id === currentCategory.id ? (currentCategory as Category) : cat));
+      toast({ title: "Category Updated", description: `Category "${currentCategory.name}" has been updated.` });
+    } else {
+      const newCategory: Category = {
+        id: generateId(),
+        name: currentCategory.name.trim(),
+        imageUrl: currentCategory.imageUrl?.trim() || 'https://placehold.co/80x80.png',
+        imageHint: currentCategory.imageHint?.trim() || currentCategory.name.toLowerCase(),
+      };
+      setCategories(prev => [...prev, newCategory]);
+      toast({ title: "Category Added", description: `Category "${newCategory.name}" has been added.` });
+    }
+    setIsDialogOpen(false);
+    setCurrentCategory({});
     setFormSubmitting(false);
   };
 
   const handleDeleteCategory = (categoryId: string) => {
-    if (window.confirm("Are you sure you want to delete this category? This action cannot be undone.")) {
-      const categoryToDelete = MOCK_CATEGORIES.find(cat => cat.id === categoryId);
-      const index = MOCK_CATEGORIES.findIndex(cat => cat.id === categoryId);
-      if (index > -1) {
-        MOCK_CATEGORIES.splice(index, 1);
-        setCategories([...MOCK_CATEGORIES]);
-        toast({ title: "Category Deleted", description: `Category "${categoryToDelete?.name}" has been deleted.` });
-      }
+    if (window.confirm("Are you sure you want to delete this category? This may affect sub-categories and products.")) {
+      setCategories(prev => prev.filter(cat => cat.id !== categoryId));
+      toast({ title: "Category Deleted", description: "The category has been deleted." });
     }
   };
-
-  const handleEditCategory = (id: string) => {
-    toast({ title: "Edit Action", description: `Edit category ${id} (Not implemented for images in this step).` });
-  };
-
 
   if (isLoading) {
     return (
@@ -87,55 +96,9 @@ export default function AdminManageCategoriesPage() {
           <FolderTree className="h-8 w-8 text-primary"/>
           Manage Parent Categories
         </h1>
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <PlusCircle className="mr-2 h-4 w-4" /> Add New Category
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-lg">
-            <DialogHeader>
-              <DialogTitle>Add New Parent Category</DialogTitle>
-              <DialogDescription>Enter the details for the new parent category.</DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="category-name">Name*</Label>
-                <Input
-                  id="category-name"
-                  value={newCategoryName}
-                  onChange={(e) => setNewCategoryName(e.target.value)}
-                  placeholder="e.g., Electronics"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="category-image-url">Image URL</Label>
-                <Input
-                  id="category-image-url"
-                  value={newCategoryImageUrl}
-                  onChange={(e) => setNewCategoryImageUrl(e.target.value)}
-                  placeholder="https://placehold.co/80x80.png"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="category-image-hint">Image Hint (for AI)</Label>
-                <Input
-                  id="category-image-hint"
-                  value={newCategoryImageHint}
-                  onChange={(e) => setNewCategoryImageHint(e.target.value)}
-                  placeholder="e.g., electronics gadget"
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <DialogClose asChild><Button type="button" variant="outline" disabled={formSubmitting}>Cancel</Button></DialogClose>
-              <Button onClick={handleAddCategory} disabled={formSubmitting || !newCategoryName.trim()}>
-                {formSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Add Category
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <Button onClick={() => openDialog()}>
+          <PlusCircle className="mr-2 h-4 w-4" /> Add New Category
+        </Button>
       </div>
 
       <Card>
@@ -160,7 +123,7 @@ export default function AdminManageCategoriesPage() {
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={() => handleEditCategory(category.id)} className="hover:text-primary">
+                    <Button variant="outline" size="sm" onClick={() => openDialog(category)} className="hover:text-primary">
                         <Edit3 className="h-4 w-4"/>
                     </Button>
                     <Button variant="destructive" size="sm" onClick={() => handleDeleteCategory(category.id)}>
@@ -175,6 +138,54 @@ export default function AdminManageCategoriesPage() {
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="sm:max-w-lg max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{isEditing ? "Edit" : "Add New"} Parent Category</DialogTitle>
+            <DialogDescription>Enter the details for the parent category.</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="category-name">Name*</Label>
+              <Input
+                id="category-name"
+                name="name"
+                value={currentCategory.name || ''}
+                onChange={handleInputChange}
+                placeholder="e.g., Electronics"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="category-image-url">Image URL</Label>
+              <Input
+                id="category-image-url"
+                name="imageUrl"
+                value={currentCategory.imageUrl || ''}
+                onChange={handleInputChange}
+                placeholder="https://placehold.co/80x80.png"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="category-image-hint">Image Hint (for AI)</Label>
+              <Input
+                id="category-image-hint"
+                name="imageHint"
+                value={currentCategory.imageHint || ''}
+                onChange={handleInputChange}
+                placeholder="e.g., electronics gadget"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <DialogClose asChild><Button type="button" variant="outline" disabled={formSubmitting}>Cancel</Button></DialogClose>
+            <Button onClick={handleSaveCategory} disabled={formSubmitting || !currentCategory.name?.trim()}>
+              {formSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {isEditing ? "Save Changes" : "Add Category"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

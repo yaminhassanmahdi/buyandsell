@@ -1,5 +1,5 @@
 
-import type { OrderStatus, Division, District, Thana as Upazilla, Category, CommissionSetting, AdminNavItem, BusinessSettings, HeroBannerSlide, CustomPage, ShippingMethod, Currency } from './types';
+import type { OrderStatus, Division, District, Thana as Upazilla, Category, CommissionSetting, AdminNavItem, BusinessSettings, HeroBannerSlide, CustomPage, ShippingMethod, Currency, SubCategory, CategoryAttributeType, CategoryAttributeValue } from './types';
 import {
   Smartphone, Laptop, Shirt, Armchair, BookOpen, Tag,
   Package as PackageIcon,
@@ -19,6 +19,45 @@ export const INITIAL_CATEGORIES: Category[] = [
   { id: 'books', name: 'Books', imageUrl: 'https://placehold.co/80x80.png', imageHint: 'books literature' },
   { id: 'others', name: 'Others', imageUrl: 'https://placehold.co/80x80.png', imageHint: 'various items' },
 ];
+
+export const INITIAL_SUB_CATEGORIES: SubCategory[] = [
+  { id: 'sc_smartphones', name: 'Smartphones', parentCategoryId: 'electronics', imageUrl: 'https://placehold.co/80x80.png', imageHint: 'smartphones mobile' },
+  { id: 'sc_laptops', name: 'Laptops', parentCategoryId: 'electronics', imageUrl: 'https://placehold.co/80x80.png', imageHint: 'laptops computer' },
+  { id: 'sc_mens_apparel', name: 'Mens Apparel', parentCategoryId: 'fashion', imageUrl: 'https://placehold.co/80x80.png', imageHint: 'mens clothing' },
+  { id: 'sc_womens_apparel', name: 'Womens Apparel', parentCategoryId: 'fashion', imageUrl: 'https://placehold.co/80x80.png', imageHint: 'womens clothing' },
+  { id: 'sc_living_room', name: 'Living Room Furniture', parentCategoryId: 'home-garden', imageUrl: 'https://placehold.co/80x80.png', imageHint: 'furniture living room' },
+  { id: 'sc_admission_books', name: 'Admission Prep', parentCategoryId: 'books', imageUrl: 'https://placehold.co/80x80.png', imageHint: 'study books' },
+  { id: 'sc_novels', name: 'Novels', parentCategoryId: 'books', imageUrl: 'https://placehold.co/80x80.png', imageHint: 'fiction books' },
+];
+
+export const INITIAL_CATEGORY_ATTRIBUTE_TYPES: CategoryAttributeType[] = [
+  { id: 'attr_author', categoryId: 'books', name: 'Author' },
+  { id: 'attr_publication', categoryId: 'books', name: 'Publication' },
+  { id: 'attr_color', categoryId: 'fashion', name: 'Color' },
+  { id: 'attr_material', categoryId: 'fashion', name: 'Material' },
+  { id: 'attr_storage', categoryId: 'electronics', name: 'Storage Size' },
+  { id: 'attr_ram', categoryId: 'electronics', name: 'RAM' },
+];
+
+export const INITIAL_CATEGORY_ATTRIBUTE_VALUES: CategoryAttributeValue[] = [
+  { id: 'val_author_rahim', attributeTypeId: 'attr_author', value: 'Mr. Rahim', imageUrl: 'https://placehold.co/40x40.png', imageHint: 'author portrait' },
+  { id: 'val_author_tagore', attributeTypeId: 'attr_author', value: 'Rabindranath Tagore', imageUrl: 'https://placehold.co/40x40.png', imageHint: 'author profile' },
+  { id: 'val_author_humayun', attributeTypeId: 'attr_author', value: 'Humayun Ahmed' },
+  { id: 'val_pub_prothom', attributeTypeId: 'attr_publication', value: 'Prothom Alo Prokashona' },
+  { id: 'val_pub_anyaprokash', attributeTypeId: 'attr_publication', value: 'Anyaprokash' },
+  { id: 'val_color_red', attributeTypeId: 'attr_color', value: 'Red', imageUrl: 'https://placehold.co/40x40/ff0000/ffffff.png?text=R', imageHint: 'red color swatch' },
+  { id: 'val_color_blue', attributeTypeId: 'attr_color', value: 'Blue', imageUrl: 'https://placehold.co/40x40/0000ff/ffffff.png?text=B', imageHint: 'blue color swatch' },
+  { id: 'val_color_black', attributeTypeId: 'attr_color', value: 'Black' },
+  { id: 'val_material_cotton', attributeTypeId: 'attr_material', value: 'Cotton' },
+  { id: 'val_material_leather', attributeTypeId: 'attr_material', value: 'Leather' },
+  { id: 'val_storage_64gb', attributeTypeId: 'attr_storage', value: '64GB' },
+  { id: 'val_storage_128gb', attributeTypeId: 'attr_storage', value: '128GB' },
+  { id: 'val_storage_256gb', attributeTypeId: 'attr_storage', value: '256GB' },
+  { id: 'val_ram_4gb', attributeTypeId: 'attr_ram', value: '4GB' },
+  { id: 'val_ram_8gb', attributeTypeId: 'attr_ram', value: '8GB' },
+  { id: 'val_ram_16gb', attributeTypeId: 'attr_ram', value: '16GB' },
+];
+
 
 export const ORDER_STATUSES: { value: OrderStatus; label: string, icon?: React.ComponentType<{className?: string}> }[] = [
   { value: 'pending', label: 'Pending', icon: Hourglass },
@@ -198,7 +237,7 @@ export const ADMIN_NAVIGATION: AdminNavItem[] = [
   {
     name: 'Location',
     href: '/admin/locations/countries',
-    icon: Landmark, // Updated icon
+    icon: Landmark, 
     subItems: [
       { name: 'Countries', href: '/admin/locations/countries', icon: Globe },
       { name: 'Divisions', href: '/admin/locations/divisions', icon: Library },
@@ -238,6 +277,8 @@ export const getStatusIcon = (status: OrderStatus) => {
 };
 
 // Storage Keys
+export const CATEGORIES_STORAGE_KEY = 'categories';
+export const SUB_CATEGORIES_STORAGE_KEY = 'subCategories';
 export const DELIVERY_CHARGES_STORAGE_KEY = 'deliveryChargeSettings';
 export const COMMISSION_SETTINGS_STORAGE_KEY = 'commissionSettings';
 export const BUSINESS_SETTINGS_STORAGE_KEY = 'businessSettings';
@@ -246,6 +287,9 @@ export const CUSTOM_PAGES_STORAGE_KEY = 'customPages';
 export const SHIPPING_METHODS_STORAGE_KEY = 'shippingMethods';
 export const CATEGORY_ATTRIBUTES_TYPES_STORAGE_KEY = 'categoryAttributeTypes';
 export const CATEGORY_ATTRIBUTE_VALUES_STORAGE_KEY = 'categoryAttributeValues';
+export const DIVISIONS_STORAGE_KEY = 'divisions';
+export const DISTRICTS_STORAGE_KEY = 'districts';
+export const THANAS_STORAGE_KEY = 'thanas'; // Also used for Upazillas storage
 
 // Default Values for Settings
 export const DEFAULT_DELIVERY_CHARGES: DeliveryChargeSettings = {
@@ -264,8 +308,8 @@ export const DEFAULT_CURRENCIES: Currency[] = [
 export const DEFAULT_BUSINESS_SETTINGS: BusinessSettings = {
   appName: '2ndhandbajar.com',
   logoUrl: '/logo-placeholder.png',
-  primaryColor: '47 92% 52%',
-  secondaryColor: '77 30% 60%',
+  primaryColor: '47 92% 52%', // HSL: Vivid Yellow/Gold
+  secondaryColor: '77 30% 60%', // HSL: Soft Green Accent
   faviconUrl: '/favicon.ico',
   availableCurrencies: DEFAULT_CURRENCIES,
   defaultCurrencyCode: 'BDT',

@@ -9,51 +9,53 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from '@/hooks/use-toast';
 import useLocalStorage from '@/hooks/use-local-storage';
-import { 
-  MOCK_CATEGORIES, 
-  MOCK_CATEGORY_ATTRIBUTE_TYPES as DEFAULT_ATTRIBUTE_TYPES,
-  MOCK_CATEGORY_ATTRIBUTE_VALUES as DEFAULT_ATTRIBUTE_VALUES
-} from '@/lib/mock-data';
-import type { Category, CategoryAttributeType, CategoryAttributeValue } from '@/lib/types';
-import { 
-  CATEGORY_ATTRIBUTES_TYPES_STORAGE_KEY, 
-  CATEGORY_ATTRIBUTE_VALUES_STORAGE_KEY 
+import {
+  CATEGORIES_STORAGE_KEY,
+  INITIAL_CATEGORIES,
+  CATEGORY_ATTRIBUTES_TYPES_STORAGE_KEY,
+  INITIAL_CATEGORY_ATTRIBUTE_TYPES,
+  CATEGORY_ATTRIBUTE_VALUES_STORAGE_KEY,
+  INITIAL_CATEGORY_ATTRIBUTE_VALUES
 } from '@/lib/constants';
-import { Loader2, PlusCircle, Trash2, Tags, ListFilter } from 'lucide-react';
+import type { Category, CategoryAttributeType, CategoryAttributeValue } from '@/lib/types';
+import { Loader2, PlusCircle, Trash2, Tags, ListFilter, Edit3, Image as ImageIcon } from 'lucide-react';
+import Image from 'next/image';
+
+const generateId = () => `attr_val-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
 
 export default function AdminManageAttributeValuesPage() {
   const { toast } = useToast();
-  
-  const [parentCategories, setParentCategories] = useState<Category[]>([]);
+
+  const [parentCategories, setParentCategories] = useLocalStorage<Category[]>(
+    CATEGORIES_STORAGE_KEY,
+    INITIAL_CATEGORIES
+  );
   const [selectedParentCategoryId, setSelectedParentCategoryId] = useState<string | null>(null);
-  
+
   const [attributeTypes, setAttributeTypes] = useLocalStorage<CategoryAttributeType[]>(
     CATEGORY_ATTRIBUTES_TYPES_STORAGE_KEY,
-    DEFAULT_ATTRIBUTE_TYPES
+    INITIAL_CATEGORY_ATTRIBUTE_TYPES
   );
   const [availableAttributeTypes, setAvailableAttributeTypes] = useState<CategoryAttributeType[]>([]);
   const [selectedAttributeTypeId, setSelectedAttributeTypeId] = useState<string | null>(null);
 
   const [attributeValues, setAttributeValues] = useLocalStorage<CategoryAttributeValue[]>(
     CATEGORY_ATTRIBUTE_VALUES_STORAGE_KEY,
-    DEFAULT_ATTRIBUTE_VALUES
+    INITIAL_CATEGORY_ATTRIBUTE_VALUES
   );
   const [filteredAttributeValues, setFilteredAttributeValues] = useState<CategoryAttributeValue[]>([]);
 
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [newAttributeValue, setNewAttributeValue] = useState('');
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [currentAttributeValue, setCurrentAttributeValue] = useState<Partial<CategoryAttributeValue>>({});
+  const [isEditing, setIsEditing] = useState(false);
   const [formSubmitting, setFormSubmitting] = useState(false);
-
-  useEffect(() => {
-    setParentCategories([...MOCK_CATEGORIES]);
-  }, []);
 
   useEffect(() => {
     if (selectedParentCategoryId) {
       const filteredTypes = attributeTypes.filter(attrType => attrType.categoryId === selectedParentCategoryId);
       setAvailableAttributeTypes(filteredTypes);
-      setSelectedAttributeTypeId(null); // Reset selected type when parent category changes
-      setFilteredAttributeValues([]); // Clear values list
+      setSelectedAttributeTypeId(null);
+      setFilteredAttributeValues([]);
     } else {
       setAvailableAttributeTypes([]);
       setSelectedAttributeTypeId(null);
@@ -69,28 +71,55 @@ export default function AdminManageAttributeValuesPage() {
     }
   }, [selectedAttributeTypeId, attributeValues]);
 
-  const handleAddAttributeValue = async () => {
-    if (!newAttributeValue.trim()) {
+  const openDialog = (attributeValue?: CategoryAttributeValue) => {
+    if (attributeValue) {
+      setCurrentAttributeValue({ ...attributeValue });
+      setIsEditing(true);
+    } else {
+      setCurrentAttributeValue({
+        attributeTypeId: selectedAttributeTypeId || '',
+        value: '',
+        imageUrl: 'https://placehold.co/40x40.png',
+        imageHint: ''
+      });
+      setIsEditing(false);
+    }
+    setIsDialogOpen(true);
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setCurrentAttributeValue(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSaveAttributeValue = async () => {
+    if (!currentAttributeValue.value?.trim()) {
       toast({ title: "Error", description: "Attribute value cannot be empty.", variant: "destructive" });
       return;
     }
-    if (!selectedAttributeTypeId) {
-      toast({ title: "Error", description: "Please select an attribute type first.", variant: "destructive" });
+    if (!currentAttributeValue.attributeTypeId) {
+      toast({ title: "Error", description: "Attribute type must be selected.", variant: "destructive" });
       return;
     }
     setFormSubmitting(true);
-    await new Promise(resolve => setTimeout(resolve, 500)); 
+    await new Promise(resolve => setTimeout(resolve, 500));
 
-    const newAttrValue: CategoryAttributeValue = {
-      id: `attr_val-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-      attributeTypeId: selectedAttributeTypeId,
-      value: newAttributeValue.trim(),
-    };
-
-    setAttributeValues(prev => [...prev, newAttrValue]);
-    toast({ title: "Attribute Value Added", description: `Value "${newAttrValue.value}" added.` });
-    setNewAttributeValue('');
-    setIsAddDialogOpen(false);
+    if (isEditing && currentAttributeValue.id) {
+      setAttributeValues(prev => prev.map(val => val.id === currentAttributeValue.id ? (currentAttributeValue as CategoryAttributeValue) : val));
+      toast({ title: "Attribute Value Updated", description: `Value "${currentAttributeValue.value}" has been updated.` });
+    } else {
+      const newAttrValue: CategoryAttributeValue = {
+        id: generateId(),
+        attributeTypeId: currentAttributeValue.attributeTypeId,
+        value: currentAttributeValue.value.trim(),
+        imageUrl: currentAttributeValue.imageUrl?.trim() || 'https://placehold.co/40x40.png',
+        imageHint: currentAttributeValue.imageHint?.trim() || currentAttributeValue.value.toLowerCase(),
+      };
+      setAttributeValues(prev => [...prev, newAttrValue]);
+      toast({ title: "Attribute Value Added", description: `Value "${newAttrValue.value}" added.` });
+    }
+    setIsDialogOpen(false);
+    setCurrentAttributeValue({});
     setFormSubmitting(false);
   };
 
@@ -100,7 +129,7 @@ export default function AdminManageAttributeValuesPage() {
       toast({ title: "Attribute Value Deleted", description: "The attribute value has been deleted." });
     }
   };
-  
+
   const selectedParentCategoryName = parentCategories.find(c => c.id === selectedParentCategoryId)?.name || "";
   const selectedAttributeTypeName = availableAttributeTypes.find(t => t.id === selectedAttributeTypeId)?.name || "";
 
@@ -111,37 +140,9 @@ export default function AdminManageAttributeValuesPage() {
           <Tags className="h-8 w-8 text-primary"/>
           Manage Attribute Values
         </h1>
-         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-          <DialogTrigger asChild>
-            <Button disabled={!selectedAttributeTypeId}>
-              <PlusCircle className="mr-2 h-4 w-4" /> Add New Value
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Add Value for {selectedAttributeTypeName || 'Attribute Type'}</DialogTitle>
-              <DialogDescription>Enter a new possible value for this attribute (e.g., for "Color", add "Red").</DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="attribute-value-name">Value*</Label>
-                <Input
-                  id="attribute-value-name"
-                  value={newAttributeValue}
-                  onChange={(e) => setNewAttributeValue(e.target.value)}
-                  placeholder="e.g., Red, Mr. Rahim"
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <DialogClose asChild><Button type="button" variant="outline" disabled={formSubmitting}>Cancel</Button></DialogClose>
-              <Button onClick={handleAddAttributeValue} disabled={formSubmitting || !newAttributeValue.trim() || !selectedAttributeTypeId}>
-                {formSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Add Value
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+         <Button onClick={() => openDialog()} disabled={!selectedAttributeTypeId}>
+            <PlusCircle className="mr-2 h-4 w-4" /> Add New Value
+          </Button>
       </div>
 
       <Card>
@@ -164,8 +165,8 @@ export default function AdminManageAttributeValuesPage() {
             </div>
             <div className="space-y-1">
               <Label htmlFor="attribute-type-select">Attribute Type</Label>
-              <Select 
-                onValueChange={(value) => setSelectedAttributeTypeId(value === 'none' ? null : value)} 
+              <Select
+                onValueChange={(value) => setSelectedAttributeTypeId(value === 'none' ? null : value)}
                 value={selectedAttributeTypeId || 'none'}
                 disabled={!selectedParentCategoryId || availableAttributeTypes.length === 0}
               >
@@ -191,15 +192,24 @@ export default function AdminManageAttributeValuesPage() {
                 {filteredAttributeValues.map(attrVal => (
                   <div key={attrVal.id} className="flex items-center justify-between p-3 border rounded-md hover:shadow-sm">
                     <div className="flex items-center gap-3">
-                      <Tags className="h-5 w-5 text-muted-foreground" />
+                      {attrVal.imageUrl ? (
+                        <Image src={attrVal.imageUrl} alt={attrVal.value} width={32} height={32} className="rounded-md object-cover" data-ai-hint={attrVal.imageHint || attrVal.value.toLowerCase()} />
+                      ) : (
+                        <Tags className="h-8 w-8 text-muted-foreground" />
+                      )}
                       <div>
                         <h3 className="font-semibold">{attrVal.value}</h3>
                         <p className="text-xs text-muted-foreground">ID: {attrVal.id}</p>
                       </div>
                     </div>
-                    <Button variant="destructive" size="sm" onClick={() => handleDeleteAttributeValue(attrVal.id)}>
-                      <Trash2 className="mr-2 h-4 w-4" /> Delete
-                    </Button>
+                    <div className="flex gap-2">
+                        <Button variant="outline" size="sm" onClick={() => openDialog(attrVal)} className="hover:text-primary">
+                            <Edit3 className="h-4 w-4" />
+                        </Button>
+                        <Button variant="destructive" size="sm" onClick={() => handleDeleteAttributeValue(attrVal.id)}>
+                            <Trash2 className="mr-2 h-4 w-4" /> Delete
+                        </Button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -214,6 +224,54 @@ export default function AdminManageAttributeValuesPage() {
             </CardContent>
          )}
       </Card>
+
+       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="sm:max-w-lg max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{isEditing ? "Edit" : "Add New"} Value for {selectedAttributeTypeName || 'Attribute Type'}</DialogTitle>
+            <DialogDescription>Enter a new possible value for this attribute.</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="attribute-value-name">Value*</Label>
+              <Input
+                id="attribute-value-name"
+                name="value"
+                value={currentAttributeValue.value || ''}
+                onChange={handleInputChange}
+                placeholder="e.g., Red, Mr. Rahim"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="attribute-value-image-url">Image URL</Label>
+              <Input
+                id="attribute-value-image-url"
+                name="imageUrl"
+                value={currentAttributeValue.imageUrl || ''}
+                onChange={handleInputChange}
+                placeholder="https://placehold.co/40x40.png"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="attribute-value-image-hint">Image Hint (for AI)</Label>
+              <Input
+                id="attribute-value-image-hint"
+                name="imageHint"
+                value={currentAttributeValue.imageHint || ''}
+                onChange={handleInputChange}
+                placeholder="e.g., red color, author photo"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <DialogClose asChild><Button type="button" variant="outline" disabled={formSubmitting}>Cancel</Button></DialogClose>
+            <Button onClick={handleSaveAttributeValue} disabled={formSubmitting || !currentAttributeValue.value?.trim() || !selectedAttributeTypeId}>
+              {formSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {isEditing ? "Save Changes" : "Add Value"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

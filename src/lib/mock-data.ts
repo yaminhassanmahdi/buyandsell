@@ -1,6 +1,6 @@
 
 import type { Product, User, Order, ShippingAddress, Category, SubCategory, WithdrawalRequest, CategoryAttributeType, CategoryAttributeValue } from './types';
-import { INITIAL_CATEGORIES, MOCK_CUSTOM_PAGES as DEFAULT_PAGES_FROM_CONSTANTS } from './constants';
+import { INITIAL_CATEGORIES, MOCK_CUSTOM_PAGES as DEFAULT_PAGES_FROM_CONSTANTS, DEFAULT_HERO_BANNER_SLIDES } from './constants';
 
 const createPastDate = (daysAgo: number): Date => {
   const date = new Date();
@@ -35,13 +35,13 @@ export let MOCK_CATEGORY_ATTRIBUTE_TYPES: CategoryAttributeType[] = [
 ];
 
 export let MOCK_CATEGORY_ATTRIBUTE_VALUES: CategoryAttributeValue[] = [
-  { id: 'val_author_rahim', attributeTypeId: 'attr_author', value: 'Mr. Rahim' },
-  { id: 'val_author_tagore', attributeTypeId: 'attr_author', value: 'Rabindranath Tagore' },
+  { id: 'val_author_rahim', attributeTypeId: 'attr_author', value: 'Mr. Rahim', imageUrl: 'https://placehold.co/40x40.png', imageHint: 'author portrait' },
+  { id: 'val_author_tagore', attributeTypeId: 'attr_author', value: 'Rabindranath Tagore', imageUrl: 'https://placehold.co/40x40.png', imageHint: 'author profile' },
   { id: 'val_author_humayun', attributeTypeId: 'attr_author', value: 'Humayun Ahmed' },
   { id: 'val_pub_prothom', attributeTypeId: 'attr_publication', value: 'Prothom Alo Prokashona' },
   { id: 'val_pub_anyaprokash', attributeTypeId: 'attr_publication', value: 'Anyaprokash' },
-  { id: 'val_color_red', attributeTypeId: 'attr_color', value: 'Red' },
-  { id: 'val_color_blue', attributeTypeId: 'attr_color', value: 'Blue' },
+  { id: 'val_color_red', attributeTypeId: 'attr_color', value: 'Red', imageUrl: 'https://placehold.co/40x40/ff0000/ffffff.png?text=R', imageHint: 'red color swatch' },
+  { id: 'val_color_blue', attributeTypeId: 'attr_color', value: 'Blue', imageUrl: 'https://placehold.co/40x40/0000ff/ffffff.png?text=B', imageHint: 'blue color swatch' },
   { id: 'val_color_black', attributeTypeId: 'attr_color', value: 'Black' },
   { id: 'val_material_cotton', attributeTypeId: 'attr_material', value: 'Cotton' },
   { id: 'val_material_leather', attributeTypeId: 'attr_material', value: 'Leather' },
@@ -64,7 +64,7 @@ export const MOCK_USERS: User[] = [
       country: 'Bangladesh',
       division: 'Dhaka',
       district: 'Dhaka',
-      thana: 'Dhaka City', // Consolidated
+      thana: 'Dhaka City',
       houseAddress: '123 Gulshan Ave',
       roadNumber: 'Road 10',
     },
@@ -88,7 +88,7 @@ export const MOCK_USERS: User[] = [
       country: 'Bangladesh',
       division: 'Chittagong',
       district: 'Chittagong',
-      thana: 'Pahartali', // Example, assuming Pahartali is an Upazila in Chittagong
+      thana: 'Sitakunda Upazila',
       houseAddress: 'Apt 2B, Hill View Road',
       roadNumber: 'Road 5',
     },
@@ -126,7 +126,7 @@ export const MOCK_USERS: User[] = [
       country: 'Bangladesh',
       division: 'Dhaka',
       district: 'Dhaka',
-      thana: 'Dhaka City', // Consolidated
+      thana: 'Dhaka City',
       houseAddress: 'Admin Building, HQ',
       roadNumber: 'Main St',
     },
@@ -253,7 +253,7 @@ const MOCK_SHIPPING_ADDRESS_BANGLADESH: ShippingAddress = {
   country: 'Bangladesh',
   division: 'Dhaka',
   district: 'Dhaka',
-  thana: 'Dhaka City', // Consolidated
+  thana: 'Dhaka City',
   houseAddress: 'House 123',
   roadNumber: 'Road 7A',
 };
@@ -285,11 +285,11 @@ export let MOCK_ORDERS: Order[] = [
     ],
     totalAmount: 290 + 130,
     deliveryChargeAmount: 130,
-    shippingAddress: { 
-      ...(MOCK_USERS.find(u => u.id === 'user1')?.defaultShippingAddress || MOCK_SHIPPING_ADDRESS_BANGLADESH), 
-      fullName: 'John Doe Updated', 
-      district: 'Gazipur', 
-      thana: 'Gazipur Sadar Upazila' 
+    shippingAddress: {
+      ...(MOCK_USERS.find(u => u.id === 'user1')?.defaultShippingAddress || MOCK_SHIPPING_ADDRESS_BANGLADESH),
+      fullName: 'John Doe Updated',
+      district: 'Gazipur',
+      thana: 'Gazipur Sadar Upazila'
     },
     status: 'delivered',
     paymentStatus: 'unpaid',
@@ -307,12 +307,12 @@ export let MOCK_ORDERS: Order[] = [
     ],
     totalAmount: 300 + 110,
     deliveryChargeAmount: 110,
-    shippingAddress: { 
-      ...MOCK_SHIPPING_ADDRESS_BANGLADESH, 
-      fullName: 'Jane Smith BD', 
-      division: 'Chittagong', 
-      district: 'Chittagong', 
-      thana: 'Chittagong Sadar Upazila' 
+    shippingAddress: {
+      ...MOCK_SHIPPING_ADDRESS_BANGLADESH,
+      fullName: 'Jane Smith BD',
+      division: 'Chittagong',
+      district: 'Chittagong',
+      thana: 'Chittagong Sadar Upazila'
     },
     status: 'processing',
     paymentStatus: 'unpaid',
@@ -339,5 +339,4 @@ export let MOCK_WITHDRAWAL_REQUESTS: WithdrawalRequest[] = [
 ];
 
 export let MOCK_CUSTOM_PAGES = [...DEFAULT_PAGES_FROM_CONSTANTS];
-
-    
+export let MOCK_HERO_BANNER_SLIDES = [...DEFAULT_HERO_BANNER_SLIDES]; // Initialize from constants
