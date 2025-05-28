@@ -13,7 +13,7 @@ export let MOCK_CATEGORIES: Category[] = INITIAL_CATEGORIES.map(cat => ({
   name: cat.name,
   imageUrl: cat.imageUrl,
   imageHint: cat.imageHint,
-  sortOrder: cat.sortOrder, // Ensure sortOrder is mapped
+  sortOrder: cat.sortOrder,
 }));
 
 export let MOCK_SUBCATEGORIES: SubCategory[] = INITIAL_SUB_CATEGORIES.map(subCat => ({
@@ -32,6 +32,7 @@ export const MOCK_USERS: User[] = [
   {
     id: 'user1',
     email: 'buyer@example.com',
+    phoneNumber: '01711111111',
     name: 'John Doe',
     defaultShippingAddress: {
       fullName: 'John Doe',
@@ -56,6 +57,7 @@ export const MOCK_USERS: User[] = [
   {
     id: 'user2',
     email: 'seller@example.com',
+    phoneNumber: '01822222222',
     name: 'Jane Smith',
     defaultShippingAddress: {
       fullName: 'Jane Smith',
@@ -93,6 +95,7 @@ export const MOCK_USERS: User[] = [
   {
     id: 'admin1',
     email: 'admin@example.com',
+    phoneNumber: '01999999999',
     name: 'Admin User',
     isAdmin: true,
     defaultShippingAddress: {
@@ -267,8 +270,8 @@ export let MOCK_ORDERS: Order[] = [
       thana: 'Gazipur Sadar Upazila'
     },
     status: 'delivered',
-    paymentStatus: 'unpaid',
-    platformCommission: 0,
+    paymentStatus: 'paid',
+    platformCommission: 29, // Example commission based on products
     createdAt: createPastDate(3),
     updatedAt: createPastDate(1),
     selectedShippingMethodId: 'express-delivery',
@@ -314,5 +317,4 @@ export let MOCK_WITHDRAWAL_REQUESTS: WithdrawalRequest[] = [
 ];
 
 export let MOCK_CUSTOM_PAGES = [...DEFAULT_PAGES_FROM_CONSTANTS];
-export let MOCK_HERO_BANNER_SLIDES = [...DEFAULT_HERO_BANNER_SLIDES]; // Initialize from constants
-
+export let MOCK_HERO_BANNER_SLIDES = [...DEFAULT_HERO_BANNER_SLIDES];

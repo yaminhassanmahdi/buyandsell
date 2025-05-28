@@ -4,7 +4,7 @@ export type Category = {
   name: string;
   imageUrl?: string;
   imageHint?: string;
-  sortOrder?: number; // Added for manual sorting
+  sortOrder?: number;
 };
 
 export type SubCategory = {
@@ -55,8 +55,8 @@ export type CartItem = {
   price: number;
   imageUrl: string;
   quantity: number;
-  sellerId?: string; // To identify the seller of the item in cart
-  stock?: number; // To check against available stock when adding to cart
+  sellerId?: string;
+  stock?: number;
 };
 
 export type Division = {
@@ -78,11 +78,11 @@ export type Thana = { // Also used as Upazilla
 
 export type ShippingAddress = {
   fullName: string;
-  phoneNumber?: string;
-  country: string; // Will default to "Bangladesh"
-  division: string; // Name of the division
-  district: string; // Name of the district
-  thana: string;    // Name of the thana/upazilla
+  phoneNumber?: string; // Optional at address level, main phone is on User
+  country: string;
+  division: string;
+  district: string;
+  thana: string; // Upazilla name
   houseAddress: string;
   roadNumber?: string;
 };
@@ -143,11 +143,15 @@ export type WithdrawalMethod = {
 
 export type User = {
   id: string;
-  email: string;
+  phoneNumber: string; // Now required
+  email?: string; // Now optional
   name: string;
   isAdmin?: boolean;
   defaultShippingAddress?: ShippingAddress | null;
   withdrawalMethods?: WithdrawalMethod[];
+  // Temp field for Google Sign-In flow
+  isAwaitingPhoneNumber?: boolean; 
+  googleEmail?: string; // Store email from Google if phone needed
 };
 
 export type AdminNavItem = {
@@ -158,31 +162,31 @@ export type AdminNavItem = {
 };
 
 export type Currency = {
-  code: string; // e.g., BDT, USD
-  symbol: string; // e.g., ৳, $
-  name: string; // e.g., Bangladeshi Taka, US Dollar
+  code: string; 
+  symbol: string; 
+  name: string; 
 };
 
 export type BusinessSettings = {
   logoUrl?: string;
-  primaryColor?: string; // HSL format e.g., "217 91% 60%" or HEX e.g., "#FFFFFF"
-  secondaryColor?: string; // HSL format e.g., "216 34% 90%" or HEX
+  primaryColor?: string; 
+  secondaryColor?: string; 
   faviconUrl?: string;
   appName?: string;
   availableCurrencies: Currency[];
-  defaultCurrencyCode: string; // Code of the default currency
+  defaultCurrencyCode: string; 
 };
 
 export type HeroBannerSlide = {
   id: string;
   imageUrl: string;
-  imageHint: string; // For AI image search if needed
+  imageHint: string; 
   title: string;
   description: string;
   buttonText: string;
   buttonLink: string;
-  bgColor?: string; // Tailwind background class e.g. bg-blue-600
-  textColor?: string; // Tailwind text color class e.g. text-white
+  bgColor?: string; 
+  textColor?: string; 
   isActive: boolean;
 };
 
@@ -190,7 +194,7 @@ export type CustomPage = {
   id: string;
   slug: string;
   title: string;
-  content: string; // Could be Markdown or HTML
+  content: string; 
   createdAt: Date;
   updatedAt: Date;
 };
@@ -201,11 +205,11 @@ export type WithdrawalRequestStatus = 'pending' | 'approved' | 'rejected';
 export type WithdrawalRequest = {
   id: string;
   userId: string;
-  userName: string; // Seller's name
+  userName: string; 
   amount: number;
   withdrawalMethodId: string;
   withdrawalMethodType: WithdrawalMethodType;
-  withdrawalMethodDetails: string; // Summary like "bKash: ****1234" or Bank Name + Acc ****5678
+  withdrawalMethodDetails: string; 
   status: WithdrawalRequestStatus;
   requestedAt: Date;
   processedAt?: Date;
@@ -214,8 +218,7 @@ export type WithdrawalRequest = {
 
 
 export type DeliveryChargeSettings = {
-  intraThana: number;    // Seller and buyer in same Thana/Upazilla
-  intraDistrict: number; // Seller and buyer in same District, different Thana/Upazilla
-  interDistrict: number; // Seller and buyer in different Districts
+  intraThana: number;    
+  intraDistrict: number; 
+  interDistrict: number; 
 };
-
