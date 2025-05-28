@@ -26,7 +26,7 @@ export function MobileCategorySheet({ isOpen, onOpenChange }: MobileCategoryShee
       const timer = setTimeout(() => {
         setView('categories');
         setSelectedParentCategory(null);
-      }, 300);
+      }, 300); // Delay reset to allow slide-out animation
       return () => clearTimeout(timer);
     }
   }, [isOpen]);
@@ -45,12 +45,9 @@ export function MobileCategorySheet({ isOpen, onOpenChange }: MobileCategoryShee
   };
 
   const handleNavigation = (categoryId: string, subCategoryId?: string) => {
-    let path = `/category/${categoryId}`; // Navigate to the new dynamic category page
+    let path = `/browse?categoryId=${encodeURIComponent(categoryId)}`;
     if (subCategoryId) {
-      // For now, clicking a subcategory in the sheet still goes to the parent category page.
-      // The subcategory scroller on that page can then handle filtering/scrolling.
-      // Or, we could append a query param if the category page handles it: path += `?subcategory=${subCategoryId}`;
-      // For now, let's keep it simple and navigate to the parent category page, the sub-category scroller there will handle it.
+      path += `&subCategoryId=${encodeURIComponent(subCategoryId)}`;
     }
     router.push(path);
     onOpenChange(false); 
@@ -84,7 +81,7 @@ export function MobileCategorySheet({ isOpen, onOpenChange }: MobileCategoryShee
       <SheetContent
         side="bottom"
         className="p-0 flex flex-col max-h-[60vh] h-auto rounded-t-xl outline-none"
-        onOpenAutoFocus={(e) => e.preventDefault()}
+        onOpenAutoFocus={(e) => e.preventDefault()} // Prevent focus stealing
       >
         {renderHeader()}
         <ScrollArea className="flex-grow">
@@ -121,7 +118,6 @@ export function MobileCategorySheet({ isOpen, onOpenChange }: MobileCategoryShee
                       key={subcategory.id}
                       variant="ghost"
                       className="w-full justify-start py-3 text-left text-sm h-auto text-muted-foreground hover:text-foreground focus:ring-2 focus:ring-primary"
-                      // Clicking subcategory from sheet also goes to parent category page; filtering happens on that page
                       onClick={() => handleNavigation(selectedParentCategory.id, subcategory.id)}
                     >
                       {subcategory.name}
