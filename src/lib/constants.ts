@@ -7,7 +7,7 @@ import {
   Handshake as HandshakeIcon,
   LayoutDashboard, CheckSquare, ShoppingCart, Users,
   ListChecks, FolderTree, Tags as TagsIcon, Settings2 as SettingsIcon,
-  Globe, Library, MapPin, Home, DollarSign, Briefcase, Edit, Trash2, CreditCard, PieChart, FileText, TrendingUp, Percent, ImageIcon, FileType, Ship, Landmark, ListFilter, Banknote
+  Globe, Library, MapPin, Home, DollarSign, Briefcase, Edit, Trash2, CreditCard, PieChart, FileText, TrendingUp, Percent, ImageIcon, FileType, Ship, Landmark, ListFilter, Banknote, LogIn
 } from 'lucide-react';
 
 export let APP_NAME = '2ndhandbajar.com';
@@ -265,6 +265,7 @@ export const ADMIN_NAVIGATION: AdminNavItem[] = [
       { name: 'Business Settings', href: '/admin/settings/business', icon: Briefcase },
       { name: 'Banners (Sliders)', href: '/admin/settings/banners', icon: ImageIcon },
       { name: 'Custom Pages', href: '/admin/settings/custom-pages', icon: FileType },
+      { name: 'Google Login', href: '/admin/settings/google-login', icon: LogIn },
     ]
   },
   { name: 'Manage Users', href: '/admin/users', icon: Users },
@@ -287,7 +288,7 @@ export const BUSINESS_SETTINGS_STORAGE_KEY = 'businessSettings';
 export const HERO_BANNERS_STORAGE_KEY = 'heroBannerSlides';
 export const CUSTOM_PAGES_STORAGE_KEY = 'customPages';
 export const SHIPPING_METHODS_STORAGE_KEY = 'shippingMethods';
-// Removed location storage keys as they are static now
+// For static location data, no storage keys needed
 // export const DIVISIONS_STORAGE_KEY = 'divisions';
 // export const DISTRICTS_STORAGE_KEY = 'districts';
 // export const THANAS_STORAGE_KEY = 'thanas';
@@ -314,6 +315,8 @@ export const DEFAULT_BUSINESS_SETTINGS: BusinessSettings = {
   faviconUrl: '/favicon.ico', // This should be a path in /public or an external URL
   availableCurrencies: DEFAULT_CURRENCIES,
   defaultCurrencyCode: 'BDT',
+  googleClientId: '',
+  googleClientSecret: '',
 };
 
 export const DEFAULT_HERO_BANNER_SLIDES: HeroBannerSlide[] = [
@@ -378,6 +381,3 @@ export const DEFAULT_SHIPPING_METHODS: ShippingMethod[] = [
   { id: 'standard-delivery', name: 'Standard Delivery' },
   { id: 'express-delivery', name: 'Express Delivery (Next Day)' },
 ];
-
-    
-

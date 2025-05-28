@@ -175,6 +175,8 @@ export type BusinessSettings = {
   appName?: string;
   availableCurrencies: Currency[];
   defaultCurrencyCode: string; 
+  googleClientId?: string;
+  googleClientSecret?: string;
 };
 
 export type HeroBannerSlide = {
