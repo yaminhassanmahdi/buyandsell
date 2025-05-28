@@ -18,6 +18,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { useForm } from "react-hook-form"; // Added this import
 
 const emailUpdateSchema = z.object({
   newEmail: z.string().email("Invalid email address."),
@@ -410,3 +411,5 @@ export default function AccountSettingsPage() {
 
 
     
+
+  
