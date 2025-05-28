@@ -8,14 +8,40 @@ import { WithdrawalMethodForm, type WithdrawalFormData } from '@/components/with
 import { WithdrawalMethodItem } from '@/components/withdrawal-method-item';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogClose } from '@/components/ui/dialog';
 import type { ShippingAddress, WithdrawalMethod, User } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Home, CreditCard, PlusCircle, AlertTriangle } from 'lucide-react';
-import { Alert, AlertTitle, AlertDescription as AlertDesc } from '@/components/ui/alert'; // Renamed AlertDescription to avoid conflict
+import { Loader2, Home, CreditCard, PlusCircle, AlertTriangle, Mail, Phone, Lock, UserCircleIcon } from 'lucide-react';
+import { Alert, AlertTitle, AlertDescription as AlertDesc } from '@/components/ui/alert';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+
+const emailUpdateSchema = z.object({
+  newEmail: z.string().email("Invalid email address."),
+});
+type EmailUpdateFormData = z.infer<typeof emailUpdateSchema>;
+
+const phoneUpdateSchema = z.object({
+  newPhoneNumber: z.string().length(11, "Phone number must be 11 digits.").regex(/^\d+$/, "Must be digits only."),
+});
+type PhoneUpdateFormData = z.infer<typeof phoneUpdateSchema>;
+
+const passwordUpdateSchema = z.object({
+  currentPassword: z.string().min(1, "Current password is required."), // Basic check for mock
+  newPassword: z.string().min(6, "New password must be at least 6 characters."),
+  confirmNewPassword: z.string(),
+}).refine((data) => data.newPassword === data.confirmNewPassword, {
+  message: "New passwords don't match",
+  path: ["confirmNewPassword"],
+});
+type PasswordUpdateFormData = z.infer<typeof passwordUpdateSchema>;
+
 
 export default function AccountSettingsPage() {
-  const { currentUser, isAuthenticated, loading: authLoading, updateCurrentUserData } = useAuth();
+  const { currentUser, isAuthenticated, loading: authLoading, updateCurrentUserData, updateEmail, updatePhoneNumber, updatePassword } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
@@ -23,14 +49,36 @@ export default function AccountSettingsPage() {
   const [isAddressDialogOpen, setIsAddressDialogOpen] = useState(false);
   const [isWithdrawalDialogOpen, setIsWithdrawalDialogOpen] = useState(false);
   const [formSubmitting, setFormSubmitting] = useState(false);
+  const [credentialFormSubmitting, setCredentialFormSubmitting] = useState<'email' | 'phone' | 'password' | null>(null);
+
 
   const fromSellPage = searchParams.get('from') === 'sell';
+
+  const emailForm = useForm<EmailUpdateFormData>({
+    resolver: zodResolver(emailUpdateSchema),
+    defaultValues: { newEmail: currentUser?.email || "" },
+  });
+
+  const phoneForm = useForm<PhoneUpdateFormData>({
+    resolver: zodResolver(phoneUpdateSchema),
+    defaultValues: { newPhoneNumber: currentUser?.phoneNumber || "" },
+  });
+
+  const passwordForm = useForm<PasswordUpdateFormData>({
+    resolver: zodResolver(passwordUpdateSchema),
+    defaultValues: { currentPassword: "", newPassword: "", confirmNewPassword: "" },
+  });
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
       router.push('/login?redirect=/account/settings');
     }
-  }, [isAuthenticated, authLoading, router]);
+     if (currentUser) {
+      emailForm.reset({ newEmail: currentUser.email || "" });
+      phoneForm.reset({ newPhoneNumber: currentUser.phoneNumber || "" });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, authLoading, router, currentUser]);
 
   const handleAddressSubmit = async (data: ShippingAddress) => {
     if (!currentUser) return;
@@ -86,6 +134,40 @@ export default function AccountSettingsPage() {
     toast({ title: "Default Method Set", description: "Withdrawal method has been set as default." });
   };
 
+  const onUpdateEmail = async (data: EmailUpdateFormData) => {
+    setCredentialFormSubmitting('email');
+    const result = await updateEmail(data.newEmail);
+    if (result.success) {
+      toast({ title: "Email Updated", description: "Your email address has been successfully updated." });
+    } else {
+      toast({ title: "Error", description: result.error || "Failed to update email.", variant: "destructive" });
+    }
+    setCredentialFormSubmitting(null);
+  };
+
+  const onUpdatePhone = async (data: PhoneUpdateFormData) => {
+    setCredentialFormSubmitting('phone');
+    const result = await updatePhoneNumber(data.newPhoneNumber);
+    if (result.success) {
+      toast({ title: "Phone Number Updated", description: "Your phone number has been successfully updated." });
+    } else {
+      toast({ title: "Error", description: result.error || "Failed to update phone number.", variant: "destructive" });
+    }
+    setCredentialFormSubmitting(null);
+  };
+
+  const onUpdatePassword = async (data: PasswordUpdateFormData) => {
+    setCredentialFormSubmitting('password');
+    const result = await updatePassword(data.currentPassword, data.newPassword);
+    if (result.success) {
+      toast({ title: "Password Updated", description: "Your password has been successfully updated." });
+      passwordForm.reset();
+    } else {
+      toast({ title: "Error", description: result.error || "Failed to update password.", variant: "destructive" });
+    }
+    setCredentialFormSubmitting(null);
+  };
+
 
   if (authLoading || (!authLoading && !isAuthenticated) || !currentUser) {
     return (
@@ -109,7 +191,7 @@ export default function AccountSettingsPage() {
         <Alert variant="destructive" className="mb-6">
           <AlertTriangle className="h-5 w-5" />
           <AlertTitle>Profile Incomplete for Selling</AlertTitle>
-          <AlertDesc> {/* Use renamed import */}
+          <AlertDesc> 
             To list items for sale, please ensure you have:
             <ul className="list-disc pl-5 mt-1">
               {!currentAddress && <li>A saved shipping address.</li>}
@@ -118,6 +200,118 @@ export default function AccountSettingsPage() {
           </AlertDesc>
         </Alert>
       )}
+
+      <Card>
+        <CardHeader>
+            <CardTitle className="flex items-center gap-2"><UserCircleIcon className="h-6 w-6 text-primary" /> Account Credentials</CardTitle>
+            <CardDescription>Manage your login and contact information.</CardDescription>
+        </CardHeader>
+        <CardContent>
+            <Accordion type="single" collapsible className="w-full">
+                {/* Email Update Section */}
+                <AccordionItem value="email">
+                    <AccordionTrigger>Update Email</AccordionTrigger>
+                    <AccordionContent className="pt-4">
+                        <p className="text-sm text-muted-foreground mb-2">Current Email: {currentUser.email || "Not set"}</p>
+                        <Form {...emailForm}>
+                            <form onSubmit={emailForm.handleSubmit(onUpdateEmail)} className="space-y-4">
+                                <FormField
+                                    control={emailForm.control}
+                                    name="newEmail"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                        <FormLabel>New Email Address</FormLabel>
+                                        <FormControl><Input type="email" placeholder="your.new.email@example.com" {...field} /></FormControl>
+                                        <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <Button type="submit" disabled={credentialFormSubmitting === 'email'}>
+                                    {credentialFormSubmitting === 'email' && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                    Save Email
+                                </Button>
+                            </form>
+                        </Form>
+                    </AccordionContent>
+                </AccordionItem>
+
+                {/* Phone Update Section */}
+                <AccordionItem value="phone">
+                    <AccordionTrigger>Update Phone Number</AccordionTrigger>
+                    <AccordionContent className="pt-4">
+                        <p className="text-sm text-muted-foreground mb-2">Current Phone: {currentUser.phoneNumber}</p>
+                         <Form {...phoneForm}>
+                            <form onSubmit={phoneForm.handleSubmit(onUpdatePhone)} className="space-y-4">
+                                <FormField
+                                    control={phoneForm.control}
+                                    name="newPhoneNumber"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                        <FormLabel>New Phone Number</FormLabel>
+                                        <FormControl><Input type="tel" placeholder="01XXXXXXXXX" {...field} /></FormControl>
+                                        <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <Button type="submit" disabled={credentialFormSubmitting === 'phone'}>
+                                    {credentialFormSubmitting === 'phone' && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                    Save Phone Number
+                                </Button>
+                            </form>
+                        </Form>
+                    </AccordionContent>
+                </AccordionItem>
+
+                {/* Password Update Section */}
+                <AccordionItem value="password">
+                    <AccordionTrigger>Change Password</AccordionTrigger>
+                    <AccordionContent className="pt-4">
+                        <Form {...passwordForm}>
+                            <form onSubmit={passwordForm.handleSubmit(onUpdatePassword)} className="space-y-4">
+                                <FormField
+                                    control={passwordForm.control}
+                                    name="currentPassword"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                        <FormLabel>Current Password</FormLabel>
+                                        <FormControl><Input type="password" {...field} /></FormControl>
+                                        <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={passwordForm.control}
+                                    name="newPassword"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                        <FormLabel>New Password</FormLabel>
+                                        <FormControl><Input type="password" {...field} /></FormControl>
+                                        <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={passwordForm.control}
+                                    name="confirmNewPassword"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                        <FormLabel>Confirm New Password</FormLabel>
+                                        <FormControl><Input type="password" {...field} /></FormControl>
+                                        <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <Button type="submit" disabled={credentialFormSubmitting === 'password'}>
+                                    {credentialFormSubmitting === 'password' && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                    Change Password
+                                </Button>
+                            </form>
+                        </Form>
+                    </AccordionContent>
+                </AccordionItem>
+            </Accordion>
+        </CardContent>
+      </Card>
 
       {/* Shipping Address Section */}
       <Card>
@@ -213,3 +407,6 @@ export default function AccountSettingsPage() {
     </div>
   );
 }
+
+
+    
