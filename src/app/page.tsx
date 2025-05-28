@@ -2,10 +2,10 @@
 "use client";
 import React, { useState, useMemo, useEffect } from 'react';
 import { ProductCard } from '@/components/product-card';
-import { MOCK_PRODUCTS, MOCK_CATEGORIES } from '@/lib/mock-data';
+// Removed direct import of MOCK_PRODUCTS
 import type { Product, Category as CategoryType } from '@/lib/types';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { SearchX, ArrowRight } from 'lucide-react';
+import { SearchX, ArrowRight, Loader2 } from 'lucide-react'; // Added Loader2
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -29,7 +29,7 @@ export default function HomePage() {
   const selectedCategoryIdFromUrl = searchParams.get('category');
   const selectedSubCategoryIdFromUrl = searchParams.get('subcategory');
 
-  const [allApprovedProducts, setAllApprovedProducts] = useState<Product[]>([]);
+  const [allProducts, setAllProducts] = useState<Product[]>([]); // State for products fetched from API
   const [loading, setLoading] = useState(true);
   const [categoriesToDisplay, setCategoriesToDisplay] = useState<CategoryType[]>([]);
 
@@ -40,23 +40,43 @@ export default function HomePage() {
 
   useEffect(() => {
     setLoading(true);
-    setTimeout(() => {
-      const approvedAndInStock = MOCK_PRODUCTS
-        .filter(p => p.status === 'approved' && p.stock > 0)
-        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-      setAllApprovedProducts(approvedAndInStock);
+    // Fetch products from the API
+    async function fetchProducts() {
+      try {
+        const response = await fetch('/api/products');
+        if (!response.ok) {
+          throw new Error('Failed to fetch products');
+        }
+        const productsData: Product[] = await response.json();
+        // Convert createdAt string to Date object if necessary (NextResponse might do this)
+        const productsWithDateObjects = productsData.map(p => ({
+          ...p,
+          createdAt: new Date(p.createdAt) 
+        }));
+        setAllProducts(productsWithDateObjects);
+      } catch (error) {
+        console.error("Error fetching products:", error);
+        // Handle error state if needed, e.g., show an error message
+        setAllProducts([]); // Set to empty or keep previous state based on desired UX
+      } finally {
+        // setLoading(false); // Loading will be set to false after categories are also processed
+      }
+    }
 
-      const currentCategories = Array.isArray(storedCategories) && storedCategories.length > 0 ? storedCategories : INITIAL_CATEGORIES;
-      const sorted = [...currentCategories].sort((a, b) => 
-        (a.sortOrder ?? 999) - (b.sortOrder ?? 999) || a.name.localeCompare(b.name)
-      );
-      setCategoriesToDisplay(sorted);
-      setLoading(false);
-    }, 500);
-  }, [storedCategories]);
+    fetchProducts();
+
+    const currentCategories = Array.isArray(storedCategories) && storedCategories.length > 0 ? storedCategories : INITIAL_CATEGORIES;
+    const sorted = [...currentCategories].sort((a, b) => 
+      (a.sortOrder ?? 999) - (b.sortOrder ?? 999) || a.name.localeCompare(b.name)
+    );
+    setCategoriesToDisplay(sorted);
+    // Set loading to false after both products and categories are processed
+    // Consider a combined loading state if categories also had an async step
+    setLoading(false); 
+  }, [storedCategories]); // fetchProducts will run once on mount due to empty dependency array inside its own logic
 
   const productsByCategory: ProductGroup[] = useMemo(() => {
-    let baseProducts = allApprovedProducts; 
+    let baseProducts = allProducts; 
 
     if (selectedCategoryIdFromUrl) {
       const category = categoriesToDisplay.find(c => c.id === selectedCategoryIdFromUrl);
@@ -66,17 +86,15 @@ export default function HomePage() {
       let title = `Products in ${category.name}`;
 
       if (selectedSubCategoryIdFromUrl) {
-        // Assuming MOCK_SUBCATEGORIES is available or fetched if needed
-        // For simplicity, this part might need access to subcategory data if title needs subcategory name
-        const subCategory = MOCK_CATEGORIES.flatMap(c => c.subCategories || []).find(sc => sc.id === selectedSubCategoryIdFromUrl);
-        // Placeholder for subcategory name logic, adjust as needed
+        // This subcategory filtering logic will also use the products fetched from the API
+        const subCategory = MOCK_SUBCATEGORIES.find(sc => sc.id === selectedSubCategoryIdFromUrl); // MOCK_SUBCATEGORIES would also need to be API-driven in a real app
         filteredProducts = filteredProducts.filter(p => p.subCategoryId === selectedSubCategoryIdFromUrl);
         title = `${subCategory ? subCategory.name : 'Selected Subcategory'} in ${category.name}`;
       }
 
       return [{
         category,
-        products: filteredProducts,
+        products: filteredProducts, // Display all filtered products for a category page view via query params
         titleOverride: title
       }];
     }
@@ -88,7 +106,32 @@ export default function HomePage() {
         .filter(product => product.categoryId === category.id)
         .slice(0, PRODUCTS_PER_CATEGORY_HOME),
     })).filter(group => group.products.length > 0);
-  }, [allApprovedProducts, selectedCategoryIdFromUrl, selectedSubCategoryIdFromUrl, categoriesToDisplay]);
+  }, [allProducts, selectedCategoryIdFromUrl, selectedSubCategoryIdFromUrl, categoriesToDisplay]);
+
+  if (loading) {
+    return (
+      <div>
+        {(!selectedCategoryIdFromUrl && !selectedSubCategoryIdFromUrl) && (
+          <>
+            <CategoryBar />
+            <HeroBanner />
+          </>
+        )}
+        <div className="container mx-auto px-4 mt-6 md:mt-8">
+          {[1, 2, 3].map(categoryKey => ( // Render a few skeleton category sections
+            <div key={categoryKey} className="mb-12">
+              <Skeleton className="h-8 w-1/2 md:w-1/4 mb-6" />
+              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+                {[...Array(PRODUCTS_PER_CATEGORY_HOME)].map((_, i) => (
+                  <ProductCardSkeleton key={i} />
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -100,25 +143,14 @@ export default function HomePage() {
       )}
 
       <div className="container mx-auto px-4 mt-6 md:mt-8">
-        {loading ? (
-          categoriesToDisplay.map(category => (
-            <div key={category.id} className="mb-12">
-              <Skeleton className="h-8 w-1/2 md:w-1/4 mb-6" />
-              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-                {[...Array(PRODUCTS_PER_CATEGORY_HOME)].map((_, i) => (
-                  <ProductCardSkeleton key={i} />
-                ))}
-              </div>
-            </div>
-          ))
-        ) : productsByCategory.length > 0 ? (
+        {productsByCategory.length > 0 ? (
           productsByCategory.map((group) => (
             <section key={group.category.id} className="mb-10 md:mb-12">
               <div className="flex items-center justify-between mb-4 md:mb-6">
                 <h2 className="text-2xl md:text-3xl font-bold">
                   {group.titleOverride || (selectedCategoryIdFromUrl ? `Products in ${group.category.name}` : `Latest in ${group.category.name}`)}
                 </h2>
-                {!selectedCategoryIdFromUrl && allApprovedProducts.filter(p => p.categoryId === group.category.id).length > PRODUCTS_PER_CATEGORY_HOME && (
+                {!selectedCategoryIdFromUrl && allProducts.filter(p => p.categoryId === group.category.id).length > PRODUCTS_PER_CATEGORY_HOME && (
                    <Button variant="outline" asChild>
                     <Link href={`/category/${group.category.id}`}>
                       View All <ArrowRight className="ml-2 h-4 w-4" />
@@ -173,3 +205,6 @@ const ProductCardSkeleton = () => (
   </div>
 );
 
+// Need to ensure MOCK_SUBCATEGORIES is available if used for titling
+// This import might be needed if subCategory names are used for titleOverride
+import { MOCK_SUBCATEGORIES } from '@/lib/mock-data';
