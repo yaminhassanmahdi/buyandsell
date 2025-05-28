@@ -14,6 +14,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetClose } from '@/components/ui/sheet';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SubCategoryScroller } from '@/components/sub-category-scroller'; // Import the scroller
 
 const SORT_OPTIONS: { value: SortByType; label: string }[] = [
   { value: 'date_desc', label: 'Newest First' },
@@ -37,6 +38,7 @@ export default function BrowsePage() {
   );
 
   const categoryId = searchParams.get('categoryId');
+  const activeSubCategoryIdsFromUrl = searchParams.getAll('subCategoryId'); // Used to check if a sub-category is active
 
   const subCategoriesForFilter = useMemo(() => {
     if (!categoryId) return [];
@@ -50,8 +52,8 @@ export default function BrowsePage() {
 
   useEffect(() => {
     setIsLoading(true);
-    const activeCategoryId = searchParams.get('categoryId');
-    const activeSubCategoryIds = searchParams.getAll('subCategoryId');
+    const activeCategoryIdFromUrl = searchParams.get('categoryId');
+    const currentActiveSubCategoryIds = searchParams.getAll('subCategoryId'); // Renamed for clarity
     const activeMinPrice = searchParams.get('minPrice');
     const activeMaxPrice = searchParams.get('maxPrice');
     const currentSortBy = (searchParams.get('sortBy') as SortByType) || 'date_desc';
@@ -65,8 +67,8 @@ export default function BrowsePage() {
       }
     });
 
-    if (activeCategoryId) {
-      const foundCategory = MOCK_CATEGORIES.find(c => c.id === activeCategoryId);
+    if (activeCategoryIdFromUrl) {
+      const foundCategory = MOCK_CATEGORIES.find(c => c.id === activeCategoryIdFromUrl);
       setCurrentCategory(foundCategory);
     } else {
       setCurrentCategory(undefined);
@@ -74,12 +76,12 @@ export default function BrowsePage() {
 
     let products = MOCK_PRODUCTS.filter(p => p.status === 'approved' && p.stock > 0);
 
-    if (activeCategoryId) {
-      products = products.filter(p => p.categoryId === activeCategoryId);
+    if (activeCategoryIdFromUrl) {
+      products = products.filter(p => p.categoryId === activeCategoryIdFromUrl);
     }
 
-    if (activeSubCategoryIds.length > 0) {
-      products = products.filter(p => p.subCategoryId && activeSubCategoryIds.includes(p.subCategoryId));
+    if (currentActiveSubCategoryIds.length > 0) {
+      products = products.filter(p => p.subCategoryId && currentActiveSubCategoryIds.includes(p.subCategoryId));
     }
     
     if (activeMinPrice) {
@@ -136,6 +138,9 @@ export default function BrowsePage() {
       const subCat = MOCK_SUBCATEGORIES.find(sc => sc.id === selectedSubCategoryIdsFromUrl[0]);
       return subCat ? `${subCat.name} in ${currentCategory.name}` : currentCategory.name;
     }
+    if (selectedSubCategoryIdsFromUrl.length > 1) {
+        return `Filtered Products in ${currentCategory.name}`;
+    }
     return currentCategory.name;
   };
   
@@ -146,6 +151,8 @@ export default function BrowsePage() {
     }
     return null;
   }, [searchParams]);
+
+  const showSubCategoryScroller = categoryId && activeSubCategoryIdsFromUrl.length === 0 && subCategoriesForFilter.length > 0;
 
   return (
     <div className="container mx-auto px-4 py-6">
@@ -187,9 +194,18 @@ export default function BrowsePage() {
         </BreadcrumbList>
       </Breadcrumb>
 
+      {showSubCategoryScroller && (
+        <div className="mb-6">
+          <SubCategoryScroller 
+            subCategories={subCategoriesForFilter} 
+            parentCategoryId={categoryId}
+          />
+        </div>
+      )}
+
       <div className="flex flex-col md:flex-row gap-8">
         {/* Desktop Filters Sidebar */}
-        <div className="hidden md:block w-full md:w-72 lg:w-80 shrink-0">
+        <div className="hidden md:block w-full md:w-72 lg:w-80 shrink-0 relative"> {/* Added relative for sticky button */}
           <ProductListFilters
             currentCategory={currentCategory} 
             subCategoriesForCurrentCategory={subCategoriesForFilter}
@@ -210,12 +226,13 @@ export default function BrowsePage() {
                       <FilterIcon className="mr-2 h-4 w-4" /> Filter
                     </Button>
                   </SheetTrigger>
-                  <SheetContent side="right" className="w-[300px] p-0">
+                  <SheetContent side="right" className="w-[300px] p-0 flex flex-col"> {/* Added flex flex-col */}
                      <SheetHeader className="p-4 border-b">
                         <SheetTitle>Filter Products</SheetTitle>
                          <SheetClose className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary" />
                      </SheetHeader>
-                     <div className="p-4">
+                     {/* ScrollArea will be inside ProductListFilters if needed */}
+                     <div className="flex-grow overflow-y-auto p-4"> {/* Make this area scrollable */}
                         <ProductListFilters
                             currentCategory={currentCategory} 
                             subCategoriesForCurrentCategory={subCategoriesForFilter}
@@ -284,3 +301,5 @@ const ProductCardSkeleton = () => (
   </div>
 );
 
+
+    
