@@ -25,7 +25,7 @@ interface AuthContextType {
   clearPendingGoogleUser: () => void;
   updateEmail: (newEmail: string) => Promise<{ success: boolean; error?: string }>;
   updatePhoneNumber: (newPhoneNumber: string) => Promise<{ success: boolean; error?: string }>;
-  updatePassword: (currentPassword: string, newPassword: string) => Promise<{ success: boolean; error?: string }>;
+  updatePassword: (newPassword: string) => Promise<{ success: boolean; error?: string }>;
   loading: boolean;
   isAuthenticated: boolean;
   isAdmin: boolean;
@@ -223,14 +223,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return { success: true };
   };
 
-  const updatePassword = async (currentPassword: string, newPassword: string): Promise<{ success: boolean; error?: string }> => {
-    // Mock: In a real app, validate currentPassword against stored hash
-    // For this mock, we'll assume currentPassword is always correct if provided.
+  const updatePassword = async (newPassword: string): Promise<{ success: boolean; error?: string }> => {
     if (!currentUser) return { success: false, error: "Not authenticated." };
-    if (!currentPassword) return { success: false, error: "Current password is required."}; // Basic check
-    
-    // Conceptual password update
-    console.log(`Password for user ${currentUser.id} conceptually updated to ${newPassword}`);
+    // In a real app, this would involve re-hashing and saving the new password.
+    // For this mock, we just acknowledge the change conceptually.
+    console.log(`Password for user ${currentUser.id} conceptually updated.`);
     return { success: true };
   };
 

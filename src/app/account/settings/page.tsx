@@ -31,7 +31,6 @@ const phoneUpdateSchema = z.object({
 type PhoneUpdateFormData = z.infer<typeof phoneUpdateSchema>;
 
 const passwordUpdateSchema = z.object({
-  currentPassword: z.string().min(1, "Current password is required."), // Basic check for mock
   newPassword: z.string().min(6, "New password must be at least 6 characters."),
   confirmNewPassword: z.string(),
 }).refine((data) => data.newPassword === data.confirmNewPassword, {
@@ -67,7 +66,7 @@ export default function AccountSettingsPage() {
 
   const passwordForm = useForm<PasswordUpdateFormData>({
     resolver: zodResolver(passwordUpdateSchema),
-    defaultValues: { currentPassword: "", newPassword: "", confirmNewPassword: "" },
+    defaultValues: { newPassword: "", confirmNewPassword: "" },
   });
 
   useEffect(() => {
@@ -159,7 +158,7 @@ export default function AccountSettingsPage() {
 
   const onUpdatePassword = async (data: PasswordUpdateFormData) => {
     setCredentialFormSubmitting('password');
-    const result = await updatePassword(data.currentPassword, data.newPassword);
+    const result = await updatePassword(data.newPassword);
     if (result.success) {
       toast({ title: "Password Updated", description: "Your password has been successfully updated." });
       passwordForm.reset();
@@ -269,17 +268,6 @@ export default function AccountSettingsPage() {
                     <AccordionContent className="pt-4">
                         <Form {...passwordForm}>
                             <form onSubmit={passwordForm.handleSubmit(onUpdatePassword)} className="space-y-4">
-                                <FormField
-                                    control={passwordForm.control}
-                                    name="currentPassword"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                        <FormLabel>Current Password</FormLabel>
-                                        <FormControl><Input type="password" {...field} /></FormControl>
-                                        <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
                                 <FormField
                                     control={passwordForm.control}
                                     name="newPassword"
@@ -409,7 +397,4 @@ export default function AccountSettingsPage() {
   );
 }
 
-
     
-
-  
