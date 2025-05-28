@@ -7,12 +7,11 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { MOCK_CATEGORIES } from '@/lib/mock-data';
 import type { Category } from '@/lib/types';
-import { FolderTree, PlusCircle, Trash2, Edit3, Loader2, Image as ImageIcon } from 'lucide-react';
-import Image from 'next/image'; // For Next.js optimized images
-import useLocalStorage from '@/hooks/use-local-storage'; // Assuming you have this hook
-import { CATEGORIES_STORAGE_KEY, INITIAL_CATEGORIES } from '@/lib/constants'; // For localStorage
+import { FolderTree, PlusCircle, Trash2, Edit3, Loader2, Image as ImageIcon, ArrowUpDown } from 'lucide-react';
+import Image from 'next/image';
+import useLocalStorage from '@/hooks/use-local-storage';
+import { CATEGORIES_STORAGE_KEY, INITIAL_CATEGORIES } from '@/lib/constants';
 
 const generateId = () => `cat-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
 
@@ -21,7 +20,7 @@ export default function AdminManageCategoriesPage() {
     CATEGORIES_STORAGE_KEY,
     INITIAL_CATEGORIES
   );
-  const [isLoading, setIsLoading] = useState(true); // For initial load simulation
+  const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [currentCategory, setCurrentCategory] = useState<Partial<Category>>({});
   const [isEditing, setIsEditing] = useState(false);
@@ -29,7 +28,7 @@ export default function AdminManageCategoriesPage() {
   const { toast } = useToast();
 
   useEffect(() => {
-    setIsLoading(false); // Simulate loading categories
+    setIsLoading(false); 
   }, []);
 
   const openDialog = (category?: Category) => {
@@ -37,15 +36,15 @@ export default function AdminManageCategoriesPage() {
       setCurrentCategory({ ...category });
       setIsEditing(true);
     } else {
-      setCurrentCategory({ name: '', imageUrl: 'https://placehold.co/80x80.png', imageHint: '' });
+      setCurrentCategory({ name: '', imageUrl: 'https://placehold.co/80x80.png', imageHint: '', sortOrder: (categories.length + 1) * 10 });
       setIsEditing(false);
     }
     setIsDialogOpen(true);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setCurrentCategory(prev => ({ ...prev, [name]: value }));
+    const { name, value, type } = e.target;
+    setCurrentCategory(prev => ({ ...prev, [name]: type === 'number' ? parseInt(value, 10) || 0 : value }));
   };
 
   const handleSaveCategory = async () => {
@@ -54,10 +53,11 @@ export default function AdminManageCategoriesPage() {
       return;
     }
     setFormSubmitting(true);
-    await new Promise(resolve => setTimeout(resolve, 500)); // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 500));
 
     if (isEditing && currentCategory.id) {
-      setCategories(prev => prev.map(cat => cat.id === currentCategory.id ? (currentCategory as Category) : cat));
+      setCategories(prev => prev.map(cat => cat.id === currentCategory.id ? (currentCategory as Category) : cat)
+                                .sort((a,b) => (a.sortOrder || 999) - (b.sortOrder || 999) || a.name.localeCompare(b.name)));
       toast({ title: "Category Updated", description: `Category "${currentCategory.name}" has been updated.` });
     } else {
       const newCategory: Category = {
@@ -65,8 +65,10 @@ export default function AdminManageCategoriesPage() {
         name: currentCategory.name.trim(),
         imageUrl: currentCategory.imageUrl?.trim() || 'https://placehold.co/80x80.png',
         imageHint: currentCategory.imageHint?.trim() || currentCategory.name.toLowerCase(),
+        sortOrder: currentCategory.sortOrder === undefined ? (categories.length + 1) * 10 : currentCategory.sortOrder,
       };
-      setCategories(prev => [...prev, newCategory]);
+      setCategories(prev => [...prev, newCategory]
+                                .sort((a,b) => (a.sortOrder || 999) - (b.sortOrder || 999) || a.name.localeCompare(b.name)));
       toast({ title: "Category Added", description: `Category "${newCategory.name}" has been added.` });
     }
     setIsDialogOpen(false);
@@ -80,6 +82,9 @@ export default function AdminManageCategoriesPage() {
       toast({ title: "Category Deleted", description: "The category has been deleted." });
     }
   };
+  
+  const sortedCategories = [...categories].sort((a,b) => (a.sortOrder || 999) - (b.sortOrder || 999) || a.name.localeCompare(b.name));
+
 
   if (isLoading) {
     return (
@@ -104,12 +109,12 @@ export default function AdminManageCategoriesPage() {
       <Card>
         <CardHeader>
           <CardTitle>Category List</CardTitle>
-          <CardDescription>View, add, edit, or delete parent product categories.</CardDescription>
+          <CardDescription>View, add, edit, or delete parent product categories. Lower sort order appears first.</CardDescription>
         </CardHeader>
         <CardContent>
-           {categories.length > 0 ? (
+           {sortedCategories.length > 0 ? (
             <div className="space-y-3">
-              {categories.map(category => (
+              {sortedCategories.map(category => (
                 <div key={category.id} className="flex items-center justify-between p-3 border rounded-md hover:shadow-sm transition-shadow">
                   <div className="flex items-center gap-3">
                     {category.imageUrl ? (
@@ -118,7 +123,7 @@ export default function AdminManageCategoriesPage() {
                       <ImageIcon className="h-10 w-10 text-muted-foreground" />
                     )}
                     <div>
-                      <h3 className="font-semibold">{category.name}</h3>
+                      <h3 className="font-semibold">{category.name} <span className="text-xs text-muted-foreground">(SO: {category.sortOrder === undefined ? 'N/A' : category.sortOrder})</span></h3>
                       <p className="text-xs text-muted-foreground">ID: {category.id}</p>
                     </div>
                   </div>
@@ -176,6 +181,17 @@ export default function AdminManageCategoriesPage() {
                 placeholder="e.g., electronics gadget"
               />
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="category-sort-order">Sort Order</Label>
+              <Input
+                id="category-sort-order"
+                name="sortOrder"
+                type="number"
+                value={currentCategory.sortOrder === undefined ? '' : currentCategory.sortOrder}
+                onChange={handleInputChange}
+                placeholder="e.g., 10, 20 (lower is first)"
+              />
+            </div>
           </div>
           <DialogFooter>
             <DialogClose asChild><Button type="button" variant="outline" disabled={formSubmitting}>Cancel</Button></DialogClose>
@@ -189,3 +205,4 @@ export default function AdminManageCategoriesPage() {
     </div>
   );
 }
+

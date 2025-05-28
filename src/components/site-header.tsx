@@ -2,17 +2,17 @@
 "use client";
 import Link from 'next/link';
 import { Button } from './ui/button';
-import { PlusCircle, Search, Menu, Handshake, ShoppingCart, ChevronDown, MoreVertical } from 'lucide-react'; // Added MoreVertical
+import { PlusCircle, Search, Menu, Handshake, ShoppingCart, ChevronDown, MoreVertical } from 'lucide-react'; 
 import { Input } from './ui/input';
-import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetClose } from '@/components/ui/sheet';
-import { MOCK_CATEGORIES } from '@/lib/mock-data'; // For mobile drawer categories
-import { USER_NAVIGATION } from '@/lib/constants'; // Corrected import path
+import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetClose } from '@/components/ui/sheet'; 
+import { MOCK_CATEGORIES } from '@/lib/mock-data';
+import { USER_NAVIGATION, ADMIN_NAVIGATION, CATEGORIES_STORAGE_KEY, INITIAL_CATEGORIES } from '@/lib/constants'; 
 import { useAuth } from '@/contexts/auth-context';
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import useLocalStorage from '@/hooks/use-local-storage';
-import type { BusinessSettings } from '@/lib/types';
+import type { BusinessSettings, Category } from '@/lib/types';
 import { BUSINESS_SETTINGS_STORAGE_KEY, DEFAULT_BUSINESS_SETTINGS, APP_NAME } from '@/lib/constants';
 import { CartSidebar } from './cart-sidebar';
 import { useCart } from '@/contexts/cart-context';
@@ -25,20 +25,33 @@ export function SiteHeader() {
   const router = useRouter();
   const { itemCount } = useCart();
 
-  const [storedSettings] = useLocalStorage<BusinessSettings>(
+  const [storedBusinessSettings] = useLocalStorage<BusinessSettings>(
     BUSINESS_SETTINGS_STORAGE_KEY,
     DEFAULT_BUSINESS_SETTINGS
   );
+  const [storedCategories] = useLocalStorage<Category[]>(CATEGORIES_STORAGE_KEY, INITIAL_CATEGORIES);
+
+
   const [isClient, setIsClient] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isCartSidebarOpen, setIsCartSidebarOpen] = useState(false);
+  const [sortedCategoriesForDrawer, setSortedCategoriesForDrawer] = useState<Category[]>([]);
+
 
   useEffect(() => {
     setIsClient(true);
   }, []);
 
-  const appNameToUse = isClient ? storedSettings.appName || APP_NAME : APP_NAME;
-  const faviconUrl = isClient ? storedSettings.faviconUrl : null;
+  useEffect(() => {
+    const categoriesToDisplay = Array.isArray(storedCategories) && storedCategories.length > 0 ? storedCategories : INITIAL_CATEGORIES;
+    const sorted = [...categoriesToDisplay].sort((a, b) => 
+      (a.sortOrder ?? 999) - (b.sortOrder ?? 999) || a.name.localeCompare(b.name)
+    );
+    setSortedCategoriesForDrawer(sorted);
+  }, [storedCategories]);
+
+  const appNameToUse = isClient ? storedBusinessSettings.appName || APP_NAME : APP_NAME;
+  const faviconUrl = isClient ? storedBusinessSettings.faviconUrl : null;
 
   const handleSearchSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -65,6 +78,7 @@ export function SiteHeader() {
                   <div className="flex items-center">
                     <Logo />
                   </div>
+                   <SheetClose className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary" />
                 </SheetHeader>
                 <div className="py-6">
                   <nav className="grid gap-2 px-4">
@@ -74,7 +88,7 @@ export function SiteHeader() {
                     )}
                     <div className="pt-4">
                       <h3 className="mb-2 px-0 text-lg font-semibold tracking-tight">Categories</h3>
-                      {MOCK_CATEGORIES.map((category) => (
+                      {sortedCategoriesForDrawer.map((category) => (
                          <Link key={category.id} href={`/category/${category.id}`} className="block py-2 text-muted-foreground hover:text-primary" onClick={() => setIsMobileMenuOpen(false)}>
                           {category.name}
                         </Link>
@@ -175,3 +189,4 @@ export function SiteHeader() {
     </>
   );
 }
+

@@ -1,6 +1,6 @@
 
 import type { Product, User, Order, ShippingAddress, Category, SubCategory, WithdrawalRequest, CategoryAttributeType, CategoryAttributeValue } from './types';
-import { INITIAL_CATEGORIES, MOCK_CUSTOM_PAGES as DEFAULT_PAGES_FROM_CONSTANTS, DEFAULT_HERO_BANNER_SLIDES } from './constants';
+import { INITIAL_CATEGORIES, MOCK_CUSTOM_PAGES as DEFAULT_PAGES_FROM_CONSTANTS, DEFAULT_HERO_BANNER_SLIDES, INITIAL_SUB_CATEGORIES, INITIAL_CATEGORY_ATTRIBUTE_TYPES, INITIAL_CATEGORY_ATTRIBUTE_VALUES } from './constants';
 
 const createPastDate = (daysAgo: number): Date => {
   const date = new Date();
@@ -13,45 +13,20 @@ export let MOCK_CATEGORIES: Category[] = INITIAL_CATEGORIES.map(cat => ({
   name: cat.name,
   imageUrl: cat.imageUrl,
   imageHint: cat.imageHint,
+  sortOrder: cat.sortOrder, // Ensure sortOrder is mapped
 }));
 
-export let MOCK_SUBCATEGORIES: SubCategory[] = [
-  { id: 'sc_smartphones', name: 'Smartphones', parentCategoryId: 'electronics', imageUrl: 'https://placehold.co/80x80.png', imageHint: 'smartphones mobile' },
-  { id: 'sc_laptops', name: 'Laptops', parentCategoryId: 'electronics', imageUrl: 'https://placehold.co/80x80.png', imageHint: 'laptops computer' },
-  { id: 'sc_mens_apparel', name: 'Mens Apparel', parentCategoryId: 'fashion', imageUrl: 'https://placehold.co/80x80.png', imageHint: 'mens clothing' },
-  { id: 'sc_womens_apparel', name: 'Womens Apparel', parentCategoryId: 'fashion', imageUrl: 'https://placehold.co/80x80.png', imageHint: 'womens clothing' },
-  { id: 'sc_living_room', name: 'Living Room Furniture', parentCategoryId: 'home-garden', imageUrl: 'https://placehold.co/80x80.png', imageHint: 'furniture living room' },
-  { id: 'sc_admission_books', name: 'Admission Prep', parentCategoryId: 'books', imageUrl: 'https://placehold.co/80x80.png', imageHint: 'study books' },
-  { id: 'sc_novels', name: 'Novels', parentCategoryId: 'books', imageUrl: 'https://placehold.co/80x80.png', imageHint: 'fiction books' },
-];
+export let MOCK_SUBCATEGORIES: SubCategory[] = INITIAL_SUB_CATEGORIES.map(subCat => ({
+  ...subCat
+}));
 
-export let MOCK_CATEGORY_ATTRIBUTE_TYPES: CategoryAttributeType[] = [
-  { id: 'attr_author', categoryId: 'books', name: 'Author' },
-  { id: 'attr_publication', categoryId: 'books', name: 'Publication' },
-  { id: 'attr_color', categoryId: 'fashion', name: 'Color' },
-  { id: 'attr_material', categoryId: 'fashion', name: 'Material' },
-  { id: 'attr_storage', categoryId: 'electronics', name: 'Storage Size' },
-  { id: 'attr_ram', categoryId: 'electronics', name: 'RAM' },
-];
+export let MOCK_CATEGORY_ATTRIBUTE_TYPES: CategoryAttributeType[] = INITIAL_CATEGORY_ATTRIBUTE_TYPES.map(attrType => ({
+  ...attrType
+}));
 
-export let MOCK_CATEGORY_ATTRIBUTE_VALUES: CategoryAttributeValue[] = [
-  { id: 'val_author_rahim', attributeTypeId: 'attr_author', value: 'Mr. Rahim', imageUrl: 'https://placehold.co/40x40.png', imageHint: 'author portrait' },
-  { id: 'val_author_tagore', attributeTypeId: 'attr_author', value: 'Rabindranath Tagore', imageUrl: 'https://placehold.co/40x40.png', imageHint: 'author profile' },
-  { id: 'val_author_humayun', attributeTypeId: 'attr_author', value: 'Humayun Ahmed' },
-  { id: 'val_pub_prothom', attributeTypeId: 'attr_publication', value: 'Prothom Alo Prokashona' },
-  { id: 'val_pub_anyaprokash', attributeTypeId: 'attr_publication', value: 'Anyaprokash' },
-  { id: 'val_color_red', attributeTypeId: 'attr_color', value: 'Red', imageUrl: 'https://placehold.co/40x40/ff0000/ffffff.png?text=R', imageHint: 'red color swatch' },
-  { id: 'val_color_blue', attributeTypeId: 'attr_color', value: 'Blue', imageUrl: 'https://placehold.co/40x40/0000ff/ffffff.png?text=B', imageHint: 'blue color swatch' },
-  { id: 'val_color_black', attributeTypeId: 'attr_color', value: 'Black' },
-  { id: 'val_material_cotton', attributeTypeId: 'attr_material', value: 'Cotton' },
-  { id: 'val_material_leather', attributeTypeId: 'attr_material', value: 'Leather' },
-  { id: 'val_storage_64gb', attributeTypeId: 'attr_storage', value: '64GB' },
-  { id: 'val_storage_128gb', attributeTypeId: 'attr_storage', value: '128GB' },
-  { id: 'val_storage_256gb', attributeTypeId: 'attr_storage', value: '256GB' },
-  { id: 'val_ram_4gb', attributeTypeId: 'attr_ram', value: '4GB' },
-  { id: 'val_ram_8gb', attributeTypeId: 'attr_ram', value: '8GB' },
-  { id: 'val_ram_16gb', attributeTypeId: 'attr_ram', value: '16GB' },
-];
+export let MOCK_CATEGORY_ATTRIBUTE_VALUES: CategoryAttributeValue[] = INITIAL_CATEGORY_ATTRIBUTE_VALUES.map(attrVal => ({
+  ...attrVal
+}));
 
 export const MOCK_USERS: User[] = [
   {
@@ -340,3 +315,4 @@ export let MOCK_WITHDRAWAL_REQUESTS: WithdrawalRequest[] = [
 
 export let MOCK_CUSTOM_PAGES = [...DEFAULT_PAGES_FROM_CONSTANTS];
 export let MOCK_HERO_BANNER_SLIDES = [...DEFAULT_HERO_BANNER_SLIDES]; // Initialize from constants
+

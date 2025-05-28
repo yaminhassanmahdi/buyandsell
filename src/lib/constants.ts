@@ -13,11 +13,11 @@ import {
 export let APP_NAME = '2ndhandbajar.com';
 
 export const INITIAL_CATEGORIES: Category[] = [
-  { id: 'electronics', name: 'Electronics', imageUrl: 'https://placehold.co/80x80.png', imageHint: 'electronics gadget' },
-  { id: 'fashion', name: 'Fashion', imageUrl: 'https://placehold.co/80x80.png', imageHint: 'fashion clothing' },
-  { id: 'home-garden', name: 'Home & Garden', imageUrl: 'https://placehold.co/80x80.png', imageHint: 'home decor' },
-  { id: 'books', name: 'Books', imageUrl: 'https://placehold.co/80x80.png', imageHint: 'books literature' },
-  { id: 'others', name: 'Others', imageUrl: 'https://placehold.co/80x80.png', imageHint: 'various items' },
+  { id: 'electronics', name: 'Electronics', imageUrl: 'https://placehold.co/80x80.png', imageHint: 'electronics gadget', sortOrder: 1 },
+  { id: 'fashion', name: 'Fashion', imageUrl: 'https://placehold.co/80x80.png', imageHint: 'fashion clothing', sortOrder: 2 },
+  { id: 'home-garden', name: 'Home & Garden', imageUrl: 'https://placehold.co/80x80.png', imageHint: 'home decor', sortOrder: 3 },
+  { id: 'books', name: 'Books', imageUrl: 'https://placehold.co/80x80.png', imageHint: 'books literature', sortOrder: 4 },
+  { id: 'others', name: 'Others', imageUrl: 'https://placehold.co/80x80.png', imageHint: 'various items', sortOrder: 5 },
 ];
 
 export const INITIAL_SUB_CATEGORIES: SubCategory[] = [
@@ -218,7 +218,7 @@ export const ADMIN_NAVIGATION: AdminNavItem[] = [
       { name: 'Manage Products', href: '/admin/products/manage', icon: ListChecks },
       { name: 'Manage Categories', href: '/admin/products/categories', icon: FolderTree },
       { name: 'Manage Sub-Categories', href: '/admin/products/sub-categories', icon: FolderTree },
-      { name: 'Manage Attribute Types', href: '/admin/products/attributes', icon: ListFilter },
+      { name: 'Manage Attributes', href: '/admin/products/attributes', icon: ListFilter },
       { name: 'Manage Attribute Values', href: '/admin/products/attribute-values', icon: TagsIcon },
       { name: 'Manage Brands (Legacy)', href: '/admin/products/brands', icon: TagsIcon },
     ]
@@ -279,17 +279,18 @@ export const getStatusIcon = (status: OrderStatus) => {
 // Storage Keys
 export const CATEGORIES_STORAGE_KEY = 'categories';
 export const SUB_CATEGORIES_STORAGE_KEY = 'subCategories';
+export const CATEGORY_ATTRIBUTES_TYPES_STORAGE_KEY = 'categoryAttributeTypes';
+export const CATEGORY_ATTRIBUTE_VALUES_STORAGE_KEY = 'categoryAttributeValues';
 export const DELIVERY_CHARGES_STORAGE_KEY = 'deliveryChargeSettings';
 export const COMMISSION_SETTINGS_STORAGE_KEY = 'commissionSettings';
 export const BUSINESS_SETTINGS_STORAGE_KEY = 'businessSettings';
 export const HERO_BANNERS_STORAGE_KEY = 'heroBannerSlides';
 export const CUSTOM_PAGES_STORAGE_KEY = 'customPages';
 export const SHIPPING_METHODS_STORAGE_KEY = 'shippingMethods';
-export const CATEGORY_ATTRIBUTES_TYPES_STORAGE_KEY = 'categoryAttributeTypes';
-export const CATEGORY_ATTRIBUTE_VALUES_STORAGE_KEY = 'categoryAttributeValues';
-export const DIVISIONS_STORAGE_KEY = 'divisions';
-export const DISTRICTS_STORAGE_KEY = 'districts';
-export const THANAS_STORAGE_KEY = 'thanas'; // Also used for Upazillas storage
+// Removed location storage keys as they are static now
+// export const DIVISIONS_STORAGE_KEY = 'divisions';
+// export const DISTRICTS_STORAGE_KEY = 'districts';
+// export const THANAS_STORAGE_KEY = 'thanas';
 
 // Default Values for Settings
 export const DEFAULT_DELIVERY_CHARGES: DeliveryChargeSettings = {
@@ -307,10 +308,10 @@ export const DEFAULT_CURRENCIES: Currency[] = [
 
 export const DEFAULT_BUSINESS_SETTINGS: BusinessSettings = {
   appName: '2ndhandbajar.com',
-  logoUrl: '/logo-placeholder.png',
-  primaryColor: '47 92% 52%', // HSL: Vivid Yellow/Gold
-  secondaryColor: '77 30% 60%', // HSL: Soft Green Accent
-  faviconUrl: '/favicon.ico',
+  logoUrl: '/logo-placeholder.png', // This should be a path in /public or an external URL
+  primaryColor: '217 91% 60%', // Tailwind blue-500
+  secondaryColor: '216 34% 90%', // Light blue-gray
+  faviconUrl: '/favicon.ico', // This should be a path in /public or an external URL
   availableCurrencies: DEFAULT_CURRENCIES,
   defaultCurrencyCode: 'BDT',
 };
@@ -379,3 +380,4 @@ export const DEFAULT_SHIPPING_METHODS: ShippingMethod[] = [
 ];
 
     
+

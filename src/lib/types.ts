@@ -4,6 +4,7 @@ export type Category = {
   name: string;
   imageUrl?: string;
   imageHint?: string;
+  sortOrder?: number; // Added for manual sorting
 };
 
 export type SubCategory = {
@@ -217,3 +218,4 @@ export type DeliveryChargeSettings = {
   intraDistrict: number; // Seller and buyer in same District, different Thana/Upazilla
   interDistrict: number; // Seller and buyer in different Districts
 };
+
