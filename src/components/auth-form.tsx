@@ -14,10 +14,10 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/auth-context";
-import { useRouter, useSearchParams } from "next/navigation"; // Added useSearchParams
-import React, { useState, useEffect } from "react"; // Added useEffect
+import { useRouter, useSearchParams } from "next/navigation"; 
+import React, { useState, useEffect } from "react"; 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Loader2, AlertCircle, Mail, Phone, LogIn } from "lucide-react"; // Added Mail, Phone
+import { Loader2, AlertCircle, Mail, Phone, LogIn } from "lucide-react"; 
 import { Separator } from "./ui/separator";
 
 const loginSchema = z.object({
@@ -28,7 +28,7 @@ const loginSchema = z.object({
 const registerSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters."}),
   phoneNumber: z.string().length(11, {message: "Phone number must be 11 digits."}).regex(/^\d+$/, "Must be digits only."),
-  email: z.string().email({ message: "Invalid email address." }).optional().or(z.literal('')), // Optional and can be empty string
+  email: z.string().email({ message: "Invalid email address." }).optional().or(z.literal('')), 
   password: z.string().min(6, { message: "Password must be at least 6 characters." }),
 });
 
@@ -49,19 +49,16 @@ export function AuthForm({ mode }: AuthFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [loginMethod, setLoginMethod] = useState<'phone' | 'email'>('phone');
   
-  // State for Google Sign-In requiring phone
   const [showCompleteGoogleSignup, setShowCompleteGoogleSignup] = useState(false);
   const [googleEmailForPhone, setGoogleEmailForPhone] = useState<string | null>(null);
 
   useEffect(() => {
-    // Check if redirected for Google Sign-In phone completion
     const needsPhone = searchParams.get('needsPhone');
     const email = searchParams.get('googleEmail');
     if (needsPhone === 'true' && email) {
       setShowCompleteGoogleSignup(true);
       setGoogleEmailForPhone(email);
     } else if (pendingGoogleUserEmail && mode !== 'completeGoogleSignup') {
-      // If there's a pendingGoogleUserEmail from a previous attempt, and we're not already on the completion form
       setShowCompleteGoogleSignup(true);
       setGoogleEmailForPhone(pendingGoogleUserEmail);
     }
@@ -84,14 +81,13 @@ export function AuthForm({ mode }: AuthFormProps) {
   });
 
   useEffect(() => {
-    // Reset form if the mode or schema changes (e.g., due to Google sign-up completion)
     form.reset(
       showCompleteGoogleSignup ? { phoneNumber: "" } as any :
       mode === 'login' 
       ? { identifier: "", password: "" }
       : { name: "", phoneNumber: "", email: "", password: "" }
     );
-  }, [showCompleteGoogleSignup, mode, form.reset, form]);
+  }, [showCompleteGoogleSignup, mode]);
 
 
   async function onSubmit(values: FormData) {
@@ -105,7 +101,7 @@ export function AuthForm({ mode }: AuthFormProps) {
         if (userResult) {
           setShowCompleteGoogleSignup(false);
           setGoogleEmailForPhone(null);
-          clearPendingGoogleUser(); // Clear from context
+          clearPendingGoogleUser(); 
           router.push(searchParams.get('redirect') || "/");
         } else {
           setError("Failed to complete sign-up. Phone number might be in use or invalid.");
@@ -141,15 +137,12 @@ export function AuthForm({ mode }: AuthFormProps) {
     const result = await signInWithGoogle();
     if (result?.user) {
       if (result.needsPhoneNumber && result.googleEmail) {
-        // Redirect to the same page with query params to trigger phone input form
-        // Or, set state to show the phone input form directly
         setGoogleEmailForPhone(result.googleEmail);
         setShowCompleteGoogleSignup(true);
-         // Clear form fields from previous mode
         form.reset({ phoneNumber: "" } as any);
 
       } else if (!result.needsPhoneNumber) {
-        router.push(searchParams.get('redirect') || "/"); // Successfully logged in
+        router.push(searchParams.get('redirect') || "/"); 
       }
     } else if (result?.error) {
       setError(result.error);
@@ -252,13 +245,14 @@ export function AuthForm({ mode }: AuthFormProps) {
           />
         )}
 
-        {(mode === 'register' || (mode === 'login' && loginMethod === 'email')) && (
+        {/* This field is only for register mode now */}
+        {mode === 'register' && (
           <FormField
             control={form.control}
             name="email"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Email Address {mode === 'register' && <span className="text-xs text-muted-foreground">(Optional)</span>}</FormLabel>
+                <FormLabel>Email Address <span className="text-xs text-muted-foreground">(Optional)</span></FormLabel>
                 <FormControl>
                   <Input type="email" placeholder="you@example.com" {...field} />
                 </FormControl>
@@ -312,7 +306,7 @@ export function AuthForm({ mode }: AuthFormProps) {
         <>
             <Separator className="my-6" />
             <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isLoading}>
-                {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <LogIn className="mr-2 h-4 w-4"/> } {/* Using LogIn for generic icon */}
+                {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <LogIn className="mr-2 h-4 w-4"/> } 
                 Sign {mode === 'login' ? 'in' : 'up'} with Google
             </Button>
         </>
