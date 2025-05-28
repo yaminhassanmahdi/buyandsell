@@ -3,24 +3,29 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogClose, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogClose, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import type { Category } from '@/lib/types';
+import type { Category, FeaturedImage } from '@/lib/types';
 import { FolderTree, PlusCircle, Trash2, Edit3, Loader2, Image as ImageIcon, ArrowUpDown } from 'lucide-react';
 import Image from 'next/image';
 import useLocalStorage from '@/hooks/use-local-storage';
 import { CATEGORIES_STORAGE_KEY, INITIAL_CATEGORIES } from '@/lib/constants';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 const generateId = () => `cat-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+const generateFeaturedImageId = (index: number) => `feat-img-${index + 1}`;
+
+const MAX_FEATURED_IMAGES = 4;
 
 export default function AdminManageCategoriesPage() {
   const [categories, setCategories] = useLocalStorage<Category[]>(
     CATEGORIES_STORAGE_KEY,
     INITIAL_CATEGORIES
   );
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false); // General loading, not initial data fetch
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [currentCategory, setCurrentCategory] = useState<Partial<Category>>({});
   const [isEditing, setIsEditing] = useState(false);
@@ -28,23 +33,58 @@ export default function AdminManageCategoriesPage() {
   const { toast } = useToast();
 
   useEffect(() => {
-    setIsLoading(false); 
+    // No specific loading effect for categories as useLocalStorage handles initial state
   }, []);
 
   const openDialog = (category?: Category) => {
     if (category) {
-      setCurrentCategory({ ...category });
+      // Ensure featuredImages is an array of up to 4, padding with defaults if necessary
+      const currentFeatured = Array.isArray(category.featuredImages) ? category.featuredImages : [];
+      const featuredImages = Array.from({ length: MAX_FEATURED_IMAGES }).map((_, i) => ({
+        id: generateFeaturedImageId(i),
+        imageUrl: currentFeatured[i]?.imageUrl || `https://placehold.co/300x300.png`,
+        imageHint: currentFeatured[i]?.imageHint || '',
+        linkUrl: currentFeatured[i]?.linkUrl || '',
+        title: currentFeatured[i]?.title || '',
+      }));
+      setCurrentCategory({ ...category, featuredImages });
       setIsEditing(true);
     } else {
-      setCurrentCategory({ name: '', imageUrl: 'https://placehold.co/80x80.png', imageHint: '', sortOrder: (categories.length + 1) * 10 });
+      const featuredImages = Array.from({ length: MAX_FEATURED_IMAGES }).map((_, i) => ({
+        id: generateFeaturedImageId(i),
+        imageUrl: 'https://placehold.co/300x300.png',
+        imageHint: '',
+        linkUrl: '',
+        title: '',
+      }));
+      setCurrentCategory({
+        name: '',
+        imageUrl: 'https://placehold.co/80x80.png',
+        imageHint: '',
+        sortOrder: (categories.length + 1) * 10,
+        featuredImages,
+        categorySlides: []
+      });
       setIsEditing(false);
     }
     setIsDialogOpen(true);
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
     setCurrentCategory(prev => ({ ...prev, [name]: type === 'number' ? parseInt(value, 10) || 0 : value }));
+  };
+
+  const handleFeaturedImageChange = (index: number, field: keyof FeaturedImage, value: string) => {
+    setCurrentCategory(prev => {
+      if (!prev || !Array.isArray(prev.featuredImages)) return prev;
+      const updatedFeaturedImages = [...prev.featuredImages];
+      if (updatedFeaturedImages[index]) {
+        // @ts-ignore
+        updatedFeaturedImages[index][field] = value;
+      }
+      return { ...prev, featuredImages: updatedFeaturedImages };
+    });
   };
 
   const handleSaveCategory = async () => {
@@ -55,21 +95,36 @@ export default function AdminManageCategoriesPage() {
     setFormSubmitting(true);
     await new Promise(resolve => setTimeout(resolve, 500));
 
+    // Filter out featured images that don't have a real imageUrl (are still placeholders) unless a title or link is set
+    const finalFeaturedImages = currentCategory.featuredImages?.filter(
+      img => (img.imageUrl && img.imageUrl !== 'https://placehold.co/300x300.png') || img.linkUrl || img.title
+    ).map(img => ({ // Ensure all fields are present even if empty, id is from mapping
+        id: img.id || generateFeaturedImageId(0), // Should have ID from initialization
+        imageUrl: img.imageUrl || 'https://placehold.co/300x300.png',
+        imageHint: img.imageHint || '',
+        linkUrl: img.linkUrl || '',
+        title: img.title || ''
+    })) || [];
+
+
+    const categoryDataToSave: Category = {
+      id: currentCategory.id || generateId(),
+      name: currentCategory.name.trim(),
+      imageUrl: currentCategory.imageUrl?.trim() || 'https://placehold.co/80x80.png',
+      imageHint: currentCategory.imageHint?.trim() || currentCategory.name.toLowerCase(),
+      sortOrder: currentCategory.sortOrder === undefined ? (categories.length + 1) * 10 : currentCategory.sortOrder,
+      featuredImages: finalFeaturedImages,
+      categorySlides: currentCategory.categorySlides || [], // Persist existing or empty
+    };
+
     if (isEditing && currentCategory.id) {
-      setCategories(prev => prev.map(cat => cat.id === currentCategory.id ? (currentCategory as Category) : cat)
+      setCategories(prev => prev.map(cat => cat.id === categoryDataToSave.id ? categoryDataToSave : cat)
                                 .sort((a,b) => (a.sortOrder || 999) - (b.sortOrder || 999) || a.name.localeCompare(b.name)));
-      toast({ title: "Category Updated", description: `Category "${currentCategory.name}" has been updated.` });
+      toast({ title: "Category Updated", description: `Category "${categoryDataToSave.name}" has been updated.` });
     } else {
-      const newCategory: Category = {
-        id: generateId(),
-        name: currentCategory.name.trim(),
-        imageUrl: currentCategory.imageUrl?.trim() || 'https://placehold.co/80x80.png',
-        imageHint: currentCategory.imageHint?.trim() || currentCategory.name.toLowerCase(),
-        sortOrder: currentCategory.sortOrder === undefined ? (categories.length + 1) * 10 : currentCategory.sortOrder,
-      };
-      setCategories(prev => [...prev, newCategory]
+      setCategories(prev => [...prev, categoryDataToSave]
                                 .sort((a,b) => (a.sortOrder || 999) - (b.sortOrder || 999) || a.name.localeCompare(b.name)));
-      toast({ title: "Category Added", description: `Category "${newCategory.name}" has been added.` });
+      toast({ title: "Category Added", description: `Category "${categoryDataToSave.name}" has been added.` });
     }
     setIsDialogOpen(false);
     setCurrentCategory({});
@@ -85,8 +140,7 @@ export default function AdminManageCategoriesPage() {
   
   const sortedCategories = [...categories].sort((a,b) => (a.sortOrder || 999) - (b.sortOrder || 999) || a.name.localeCompare(b.name));
 
-
-  if (isLoading) {
+  if (isLoading) { // Though not strictly used for initial load from localStorage here
     return (
       <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -145,55 +199,59 @@ export default function AdminManageCategoriesPage() {
       </Card>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-lg max-h-[80vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-2xl max-h-[90vh]">
           <DialogHeader>
             <DialogTitle>{isEditing ? "Edit" : "Add New"} Parent Category</DialogTitle>
             <DialogDescription>Enter the details for the parent category.</DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="category-name">Name*</Label>
-              <Input
-                id="category-name"
-                name="name"
-                value={currentCategory.name || ''}
-                onChange={handleInputChange}
-                placeholder="e.g., Electronics"
-              />
+          <ScrollArea className="max-h-[70vh] p-1"> {/* Added ScrollArea here */}
+            <div className="grid gap-4 py-4 pr-4"> {/* Added pr-4 for scrollbar space */}
+              <div className="space-y-2">
+                <Label htmlFor="category-name">Name*</Label>
+                <Input id="category-name" name="name" value={currentCategory.name || ''} onChange={handleInputChange} placeholder="e.g., Electronics"/>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="category-image-url">Image URL (for category icon)</Label>
+                <Input id="category-image-url" name="imageUrl" value={currentCategory.imageUrl || ''} onChange={handleInputChange} placeholder="https://placehold.co/80x80.png"/>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="category-image-hint">Image Hint (for AI)</Label>
+                <Input id="category-image-hint" name="imageHint" value={currentCategory.imageHint || ''} onChange={handleInputChange} placeholder="e.g., electronics gadget"/>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="category-sort-order">Sort Order</Label>
+                <Input id="category-sort-order" name="sortOrder" type="number" value={currentCategory.sortOrder === undefined ? '' : currentCategory.sortOrder} onChange={handleInputChange} placeholder="e.g., 10 (lower is first)"/>
+              </div>
+
+              <h3 className="text-lg font-semibold mt-6 mb-2 border-t pt-4">Featured Images (Grid of 4 on Category Page)</h3>
+              {currentCategory.featuredImages?.map((img, index) => (
+                <Card key={img.id || index} className="p-4 space-y-3">
+                   <Label className="text-sm font-medium">Featured Image {index + 1}</Label>
+                  <div className="space-y-1">
+                    <Label htmlFor={`feat-img-url-${index}`} className="text-xs">Image URL</Label>
+                    <Input id={`feat-img-url-${index}`} value={img.imageUrl} onChange={(e) => handleFeaturedImageChange(index, 'imageUrl', e.target.value)} placeholder="https://placehold.co/300x300.png"/>
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor={`feat-img-hint-${index}`} className="text-xs">Image Hint</Label>
+                    <Input id={`feat-img-hint-${index}`} value={img.imageHint} onChange={(e) => handleFeaturedImageChange(index, 'imageHint', e.target.value)} placeholder="e.g., style fashion"/>
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor={`feat-img-link-${index}`} className="text-xs">Link URL (Optional)</Label>
+                    <Input id={`feat-img-link-${index}`} value={img.linkUrl || ''} onChange={(e) => handleFeaturedImageChange(index, 'linkUrl', e.target.value)} placeholder="/browse?some_filter=value"/>
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor={`feat-img-title-${index}`} className="text-xs">Title (Optional)</Label>
+                    <Input id={`feat-img-title-${index}`} value={img.title || ''} onChange={(e) => handleFeaturedImageChange(index, 'title', e.target.value)} placeholder="e.g., Summer Collection"/>
+                  </div>
+                </Card>
+              ))}
+              
+              <div className="mt-4 border-t pt-4">
+                <Label className="text-muted-foreground">Category Specific Slides: Management for these will be added in a future update.</Label>
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="category-image-url">Image URL</Label>
-              <Input
-                id="category-image-url"
-                name="imageUrl"
-                value={currentCategory.imageUrl || ''}
-                onChange={handleInputChange}
-                placeholder="https://placehold.co/80x80.png"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="category-image-hint">Image Hint (for AI)</Label>
-              <Input
-                id="category-image-hint"
-                name="imageHint"
-                value={currentCategory.imageHint || ''}
-                onChange={handleInputChange}
-                placeholder="e.g., electronics gadget"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="category-sort-order">Sort Order</Label>
-              <Input
-                id="category-sort-order"
-                name="sortOrder"
-                type="number"
-                value={currentCategory.sortOrder === undefined ? '' : currentCategory.sortOrder}
-                onChange={handleInputChange}
-                placeholder="e.g., 10, 20 (lower is first)"
-              />
-            </div>
-          </div>
-          <DialogFooter>
+          </ScrollArea>
+          <DialogFooter className="mt-4">
             <DialogClose asChild><Button type="button" variant="outline" disabled={formSubmitting}>Cancel</Button></DialogClose>
             <Button onClick={handleSaveCategory} disabled={formSubmitting || !currentCategory.name?.trim()}>
               {formSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -205,4 +263,3 @@ export default function AdminManageCategoriesPage() {
     </div>
   );
 }
-

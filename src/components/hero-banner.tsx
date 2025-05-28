@@ -5,36 +5,55 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/card';
 import { ChevronRight, ChevronLeft } from 'lucide-react';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import useLocalStorage from '@/hooks/use-local-storage';
 import type { HeroBannerSlide } from '@/lib/types';
 import { HERO_BANNERS_STORAGE_KEY, DEFAULT_HERO_BANNER_SLIDES } from '@/lib/constants';
 
-export function HeroBanner() {
-  const [storedSlides] = useLocalStorage<HeroBannerSlide[]>(
+interface HeroBannerProps {
+  slides?: HeroBannerSlide[]; // Optional prop for category-specific slides
+}
+
+export function HeroBanner({ slides: categorySpecificSlides }: HeroBannerProps) {
+  const [globalSlidesFromStorage] = useLocalStorage<HeroBannerSlide[]>(
     HERO_BANNERS_STORAGE_KEY,
-    DEFAULT_HERO_BANNER_SLIDES // Use the direct import
+    DEFAULT_HERO_BANNER_SLIDES
   );
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
 
-  const activeSlides = storedSlides.filter(slide => slide.isActive);
+  const slidesToUse = useMemo(() => {
+    const activeCategorySlides = categorySpecificSlides?.filter(slide => slide.isActive);
+    if (activeCategorySlides && activeCategorySlides.length > 0) {
+      return activeCategorySlides;
+    }
+    return globalSlidesFromStorage.filter(slide => slide.isActive);
+  }, [categorySpecificSlides, globalSlidesFromStorage]);
+
 
   useEffect(() => {
-    if (activeSlides.length === 0) return;
+    if (slidesToUse.length === 0) return;
     const timer = setTimeout(() => {
-      setCurrentSlideIndex((prevSlide) => (prevSlide + 1) % activeSlides.length);
+      setCurrentSlideIndex((prevSlide) => (prevSlide + 1) % slidesToUse.length);
     }, 5000); // Change slide every 5 seconds
     return () => clearTimeout(timer);
-  }, [currentSlideIndex, activeSlides.length]);
+  }, [currentSlideIndex, slidesToUse.length]);
 
-  if (activeSlides.length === 0) {
+  // Reset index if slidesToUse changes and current index is out of bounds
+  useEffect(() => {
+    if (currentSlideIndex >= slidesToUse.length) {
+      setCurrentSlideIndex(0);
+    }
+  }, [slidesToUse, currentSlideIndex]);
+
+
+  if (slidesToUse.length === 0) {
     return (
         <div className="w-full my-4 md:my-6">
             <div className="container mx-auto px-0 md:px-4">
                 <Card className="overflow-hidden shadow-lg relative bg-muted text-muted-foreground aspect-[16/6] md:aspect-[16/5]">
                     <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-4 md:p-8">
                         <h2 className="text-xl md:text-2xl font-semibold">No active banners</h2>
-                        <p className="text-sm md:text-base">Configure banners in admin settings.</p>
+                        <p className="text-sm md:text-base">Configure banners in admin settings or for this category.</p>
                     </div>
                 </Card>
             </div>
@@ -42,9 +61,9 @@ export function HeroBanner() {
     );
   }
 
-  const slide = activeSlides[currentSlideIndex];
-  const prevSlide = () => setCurrentSlideIndex((currentSlideIndex - 1 + activeSlides.length) % activeSlides.length);
-  const nextSlide = () => setCurrentSlideIndex((currentSlideIndex + 1) % activeSlides.length);
+  const slide = slidesToUse[currentSlideIndex];
+  const prevSlide = () => setCurrentSlideIndex((currentSlideIndex - 1 + slidesToUse.length) % slidesToUse.length);
+  const nextSlide = () => setCurrentSlideIndex((currentSlideIndex + 1) % slidesToUse.length);
 
   return (
     <div className="w-full my-4 md:my-6">
@@ -72,7 +91,7 @@ export function HeroBanner() {
           </div>
           {/* Manual Dots for navigation */}
           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex space-x-2">
-            {activeSlides.map((_, index) => (
+            {slidesToUse.map((_, index) => (
               <button
                 key={index}
                 onClick={() => setCurrentSlideIndex(index)}
@@ -82,7 +101,7 @@ export function HeroBanner() {
             ))}
           </div>
           {/* Prev/Next Buttons */}
-          {activeSlides.length > 1 && (
+          {slidesToUse.length > 1 && (
             <>
               <Button variant="ghost" size="icon" onClick={prevSlide} className={`absolute left-2 top-1/2 -translate-y-1/2 ${slide.textColor || 'text-primary-foreground'} hover:bg-black/20`}>
                 <ChevronLeft className="h-6 w-6" />
@@ -97,5 +116,3 @@ export function HeroBanner() {
     </div>
   );
 }
-
-  

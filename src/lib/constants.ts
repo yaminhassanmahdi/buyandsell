@@ -1,5 +1,5 @@
 
-import type { OrderStatus, Division, District, Thana as Upazilla, Category, CommissionSetting, AdminNavItem, BusinessSettings, HeroBannerSlide, CustomPage, ShippingMethod, Currency, SubCategory, CategoryAttributeType, CategoryAttributeValue } from './types';
+import type { OrderStatus, Division, District, Thana as Upazilla, Category, CommissionSetting, AdminNavItem, BusinessSettings, HeroBannerSlide, CustomPage, ShippingMethod, Currency, SubCategory, CategoryAttributeType, CategoryAttributeValue, FeaturedImage } from './types';
 import {
   Smartphone, Laptop, Shirt, Armchair, BookOpen, Tag,
   Package as PackageIcon,
@@ -13,21 +13,21 @@ import {
 export let APP_NAME = '2ndhandbajar.com';
 
 export const INITIAL_CATEGORIES: Category[] = [
-  { id: 'electronics', name: 'Electronics', imageUrl: 'https://placehold.co/80x80.png', imageHint: 'electronics gadget', sortOrder: 1 },
-  { id: 'fashion', name: 'Fashion', imageUrl: 'https://placehold.co/80x80.png', imageHint: 'fashion clothing', sortOrder: 2 },
-  { id: 'home-garden', name: 'Home & Garden', imageUrl: 'https://placehold.co/80x80.png', imageHint: 'home decor', sortOrder: 3 },
-  { id: 'books', name: 'Books', imageUrl: 'https://placehold.co/80x80.png', imageHint: 'books literature', sortOrder: 4 },
-  { id: 'others', name: 'Others', imageUrl: 'https://placehold.co/80x80.png', imageHint: 'various items', sortOrder: 5 },
+  { id: 'electronics', name: 'Electronics', imageUrl: 'https://placehold.co/80x80/007bff/ffffff.png?text=E', imageHint: 'electronics gadget', sortOrder: 1, featuredImages: [], categorySlides: [] },
+  { id: 'fashion', name: 'Fashion', imageUrl: 'https://placehold.co/80x80/ff69b4/ffffff.png?text=F', imageHint: 'fashion clothing', sortOrder: 2, featuredImages: [], categorySlides: [] },
+  { id: 'home-garden', name: 'Home & Garden', imageUrl: 'https://placehold.co/80x80/28a745/ffffff.png?text=H', imageHint: 'home decor', sortOrder: 3, featuredImages: [], categorySlides: [] },
+  { id: 'books', name: 'Books', imageUrl: 'https://placehold.co/80x80/fd7e14/ffffff.png?text=B', imageHint: 'books literature', sortOrder: 4, featuredImages: [], categorySlides: [] },
+  { id: 'others', name: 'Others', imageUrl: 'https://placehold.co/80x80/6c757d/ffffff.png?text=O', imageHint: 'various items', sortOrder: 5, featuredImages: [], categorySlides: [] },
 ];
 
 export const INITIAL_SUB_CATEGORIES: SubCategory[] = [
-  { id: 'sc_smartphones', name: 'Smartphones', parentCategoryId: 'electronics', imageUrl: 'https://placehold.co/80x80.png', imageHint: 'smartphones mobile' },
-  { id: 'sc_laptops', name: 'Laptops', parentCategoryId: 'electronics', imageUrl: 'https://placehold.co/80x80.png', imageHint: 'laptops computer' },
-  { id: 'sc_mens_apparel', name: 'Mens Apparel', parentCategoryId: 'fashion', imageUrl: 'https://placehold.co/80x80.png', imageHint: 'mens clothing' },
-  { id: 'sc_womens_apparel', name: 'Womens Apparel', parentCategoryId: 'fashion', imageUrl: 'https://placehold.co/80x80.png', imageHint: 'womens clothing' },
-  { id: 'sc_living_room', name: 'Living Room Furniture', parentCategoryId: 'home-garden', imageUrl: 'https://placehold.co/80x80.png', imageHint: 'furniture living room' },
-  { id: 'sc_admission_books', name: 'Admission Prep', parentCategoryId: 'books', imageUrl: 'https://placehold.co/80x80.png', imageHint: 'study books' },
-  { id: 'sc_novels', name: 'Novels', parentCategoryId: 'books', imageUrl: 'https://placehold.co/80x80.png', imageHint: 'fiction books' },
+  { id: 'sc_smartphones', name: 'Smartphones', parentCategoryId: 'electronics', imageUrl: 'https://placehold.co/80x80/007bff/ffffff.png?text=S', imageHint: 'smartphones mobile' },
+  { id: 'sc_laptops', name: 'Laptops', parentCategoryId: 'electronics', imageUrl: 'https://placehold.co/80x80/007bff/ffffff.png?text=L', imageHint: 'laptops computer' },
+  { id: 'sc_mens_apparel', name: 'Mens Apparel', parentCategoryId: 'fashion', imageUrl: 'https://placehold.co/80x80/ff69b4/ffffff.png?text=M', imageHint: 'mens clothing' },
+  { id: 'sc_womens_apparel', name: 'Womens Apparel', parentCategoryId: 'fashion', imageUrl: 'https://placehold.co/80x80/ff69b4/ffffff.png?text=W', imageHint: 'womens clothing' },
+  { id: 'sc_living_room', name: 'Living Room Furniture', parentCategoryId: 'home-garden', imageUrl: 'https://placehold.co/80x80/28a745/ffffff.png?text=LR', imageHint: 'furniture living room' },
+  { id: 'sc_admission_books', name: 'Admission Prep', parentCategoryId: 'books', imageUrl: 'https://placehold.co/80x80/fd7e14/ffffff.png?text=A', imageHint: 'study books' },
+  { id: 'sc_novels', name: 'Novels', parentCategoryId: 'books', imageUrl: 'https://placehold.co/80x80/fd7e14/ffffff.png?text=N', imageHint: 'fiction books' },
 ];
 
 export const INITIAL_CATEGORY_ATTRIBUTE_TYPES: CategoryAttributeType[] = [
@@ -40,14 +40,14 @@ export const INITIAL_CATEGORY_ATTRIBUTE_TYPES: CategoryAttributeType[] = [
 ];
 
 export const INITIAL_CATEGORY_ATTRIBUTE_VALUES: CategoryAttributeValue[] = [
-  { id: 'val_author_rahim', attributeTypeId: 'attr_author', value: 'Mr. Rahim', imageUrl: 'https://placehold.co/40x40.png', imageHint: 'author portrait' },
-  { id: 'val_author_tagore', attributeTypeId: 'attr_author', value: 'Rabindranath Tagore', imageUrl: 'https://placehold.co/40x40.png', imageHint: 'author profile' },
+  { id: 'val_author_rahim', attributeTypeId: 'attr_author', value: 'Mr. Rahim', imageUrl: 'https://placehold.co/40x40/777777/ffffff.png?text=AR', imageHint: 'author portrait' },
+  { id: 'val_author_tagore', attributeTypeId: 'attr_author', value: 'Rabindranath Tagore', imageUrl: 'https://placehold.co/40x40/777777/ffffff.png?text=RT', imageHint: 'author profile' },
   { id: 'val_author_humayun', attributeTypeId: 'attr_author', value: 'Humayun Ahmed' },
   { id: 'val_pub_prothom', attributeTypeId: 'attr_publication', value: 'Prothom Alo Prokashona' },
   { id: 'val_pub_anyaprokash', attributeTypeId: 'attr_publication', value: 'Anyaprokash' },
   { id: 'val_color_red', attributeTypeId: 'attr_color', value: 'Red', imageUrl: 'https://placehold.co/40x40/ff0000/ffffff.png?text=R', imageHint: 'red color swatch' },
   { id: 'val_color_blue', attributeTypeId: 'attr_color', value: 'Blue', imageUrl: 'https://placehold.co/40x40/0000ff/ffffff.png?text=B', imageHint: 'blue color swatch' },
-  { id: 'val_color_black', attributeTypeId: 'attr_color', value: 'Black' },
+  { id: 'val_color_black', attributeTypeId: 'attr_color', value: 'Black', imageUrl: 'https://placehold.co/40x40/000000/ffffff.png?text=Blk', imageHint: 'black color swatch' },
   { id: 'val_material_cotton', attributeTypeId: 'attr_material', value: 'Cotton' },
   { id: 'val_material_leather', attributeTypeId: 'attr_material', value: 'Leather' },
   { id: 'val_storage_64gb', attributeTypeId: 'attr_storage', value: '64GB' },
@@ -278,20 +278,16 @@ export const getStatusIcon = (status: OrderStatus) => {
 };
 
 // Storage Keys
-export const CATEGORIES_STORAGE_KEY = 'categories';
-export const SUB_CATEGORIES_STORAGE_KEY = 'subCategories';
-export const CATEGORY_ATTRIBUTES_TYPES_STORAGE_KEY = 'categoryAttributeTypes';
-export const CATEGORY_ATTRIBUTE_VALUES_STORAGE_KEY = 'categoryAttributeValues';
+export const CATEGORIES_STORAGE_KEY = 'categories_v2'; // Added _v2 to potentially clear old structures
+export const SUB_CATEGORIES_STORAGE_KEY = 'subCategories_v2';
+export const CATEGORY_ATTRIBUTES_TYPES_STORAGE_KEY = 'categoryAttributeTypes_v2';
+export const CATEGORY_ATTRIBUTE_VALUES_STORAGE_KEY = 'categoryAttributeValues_v2';
 export const DELIVERY_CHARGES_STORAGE_KEY = 'deliveryChargeSettings';
 export const COMMISSION_SETTINGS_STORAGE_KEY = 'commissionSettings';
-export const BUSINESS_SETTINGS_STORAGE_KEY = 'businessSettings';
-export const HERO_BANNERS_STORAGE_KEY = 'heroBannerSlides';
-export const CUSTOM_PAGES_STORAGE_KEY = 'customPages';
-export const SHIPPING_METHODS_STORAGE_KEY = 'shippingMethods';
-// For static location data, no storage keys needed
-// export const DIVISIONS_STORAGE_KEY = 'divisions';
-// export const DISTRICTS_STORAGE_KEY = 'districts';
-// export const THANAS_STORAGE_KEY = 'thanas';
+export const BUSINESS_SETTINGS_STORAGE_KEY = 'businessSettings_v2';
+export const HERO_BANNERS_STORAGE_KEY = 'heroBannerSlides_v2';
+export const CUSTOM_PAGES_STORAGE_KEY = 'customPages_v2';
+export const SHIPPING_METHODS_STORAGE_KEY = 'shippingMethods_v2';
 
 // Default Values for Settings
 export const DEFAULT_DELIVERY_CHARGES: DeliveryChargeSettings = {
@@ -309,10 +305,10 @@ export const DEFAULT_CURRENCIES: Currency[] = [
 
 export const DEFAULT_BUSINESS_SETTINGS: BusinessSettings = {
   appName: '2ndhandbajar.com',
-  logoUrl: '/logo-placeholder.png', // This should be a path in /public or an external URL
-  primaryColor: '217 91% 60%', // Tailwind blue-500
-  secondaryColor: '216 34% 90%', // Light blue-gray
-  faviconUrl: '/favicon.ico', // This should be a path in /public or an external URL
+  logoUrl: '/logo-placeholder.png', 
+  primaryColor: '217 91% 60%', 
+  secondaryColor: '216 34% 90%', 
+  faviconUrl: '/favicon.ico', 
   availableCurrencies: DEFAULT_CURRENCIES,
   defaultCurrencyCode: 'BDT',
   googleClientId: '',
@@ -322,39 +318,39 @@ export const DEFAULT_BUSINESS_SETTINGS: BusinessSettings = {
 export const DEFAULT_HERO_BANNER_SLIDES: HeroBannerSlide[] = [
   {
     id: 'slide1',
-    imageUrl: 'https://placehold.co/1200x400.png',
-    imageHint: 'promotional banner electronics',
+    imageUrl: 'https://placehold.co/1200x400/007bff/ffffff.png?text=Latest+Gadgets',
+    imageHint: 'promotional electronics',
     title: 'Latest Gadgets on Sale!',
     description: 'Discover amazing deals on smartphones, laptops, and more.',
     buttonText: 'Shop Electronics',
-    buttonLink: '/category/electronics',
+    buttonLink: '/browse?categoryId=electronics',
     bgColor: 'bg-blue-600',
     textColor: 'text-white',
     isActive: true,
   },
   {
     id: 'slide2',
-    imageUrl: 'https://placehold.co/1200x400.png',
-    imageHint: 'fashion sale banner',
+    imageUrl: 'https://placehold.co/1200x400/e83e8c/ffffff.png?text=Trendy+Fashion',
+    imageHint: 'fashion sale',
     title: 'Trendy Fashion Finds',
     description: 'Upgrade your wardrobe with the latest styles.',
     buttonText: 'Explore Fashion',
-    buttonLink: '/category/fashion',
+    buttonLink: '/browse?categoryId=fashion',
     bgColor: 'bg-pink-500',
     textColor: 'text-white',
     isActive: true,
   },
   {
     id: 'slide3',
-    imageUrl: 'https://placehold.co/1200x400.png',
-    imageHint: 'home decor banner',
+    imageUrl: 'https://placehold.co/1200x400/28a745/ffffff.png?text=Home+Decor',
+    imageHint: 'home decor items',
     title: 'Home Decor Specials',
     description: 'Beautify your space with unique second-hand treasures.',
     buttonText: 'View Home Goods',
-    buttonLink: '/category/home-garden',
+    buttonLink: '/browse?categoryId=home-garden',
     bgColor: 'bg-green-500',
     textColor: 'text-white',
-    isActive: false,
+    isActive: true,
   },
 ];
 

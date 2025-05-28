@@ -1,9 +1,9 @@
 
 "use client";
 import React, { useState, useEffect, useMemo } from 'react';
-import { useParams, useSearchParams, useRouter } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { MOCK_PRODUCTS, MOCK_CATEGORIES, MOCK_SUBCATEGORIES } from '@/lib/mock-data';
-import type { Product, Category as CategoryType, SubCategory, BusinessSettings } from '@/lib/types';
+import type { Product, Category as CategoryType, SubCategory, BusinessSettings, HeroBannerSlide, FeaturedImage } from '@/lib/types';
 import { ProductCard } from '@/components/product-card';
 import { HeroBanner } from '@/components/hero-banner';
 import { SubCategoryScroller } from '@/components/sub-category-scroller';
@@ -14,7 +14,7 @@ import { ArrowRight, SearchX, Tag } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import useLocalStorage from '@/hooks/use-local-storage';
-import { BUSINESS_SETTINGS_STORAGE_KEY, DEFAULT_BUSINESS_SETTINGS } from '@/lib/constants';
+import { BUSINESS_SETTINGS_STORAGE_KEY, DEFAULT_BUSINESS_SETTINGS, CATEGORIES_STORAGE_KEY, INITIAL_CATEGORIES, SUB_CATEGORIES_STORAGE_KEY, INITIAL_SUB_CATEGORIES, HERO_BANNERS_STORAGE_KEY, DEFAULT_HERO_BANNER_SLIDES } from '@/lib/constants';
 
 const PRODUCTS_PER_SUB_CATEGORY_ROW = 4;
 
@@ -23,12 +23,18 @@ export default function CategoryPage() {
   const router = useRouter();
   const categoryId = params.categoryId as string;
 
+  const [allCategories] = useLocalStorage<CategoryType[]>(CATEGORIES_STORAGE_KEY, INITIAL_CATEGORIES);
+  const [allSubCategories] = useLocalStorage<SubCategory[]>(SUB_CATEGORIES_STORAGE_KEY, INITIAL_SUB_CATEGORIES);
+  const [globalSlides] = useLocalStorage<HeroBannerSlide[]>(HERO_BANNERS_STORAGE_KEY, DEFAULT_HERO_BANNER_SLIDES);
+
+
   const [category, setCategory] = useState<CategoryType | null>(null);
   const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const [settings] = useLocalStorage<BusinessSettings>(BUSINESS_SETTINGS_STORAGE_KEY, DEFAULT_BUSINESS_SETTINGS);
+  
   const activeCurrency = useMemo(() => {
     const safeAvailableCurrencies = settings?.availableCurrencies && Array.isArray(settings.availableCurrencies) && settings.availableCurrencies.length > 0
       ? settings.availableCurrencies
@@ -42,14 +48,14 @@ export default function CategoryPage() {
     setIsLoading(true);
     if (categoryId) {
       setTimeout(() => {
-        const foundCategory = MOCK_CATEGORIES.find(c => c.id === categoryId);
+        const foundCategory = allCategories.find(c => c.id === categoryId);
         if (!foundCategory) {
           router.push('/'); 
           return;
         }
         setCategory(foundCategory);
 
-        const relatedSubCategories = MOCK_SUBCATEGORIES.filter(sc => sc.parentCategoryId === categoryId);
+        const relatedSubCategories = allSubCategories.filter(sc => sc.parentCategoryId === categoryId);
         setSubCategories(relatedSubCategories);
 
         const categoryProducts = MOCK_PRODUCTS.filter(p => p.categoryId === categoryId && p.status === 'approved' && p.stock > 0);
@@ -57,7 +63,14 @@ export default function CategoryPage() {
         setIsLoading(false);
       }, 300); 
     }
-  }, [categoryId, router]);
+  }, [categoryId, router, allCategories, allSubCategories]);
+
+  const categorySlidesToDisplay = useMemo(() => {
+    if (category && category.categorySlides && category.categorySlides.filter(s => s.isActive).length > 0) {
+      return category.categorySlides.filter(s => s.isActive);
+    }
+    return globalSlides.filter(s => s.isActive);
+  }, [category, globalSlides]);
 
   if (isLoading) {
     return (
@@ -103,6 +116,10 @@ export default function CategoryPage() {
   const productsBySubCategory = (subCatId: string) => {
     return products.filter(p => p.subCategoryId === subCatId && p.stock > 0).slice(0, PRODUCTS_PER_SUB_CATEGORY_ROW);
   };
+  
+  const validFeaturedImages = category.featuredImages?.filter(
+      img => img.imageUrl && img.imageUrl !== 'https://placehold.co/300x300.png'
+  ) || [];
 
   return (
     <div className="py-2">
@@ -114,26 +131,32 @@ export default function CategoryPage() {
         <SubCategoryScroller 
             subCategories={subCategories} 
             parentCategoryId={category.id}
-            // onSubCategorySelect is removed as navigation is now handled by Link
         />
       )}
 
-      <HeroBanner />
+      <HeroBanner slides={categorySlidesToDisplay.length > 0 ? categorySlidesToDisplay : undefined} />
 
-      <section className="my-8 md:my-12">
-        <div className="container mx-auto px-4">
-          <h2 className="text-2xl md:text-3xl font-bold mb-4 md:mb-6 text-center">Shop by Style</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 justify-items-center">
-            {[1, 2, 3, 4].map(i => ( 
-              <Link key={i} href="#" className="group block">
-                <div className="aspect-square w-full max-w-[200px] md:max-w-[250px] bg-muted rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow">
-                  <Image src={`https://placehold.co/300x300.png`} alt={`Featured Style ${i}`} width={300} height={300} className="object-cover w-full h-full group-hover:scale-105 transition-transform" data-ai-hint="style fashion" />
-                </div>
-              </Link>
-            ))}
+
+      {validFeaturedImages.length > 0 && (
+        <section className="my-8 md:my-12">
+          <div className="container mx-auto px-4">
+            <h2 className="text-2xl md:text-3xl font-bold mb-4 md:mb-6 text-center">
+              {validFeaturedImages.some(img => img.title) ? "Featured Styles" : "Shop by Style"} {/* Or a more generic title */}
+            </h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 justify-items-center">
+              {validFeaturedImages.map((img, i) => ( 
+                <Link key={img.id || i} href={img.linkUrl || '#'} className="group block w-full">
+                  <div className="aspect-square w-full max-w-[200px] md:max-w-[250px] bg-muted rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow">
+                    <Image src={img.imageUrl} alt={img.title || `Featured Style ${i + 1}`} width={300} height={300} className="object-cover w-full h-full group-hover:scale-105 transition-transform" data-ai-hint={img.imageHint || "style fashion"} />
+                  </div>
+                  {img.title && <p className="mt-2 text-sm font-medium text-center group-hover:text-primary">{img.title}</p>}
+                </Link>
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
+
 
       {subCategories.map(subCat => (
         <section key={subCat.id} id={`subcategory-products-${subCat.id}`} className="mb-10 md:mb-12 pt-6 -mt-6">
@@ -169,7 +192,6 @@ export default function CategoryPage() {
         </section>
       ))}
 
-       {/* Section for All Products in the Parent Category if no subcategories or to show remaining */}
       {subCategories.length === 0 && products.length > 0 && (
         <section className="mb-10 md:mb-12 pt-6 -mt-6">
           <div className="container mx-auto px-4">
@@ -186,8 +208,6 @@ export default function CategoryPage() {
           </div>
         </section>
       )}
-
-
     </div>
   );
 }

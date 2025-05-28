@@ -1,10 +1,20 @@
 
+export type FeaturedImage = {
+  id: string; // e.g., 'feat-img-1'
+  imageUrl: string;
+  imageHint: string;
+  linkUrl?: string;
+  title?: string;
+};
+
 export type Category = {
   id: string;
   name: string;
   imageUrl?: string;
   imageHint?: string;
   sortOrder?: number;
+  featuredImages?: FeaturedImage[];
+  categorySlides?: HeroBannerSlide[]; // Reusing HeroBannerSlide type
 };
 
 export type SubCategory = {
