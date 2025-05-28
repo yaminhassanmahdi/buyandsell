@@ -8,7 +8,7 @@ import { WithdrawalMethodForm, type WithdrawalFormData } from '@/components/with
 import { WithdrawalMethodItem } from '@/components/withdrawal-method-item';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogClose } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogClose, DialogTrigger } from '@/components/ui/dialog';
 import type { ShippingAddress, WithdrawalMethod, User } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Home, CreditCard, PlusCircle, AlertTriangle, Mail, Phone, Lock, UserCircleIcon } from 'lucide-react';
@@ -18,7 +18,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { useForm } from "react-hook-form"; // Added this import
+import { useForm } from "react-hook-form";
 
 const emailUpdateSchema = z.object({
   newEmail: z.string().email("Invalid email address."),
