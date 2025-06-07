@@ -6,7 +6,7 @@
 -- This could be a single-row table or a key-value store. For simplicity, a single-row table.
 CREATE TABLE app_settings (
     id SERIAL PRIMARY KEY, -- Only one row expected in this table
-    app_name VARCHAR(255) NOT NULL DEFAULT '2ndhandbajar.com',
+    app_name VARCHAR(25a5) NOT NULL DEFAULT '2ndhandbajar.com',
     logo_url TEXT,
     favicon_url TEXT,
     primary_color VARCHAR(50), -- Can store HSL string or HEX
