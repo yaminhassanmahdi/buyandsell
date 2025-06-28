@@ -16,7 +16,29 @@ To get started with development:
     yarn install
     ```
 
-2.  **Run the development server:**
+2.  **Set up the database:**
+    *   This project is designed to work with a PostgreSQL database.
+    *   A complete database schema is provided in `schema.sql` in the project root.
+    *   Execute this SQL script in your PostgreSQL database instance to create all the necessary tables.
+
+3.  **Configure Environment Variables:**
+    *   Create a file named `.env.local` in the project root.
+    *   This file is for local development and should **NOT** be committed to version control (ensure it's in your `.gitignore` file).
+    *   Populate `.env.local` with your PostgreSQL database credentials:
+        ```env
+        # .env.local
+        DB_USER="your_database_user"
+        DB_PASSWORD="your_database_password"
+        DB_HOST="your_database_host"
+        DB_PORT="your_database_port"
+        DB_NAME="your_database_name"
+        
+        # If your database requires an SSL CA certificate, add it here.
+        # Enclose the multi-line certificate in double quotes.
+        DB_SSL_CA="-----BEGIN CERTIFICATE-----\n...\n-----END CERTIFICATE-----"
+        ```
+
+4.  **Run the development server:**
     ```bash
     npm run dev
     # or
@@ -104,4 +126,3 @@ To make this application production-ready, the following key areas need to be ad
 *   `src/hooks/`: Custom React hooks (e.g., `useLocalStorage`, `useToast`).
 *   `src/lib/`: Utility functions, type definitions, constants, and mock data.
 *   `src/ai/`: Genkit AI related files (if used).
-```
