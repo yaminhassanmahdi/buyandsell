@@ -84,13 +84,12 @@ export async function POST(request: Request) {
       
       // Insert order item
       const itemQuery = `
-        INSERT INTO order_items (order_id, product_id, seller_id, name, price, quantity, image_url, total)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO order_items (order_id, product_id, seller_id, name, price, quantity, image_url)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
       `;
       await executeQuery(itemQuery, [
         orderId, item.productId || item.id, item.sellerId, item.name, 
-        item.price, item.quantity, item.imageUrl || '', 
-        item.total || (item.price * item.quantity)
+        item.price, item.quantity, item.imageUrl || ''
       ]);
       
       // Update product stock

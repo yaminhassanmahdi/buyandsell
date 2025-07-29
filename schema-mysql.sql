@@ -190,9 +190,12 @@ CREATE TABLE IF NOT EXISTS commissions (
 
 CREATE TABLE IF NOT EXISTS delivery_charge_settings (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    intra_thana_charge DECIMAL(10, 2) NOT NULL,
-    intra_district_charge DECIMAL(10, 2) NOT NULL,
-    inter_district_charge DECIMAL(10, 2) NOT NULL
+    intra_upazilla_charge DECIMAL(10, 2) NOT NULL DEFAULT 60,
+    intra_district_charge DECIMAL(10, 2) NOT NULL DEFAULT 110,
+    inter_district_charge DECIMAL(10, 2) NOT NULL DEFAULT 130,
+    intra_upazilla_extra_kg_charge DECIMAL(10, 2) DEFAULT 20,
+    intra_district_extra_kg_charge DECIMAL(10, 2) DEFAULT 30,
+    inter_district_extra_kg_charge DECIMAL(10, 2) DEFAULT 40
 );
 
 CREATE TABLE IF NOT EXISTS shipping_methods (

@@ -219,8 +219,12 @@ export default function CheckoutPage() {
       // Prepare order items with product details
       const orderItems = cartItems.map(item => {
         const productDetails = allProducts.find(p => p.id === item.id);
+        if (!productDetails) {
+          throw new Error(`Product ${item.id} not found`);
+        }
         return {
           productId: item.id,
+          sellerId: productDetails.sellerId,
           quantity: item.quantity,
           price: item.price,
           name: item.name,
