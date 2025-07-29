@@ -1,6 +1,5 @@
-
 "use client";
-import type { WithdrawalMethod } from "@/lib/types";
+import type { WithdrawalMethod, BKashDetails, BankDetails } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Banknote, Smartphone, Trash2, CheckCircle } from "lucide-react";
 
@@ -12,13 +11,25 @@ interface WithdrawalMethodItemProps {
 
 export function WithdrawalMethodItem({ method, onRemove, onSetDefault }: WithdrawalMethodItemProps) {
   const getDisplayDetails = () => {
+    if (!method.details) {
+      return "Invalid method details";
+    }
+
     if (method.type === 'bkash') {
-      return `bKash Account: ******${method.details.accountNumber.slice(-4)}`;
+      const bkashDetails = method.details as BKashDetails;
+      const accountNumber = bkashDetails?.accountNumber || 'N/A';
+      const lastFour = accountNumber.length >= 4 ? accountNumber.slice(-4) : accountNumber;
+      return `bKash Account: ******${lastFour}`;
     }
+    
     if (method.type === 'bank') {
-      const bankDetails = method.details;
-      return `${bankDetails.bankName}, Acc: ******${bankDetails.accountNumber.slice(-4)}`;
+      const bankDetails = method.details as BankDetails;
+      const accountNumber = bankDetails?.accountNumber || 'N/A';
+      const bankName = bankDetails?.bankName || 'Unknown Bank';
+      const lastFour = accountNumber.length >= 4 ? accountNumber.slice(-4) : accountNumber;
+      return `${bankName}, Acc: ******${lastFour}`;
     }
+    
     return "Unknown Method";
   };
 
@@ -32,7 +43,9 @@ export function WithdrawalMethodItem({ method, onRemove, onSetDefault }: Withdra
         )}
         <div>
           <p className="font-medium">{getDisplayDetails()}</p>
-          <p className="text-xs text-muted-foreground">Added: {new Date(method.createdAt).toLocaleDateString()}</p>
+          <p className="text-xs text-muted-foreground">
+            Added: {method.createdAt ? new Date(method.createdAt).toLocaleDateString() : 'Unknown date'}
+          </p>
         </div>
       </div>
       <div className="flex items-center gap-2">

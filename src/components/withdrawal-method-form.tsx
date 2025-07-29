@@ -1,4 +1,3 @@
-
 "use client";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -46,8 +45,12 @@ export function WithdrawalMethodForm({ onSubmit, isLoading = false }: Withdrawal
   const form = useForm<WithdrawalFormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      type: 'bkash', // Default to bKash
-      // Fields will be conditionally rendered, so no need for default values for all
+      type: 'bkash',
+      accountNumber: '',
+      bankName: '',
+      accountHolderName: '',
+      routingNumber: '',
+      branchName: '',
     },
   });
 
@@ -55,7 +58,14 @@ export function WithdrawalMethodForm({ onSubmit, isLoading = false }: Withdrawal
 
   const handleFormSubmit = async (values: WithdrawalFormData) => {
     await onSubmit(values);
-    form.reset({ type: 'bkash'}); // Reset form after submission
+    form.reset({ 
+      type: 'bkash',
+      accountNumber: '',
+      bankName: '',
+      accountHolderName: '',
+      routingNumber: '',
+      branchName: '',
+    });
   };
 
   return (
@@ -69,21 +79,23 @@ export function WithdrawalMethodForm({ onSubmit, isLoading = false }: Withdrawal
               <FormLabel>Method Type</FormLabel>
               <Select onValueChange={(value) => {
                 field.onChange(value as WithdrawalMethodType);
-                // Reset other fields when type changes
+                // Reset other fields when type changes - use empty strings instead of undefined
                 if (value === 'bkash') {
                     form.setValue('accountNumber', '');
-                    // @ts-ignore
-                    form.setValue('bankName', undefined); 
-                } else {
-                    // @ts-ignore
-                    form.setValue('accountNumber', undefined);
+                    // Clear bank fields
                     form.setValue('bankName', '');
                     form.setValue('accountHolderName', '');
+                    form.setValue('routingNumber', '');
+                    form.setValue('branchName', '');
+                } else {
+                    // Clear bkash field
                     form.setValue('accountNumber', '');
+                    // Initialize bank fields
+                    form.setValue('bankName', '');
+                    form.setValue('accountHolderName', '');
                     form.setValue('routingNumber', '');
                     form.setValue('branchName', '');
                 }
-
               }} value={field.value}>
                 <FormControl>
                   <SelectTrigger>
@@ -108,7 +120,7 @@ export function WithdrawalMethodForm({ onSubmit, isLoading = false }: Withdrawal
               <FormItem>
                 <FormLabel>bKash Account Number</FormLabel>
                 <FormControl>
-                  <Input type="tel" placeholder="01XXXXXXXXX" {...field} />
+                  <Input type="tel" placeholder="01XXXXXXXXX" {...field} value={field.value || ''} />
                 </FormControl>
                 <FormDescription>Enter your 11-digit bKash personal account number.</FormDescription>
                 <FormMessage />
@@ -126,7 +138,7 @@ export function WithdrawalMethodForm({ onSubmit, isLoading = false }: Withdrawal
                 <FormItem>
                   <FormLabel>Bank Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g., City Bank" {...field} />
+                    <Input placeholder="e.g., City Bank" {...field} value={field.value || ''} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -139,7 +151,7 @@ export function WithdrawalMethodForm({ onSubmit, isLoading = false }: Withdrawal
                 <FormItem>
                   <FormLabel>Account Holder Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="As it appears on your bank account" {...field} />
+                    <Input placeholder="As it appears on your bank account" {...field} value={field.value || ''} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -152,7 +164,7 @@ export function WithdrawalMethodForm({ onSubmit, isLoading = false }: Withdrawal
                 <FormItem>
                   <FormLabel>Bank Account Number</FormLabel>
                   <FormControl>
-                    <Input placeholder="Your bank account number" {...field} />
+                    <Input placeholder="Your bank account number" {...field} value={field.value || ''} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -165,7 +177,7 @@ export function WithdrawalMethodForm({ onSubmit, isLoading = false }: Withdrawal
                 <FormItem>
                   <FormLabel>Routing Number (Optional)</FormLabel>
                   <FormControl>
-                    <Input placeholder="Bank routing number" {...field} />
+                    <Input placeholder="Bank routing number" {...field} value={field.value || ''} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -178,7 +190,7 @@ export function WithdrawalMethodForm({ onSubmit, isLoading = false }: Withdrawal
                 <FormItem>
                   <FormLabel>Branch Name (Optional)</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g., Gulshan Branch" {...field} />
+                    <Input placeholder="e.g., Gulshan Branch" {...field} value={field.value || ''} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

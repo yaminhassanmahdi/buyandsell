@@ -1,4 +1,3 @@
-
 "use client";
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -6,30 +5,55 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import useLocalStorage from '@/hooks/use-local-storage';
-import type { Category, CommissionSetting } from '@/lib/types';
-import { MOCK_CATEGORIES } from '@/lib/mock-data'; // Parent categories
-import { COMMISSION_SETTINGS_STORAGE_KEY, DEFAULT_COMMISSION_SETTINGS } from '@/lib/constants';
 import { Loader2, Save, Percent } from 'lucide-react';
+import { apiClient } from '@/lib/api-client';
+import type { Category, CommissionSetting } from '@/lib/types';
 
 export default function AdminCommissionsPage() {
   const { toast } = useToast();
-  const [commissionSettings, setCommissionSettings] = useLocalStorage<CommissionSetting[]>(
-    COMMISSION_SETTINGS_STORAGE_KEY,
-    DEFAULT_COMMISSION_SETTINGS
-  );
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [commissionSettings, setCommissionSettings] = useState<CommissionSetting[]>([]);
   const [localSettings, setLocalSettings] = useState<Record<string, string>>({}); // Store percentages as strings for input
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    // Initialize localSettings from stored commissionSettings
-    const initialLocalSettings: Record<string, string> = {};
-    MOCK_CATEGORIES.forEach(category => {
-      const setting = commissionSettings.find(cs => cs.categoryId === category.id);
-      initialLocalSettings[category.id] = setting ? String(setting.percentage) : '0';
-    });
-    setLocalSettings(initialLocalSettings);
-  }, [commissionSettings]);
+    const fetchData = async () => {
+      try {
+        setIsLoading(true);
+        
+        // Fetch categories - these are already parent categories
+        const categoriesData = await apiClient.getCategories();
+        setCategories(categoriesData);
+
+        // Fetch commission settings
+        const response = await fetch('/api/commissions');
+        if (response.ok) {
+          const commissionsData = await response.json();
+          setCommissionSettings(commissionsData);
+          
+          // Initialize localSettings from fetched commissionSettings
+          const initialLocalSettings: Record<string, string> = {};
+          categoriesData.forEach(category => {
+            const setting = commissionsData.find((cs: CommissionSetting) => cs.categoryId === category.id);
+            initialLocalSettings[category.id] = setting ? String(setting.percentage) : '0';
+          });
+          setLocalSettings(initialLocalSettings);
+        }
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load commission settings.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [toast]);
 
   const handlePercentageChange = (categoryId: string, value: string) => {
     // Allow empty string for typing, validate on save
@@ -42,8 +66,8 @@ export default function AdminCommissionsPage() {
     }
   };
 
-  const handleSaveCommissions = () => {
-    setIsLoading(true);
+  const handleSaveCommissions = async () => {
+    setIsSaving(true);
     const newCommissionSettings: CommissionSetting[] = [];
     let isValid = true;
 
@@ -55,9 +79,10 @@ export default function AdminCommissionsPage() {
       }
       const percentage = parseFloat(percentageStr);
       if (isNaN(percentage) || percentage < 0 || percentage > 100) {
+        const categoryName = categories.find(c => c.id === categoryId)?.name || categoryId;
         toast({
           title: "Invalid Input",
-          description: `Commission for ${MOCK_CATEGORIES.find(c=>c.id === categoryId)?.name || categoryId} must be between 0 and 100.`,
+          description: `Commission for ${categoryName} must be between 0 and 100.`,
           variant: "destructive",
         });
         isValid = false;
@@ -67,14 +92,56 @@ export default function AdminCommissionsPage() {
     }
 
     if (isValid) {
-      setCommissionSettings(newCommissionSettings);
-      toast({
-        title: "Commissions Updated",
-        description: "Category commission settings have been saved.",
-      });
+      try {
+        const response = await fetch('/api/commissions', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ commissions: newCommissionSettings }),
+        });
+
+        if (response.ok) {
+          setCommissionSettings(newCommissionSettings);
+          toast({
+            title: "Commissions Updated",
+            description: "Category commission settings have been saved successfully.",
+          });
+        } else {
+          throw new Error('Failed to save commission settings');
+        }
+      } catch (error) {
+        console.error('Error saving commissions:', error);
+        toast({
+          title: "Error",
+          description: "Failed to save commission settings. Please try again.",
+          variant: "destructive",
+        });
+      }
     }
-    setIsLoading(false);
+    setIsSaving(false);
   };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-8 py-4">
+        <h1 className="text-3xl font-bold flex items-center gap-3">
+          <Percent className="h-8 w-8 text-primary" />
+          Manage Platform Commissions
+        </h1>
+        <Card>
+          <CardHeader>
+            <CardTitle>Loading Commission Settings...</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 py-4">
@@ -91,7 +158,7 @@ export default function AdminCommissionsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          {MOCK_CATEGORIES.map(category => (
+          {categories.map(category => (
             <div key={category.id} className="grid grid-cols-1 md:grid-cols-3 items-center gap-4 p-4 border rounded-lg">
               <Label htmlFor={`commission-${category.id}`} className="text-md font-medium md:col-span-1">
                 {category.name}
@@ -112,8 +179,8 @@ export default function AdminCommissionsPage() {
               </div>
             </div>
           ))}
-          <Button onClick={handleSaveCommissions} disabled={isLoading} className="mt-6 w-full md:w-auto">
-            {isLoading ? (
+          <Button onClick={handleSaveCommissions} disabled={isSaving} className="mt-6 w-full md:w-auto">
+            {isSaving ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
               <Save className="mr-2 h-4 w-4" />

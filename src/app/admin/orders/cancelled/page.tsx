@@ -1,12 +1,11 @@
-
 "use client";
 import { useEffect, useState } from 'react';
-import { MOCK_ORDERS } from '@/lib/mock-data';
 import type { Order, OrderStatus } from '@/lib/types';
 import { OrderManagementCard } from '@/components/admin/order-management-card';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { PackageX, Loader2, SearchX } from 'lucide-react';
+import { apiClient } from '@/lib/api-client';
 
 export default function AdminCancelledOrdersPage() {
   const [cancelledOrders, setCancelledOrders] = useState<Order[]>([]);
@@ -15,33 +14,49 @@ export default function AdminCancelledOrdersPage() {
   const { toast } = useToast();
 
   useEffect(() => {
-    setIsLoading(true);
-    setTimeout(() => {
-      const filtered = MOCK_ORDERS.filter(order => order.status === 'cancelled')
-                                 .sort((a,b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
-      setCancelledOrders(filtered);
-      setIsLoading(false);
-    }, 300);
-  }, []);
+    const fetchCancelledOrders = async () => {
+      setIsLoading(true);
+      try {
+        const orders = await apiClient.getOrders({ status: 'cancelled' });
+        setCancelledOrders(orders.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+      } catch (error) {
+        console.error('Error fetching cancelled orders:', error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch cancelled orders.",
+          variant: "destructive"
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchCancelledOrders();
+  }, [toast]);
 
   const handleUpdateStatus = async (orderId: string, newStatus: OrderStatus) => {
     setProcessingOrderId(orderId);
-    await new Promise(resolve => setTimeout(resolve, 700));
-    
-    const orderIndex = MOCK_ORDERS.findIndex(o => o.id === orderId);
-    if (orderIndex !== -1) {
-      MOCK_ORDERS[orderIndex].status = newStatus;
-      MOCK_ORDERS[orderIndex].updatedAt = new Date();
-    }
-
-    setCancelledOrders(prevOrders => 
+    try {
+      await apiClient.updateOrder(orderId, { status: newStatus });
+      
+      // Update local state
+      setCancelledOrders(prevOrders => 
         prevOrders.map(order => 
-            order.id === orderId ? { ...order, status: newStatus, updatedAt: new Date() } : order
-        ).filter(order => newStatus === 'cancelled' ? true : order.id !== orderId) 
-    );
+          order.id === orderId ? { ...order, status: newStatus, updatedAt: new Date() } : order
+        ).filter(order => newStatus === 'cancelled' ? true : order.id !== orderId)
+      );
 
-    toast({ title: "Order Status Updated", description: `Order #${orderId} status changed to ${newStatus}.` });
-    setProcessingOrderId(null);
+      toast({ title: "Order Status Updated", description: `Order #${orderId} status changed to ${newStatus}.` });
+    } catch (error) {
+      console.error('Error updating order status:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update order status.",
+        variant: "destructive"
+      });
+    } finally {
+      setProcessingOrderId(null);
+    }
   };
 
   if (isLoading) {
@@ -64,7 +79,7 @@ export default function AdminCancelledOrdersPage() {
           <SearchX className="h-5 w-5" />
           <AlertTitle>No Cancelled Orders</AlertTitle>
           <AlertDescription>
-            There are currently no orders marked as "cancelled".
+            There are currently no orders in "cancelled" status.
           </AlertDescription>
         </Alert>
       ) : (

@@ -1,4 +1,3 @@
-
 import type { Product, User, Order, ShippingAddress, Category, SubCategory, WithdrawalRequest, CategoryAttributeType, CategoryAttributeValue } from './types';
 import { INITIAL_CATEGORIES, MOCK_CUSTOM_PAGES as DEFAULT_PAGES_FROM_CONSTANTS, DEFAULT_HERO_BANNER_SLIDES, INITIAL_SUB_CATEGORIES, INITIAL_CATEGORY_ATTRIBUTE_TYPES, INITIAL_CATEGORY_ATTRIBUTE_VALUES } from './constants';
 
@@ -40,7 +39,7 @@ export const MOCK_USERS: User[] = [
       country: 'Bangladesh',
       division: 'Dhaka',
       district: 'Dhaka',
-      thana: 'Dhaka City',
+      upazilla: 'Dhaka City',
       houseAddress: '123 Gulshan Ave',
       roadNumber: 'Road 10',
     },
@@ -65,7 +64,7 @@ export const MOCK_USERS: User[] = [
       country: 'Bangladesh',
       division: 'Chittagong',
       district: 'Chittagong',
-      thana: 'Sitakunda Upazila',
+      upazilla: 'Sitakunda Upazila',
       houseAddress: 'Apt 2B, Hill View Road',
       roadNumber: 'Road 5',
     },
@@ -104,7 +103,7 @@ export const MOCK_USERS: User[] = [
       country: 'Bangladesh',
       division: 'Dhaka',
       district: 'Dhaka',
-      thana: 'Dhaka City',
+      upazilla: 'Dhaka City',
       houseAddress: 'Admin Building, HQ',
       roadNumber: 'Main St',
     },
@@ -231,7 +230,7 @@ const MOCK_SHIPPING_ADDRESS_BANGLADESH: ShippingAddress = {
   country: 'Bangladesh',
   division: 'Dhaka',
   district: 'Dhaka',
-  thana: 'Dhaka City',
+  upazilla: 'Dhaka City',
   houseAddress: 'House 123',
   roadNumber: 'Road 7A',
 };
@@ -267,7 +266,7 @@ export let MOCK_ORDERS: Order[] = [
       ...(MOCK_USERS.find(u => u.id === 'user1')?.defaultShippingAddress || MOCK_SHIPPING_ADDRESS_BANGLADESH),
       fullName: 'John Doe Updated',
       district: 'Gazipur',
-      thana: 'Gazipur Sadar Upazila'
+      upazilla: 'Gazipur Sadar Upazila'
     },
     status: 'delivered',
     paymentStatus: 'paid',
@@ -290,7 +289,7 @@ export let MOCK_ORDERS: Order[] = [
       fullName: 'Jane Smith BD',
       division: 'Chittagong',
       district: 'Chittagong',
-      thana: 'Chittagong Sadar Upazila'
+      upazilla: 'Chittagong Sadar Upazila'
     },
     status: 'processing',
     paymentStatus: 'unpaid',

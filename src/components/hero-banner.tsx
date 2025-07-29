@@ -1,4 +1,3 @@
-
 "use client";
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
@@ -6,29 +5,80 @@ import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/card';
 import { ChevronRight, ChevronLeft } from 'lucide-react';
 import React, { useState, useEffect, useMemo } from 'react';
-import useLocalStorage from '@/hooks/use-local-storage';
 import type { HeroBannerSlide } from '@/lib/types';
-import { HERO_BANNERS_STORAGE_KEY, DEFAULT_HERO_BANNER_SLIDES } from '@/lib/constants';
 
 interface HeroBannerProps {
   slides?: HeroBannerSlide[]; // Optional prop for category-specific slides
 }
 
+interface DatabaseBanner {
+  id: number;
+  imageUrl: string;
+  imageHint: string;
+  title: string;
+  description: string;
+  buttonText: string;
+  buttonLink: string;
+  bgColor: string;
+  textColor: string;
+  isActive: boolean;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+const convertDbBannerToSlide = (dbBanner: DatabaseBanner): HeroBannerSlide => ({
+  id: dbBanner.id.toString(),
+  imageUrl: dbBanner.imageUrl,
+  imageHint: dbBanner.imageHint,
+  title: dbBanner.title,
+  description: dbBanner.description,
+  buttonText: dbBanner.buttonText,
+  buttonLink: dbBanner.buttonLink,
+  bgColor: dbBanner.bgColor,
+  textColor: dbBanner.textColor,
+  isActive: dbBanner.isActive,
+});
+
 export function HeroBanner({ slides: categorySpecificSlides }: HeroBannerProps) {
-  const [globalSlidesFromStorage] = useLocalStorage<HeroBannerSlide[]>(
-    HERO_BANNERS_STORAGE_KEY,
-    DEFAULT_HERO_BANNER_SLIDES
-  );
+  const [globalBanners, setGlobalBanners] = useState<HeroBannerSlide[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
 
+  // Fetch global banners from API
+  useEffect(() => {
+    const fetchGlobalBanners = async () => {
+      try {
+        setIsLoading(true);
+        const response = await fetch('/api/banners');
+        if (response.ok) {
+          const data = await response.json();
+          const bannerSlides = data.banners.map(convertDbBannerToSlide);
+          setGlobalBanners(bannerSlides);
+        } else {
+          console.error('Failed to fetch banners');
+          setGlobalBanners([]);
+        }
+      } catch (error) {
+        console.error('Error fetching banners:', error);
+        setGlobalBanners([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchGlobalBanners();
+  }, []);
+
   const slidesToUse = useMemo(() => {
+    // If category-specific slides are provided and active, use them
     const activeCategorySlides = categorySpecificSlides?.filter(slide => slide.isActive);
     if (activeCategorySlides && activeCategorySlides.length > 0) {
       return activeCategorySlides;
     }
-    return globalSlidesFromStorage.filter(slide => slide.isActive);
-  }, [categorySpecificSlides, globalSlidesFromStorage]);
-
+    // Otherwise, use global banners from API
+    return globalBanners.filter(slide => slide.isActive);
+  }, [categorySpecificSlides, globalBanners]);
 
   useEffect(() => {
     if (slidesToUse.length === 0) return;
@@ -45,19 +95,36 @@ export function HeroBanner({ slides: categorySpecificSlides }: HeroBannerProps) 
     }
   }, [slidesToUse, currentSlideIndex]);
 
+  // Show loading state only for global banners (not category-specific)
+  if (isLoading && !categorySpecificSlides) {
+    return (
+      <div className="w-full my-4 md:my-6">
+        <div className="container mx-auto px-0 md:px-4">
+          <Card className="overflow-hidden shadow-lg relative bg-muted text-muted-foreground aspect-[16/6] md:aspect-[16/5]">
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-4 md:p-8">
+              <div className="animate-pulse">
+                <div className="h-8 w-48 bg-muted-foreground/20 rounded mb-4"></div>
+                <div className="h-4 w-64 bg-muted-foreground/20 rounded"></div>
+              </div>
+            </div>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   if (slidesToUse.length === 0) {
     return (
-        <div className="w-full my-4 md:my-6">
-            <div className="container mx-auto px-0 md:px-4">
-                <Card className="overflow-hidden shadow-lg relative bg-muted text-muted-foreground aspect-[16/6] md:aspect-[16/5]">
-                    <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-4 md:p-8">
-                        <h2 className="text-xl md:text-2xl font-semibold">No active banners</h2>
-                        <p className="text-sm md:text-base">Configure banners in admin settings or for this category.</p>
-                    </div>
-                </Card>
+      <div className="w-full my-4 md:my-6">
+        <div className="container mx-auto px-0 md:px-4">
+          <Card className="overflow-hidden shadow-lg relative bg-muted text-muted-foreground aspect-[16/6] md:aspect-[16/5]">
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-4 md:p-8">
+              <h2 className="text-xl md:text-2xl font-semibold">No active banners</h2>
+              <p className="text-sm md:text-base">Configure banners in admin settings or for this category.</p>
             </div>
+          </Card>
         </div>
+      </div>
     );
   }
 

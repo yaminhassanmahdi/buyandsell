@@ -1,4 +1,3 @@
-
 "use client";
 import Image from 'next/image';
 import type { CartItem as CartItemType, BusinessSettings } from '@/lib/types';
@@ -17,8 +16,13 @@ interface CartItemProps {
 export function CartItem({ item }: CartItemProps) {
   const { removeFromCart, updateQuantity } = useCart();
   const [settings] = useLocalStorage<BusinessSettings>(BUSINESS_SETTINGS_STORAGE_KEY, DEFAULT_BUSINESS_SETTINGS);
-  const activeCurrency = settings.availableCurrencies.find(c => c.code === settings.defaultCurrencyCode) || settings.availableCurrencies[0] || { symbol: '?' };
+  const activeCurrency = settings?.availableCurrencies?.find(c => c.code === settings?.defaultCurrencyCode) || 
+    settings?.availableCurrencies?.[0] || 
+    { code: 'BDT', symbol: '৳', name: 'Bangladeshi Taka' };
   const currencySymbol = activeCurrency.symbol;
+
+  // Get the stock limit from the item (if available) or use a reasonable default
+  const maxStock = (item as any).stock || 99;
 
   return (
     <div className="flex items-center gap-4 py-4 border-b last:border-b-0">
@@ -37,10 +41,12 @@ export function CartItem({ item }: CartItemProps) {
           <h3 className="font-semibold hover:text-primary transition-colors">{item.name}</h3>
         </Link>
         <p className="text-sm text-muted-foreground">Price: {currencySymbol}{item.price.toFixed(2)}</p>
-         <div className="mt-2">
+        <p className="text-xs text-muted-foreground">Stock: {maxStock} available</p>
+        <div className="mt-2">
           <QuantitySelector 
             quantity={item.quantity} 
-            setQuantity={(q) => updateQuantity(item.id, q)}
+            setQuantity={(q) => updateQuantity(item.id, q, maxStock)}
+            maxQuantity={maxStock}
           />
         </div>
       </div>

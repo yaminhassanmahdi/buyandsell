@@ -1,8 +1,8 @@
-
 "use client";
+
 import React, { useState, useMemo, useEffect } from 'react';
 import { ProductCard } from '@/components/product-card';
-import { MOCK_PRODUCTS } from '@/lib/mock-data'; // Reverted to MOCK_PRODUCTS
+import { apiClient } from '@/lib/api-client';
 import type { Product, Category as CategoryType } from '@/lib/types';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { SearchX, ArrowRight, Loader2 } from 'lucide-react'; 
@@ -14,10 +14,10 @@ import { HeroBanner } from '@/components/hero-banner';
 import { useSearchParams } from 'next/navigation';
 import useLocalStorage from '@/hooks/use-local-storage';
 import { CATEGORIES_STORAGE_KEY, INITIAL_CATEGORIES } from '@/lib/constants';
-import { MOCK_SUBCATEGORIES } from '@/lib/mock-data'; // Kept for title generation
+import { Suspense } from "react";
 
 
-const PRODUCTS_PER_CATEGORY_HOME = 4;
+const PRODUCTS_PER_CATEGORY_HOME = 8;
 
 interface ProductGroup {
   category: CategoryType;
@@ -25,13 +25,15 @@ interface ProductGroup {
   titleOverride?: string;
 }
 
-export default function HomePage() {
+function HomePageInner() {
   const searchParams = useSearchParams();
   const selectedCategoryIdFromUrl = searchParams.get('category');
   const selectedSubCategoryIdFromUrl = searchParams.get('subcategory');
 
   const [loading, setLoading] = useState(true); 
   const [categoriesToDisplay, setCategoriesToDisplay] = useState<CategoryType[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [subCategories, setSubCategories] = useState<any[]>([]);
 
   const [storedCategories] = useLocalStorage<CategoryType[]>(
     CATEGORIES_STORAGE_KEY,
@@ -39,36 +41,81 @@ export default function HomePage() {
   );
 
   useEffect(() => {
-    setLoading(true);
-    // Process categories from localStorage
-    const currentCategories = Array.isArray(storedCategories) && storedCategories.length > 0 ? storedCategories : INITIAL_CATEGORIES;
-    const sorted = [...currentCategories].sort((a, b) => 
-      (a.sortOrder ?? 999) - (b.sortOrder ?? 999) || a.name.localeCompare(b.name)
-    );
-    setCategoriesToDisplay(sorted);
-    setLoading(false); // Set loading to false after categories are processed
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        // Fetch categories
+        const categoriesData = await apiClient.getCategories({ includeSubCategories: true });
+        setCategoriesToDisplay(categoriesData);
+        
+        // Extract subcategories for later use
+        const allSubCategories = categoriesData.flatMap((cat: any) => cat.subCategories || []);
+        setSubCategories(allSubCategories);
+
+        // Fetch products
+        const productsData = await apiClient.getProducts({ 
+          status: 'approved',
+          limit: 50 
+        });
+        // Filter products with stock > 0
+        setProducts(productsData.filter((p: any) => p.stock > 0));
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        // Fallback to stored categories if API fails
+        const currentCategories = Array.isArray(storedCategories) && storedCategories.length > 0 ? storedCategories : INITIAL_CATEGORIES;
+        const sorted = [...currentCategories].sort((a, b) => 
+          (a.sortOrder ?? 999) - (b.sortOrder ?? 999) || a.name.localeCompare(b.name)
+        );
+        setCategoriesToDisplay(sorted);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
   }, [storedCategories]);
 
   const productsByCategory: ProductGroup[] = useMemo(() => {
-    // Directly use MOCK_PRODUCTS, filtered for approved and in-stock
-    let baseProducts = MOCK_PRODUCTS.filter(p => p.status === 'approved' && p.stock > 0); 
+    // Use products from API
+    let baseProducts = products;
 
     if (selectedCategoryIdFromUrl) {
       const category = categoriesToDisplay.find(c => c.id === selectedCategoryIdFromUrl);
       if (!category) return [];
 
       let filteredProducts = baseProducts.filter(p => p.categoryId === selectedCategoryIdFromUrl);
+      
+      if (selectedSubCategoryIdFromUrl) {
+        filteredProducts = filteredProducts.filter(p => p.subCategoryId === selectedSubCategoryIdFromUrl);
+      }
+      
+      const formattedProducts = filteredProducts.map(p => ({
+        id: p.id,
+        name: p.name,
+        description: p.description,
+        status: p.status,
+        stock: parseInt(p.stock),
+        categoryId: p.categoryId,
+        subCategoryId: p.subCategoryId,
+        sellerId: p.sellerId,
+        sellerName: p.sellerName,
+        imageUrl: p.imageUrl,
+        imageHint: p.imageHint,
+        createdAt: new Date(p.createdAt),
+        price: parseFloat(p.price),
+        selectedAttributes: p.selectedAttributes || []
+      }));
+
       let title = `Products in ${category.name}`;
 
       if (selectedSubCategoryIdFromUrl) {
-        const subCategory = MOCK_SUBCATEGORIES.find(sc => sc.id === selectedSubCategoryIdFromUrl);
-        filteredProducts = filteredProducts.filter(p => p.subCategoryId === selectedSubCategoryIdFromUrl);
+        const subCategory = subCategories.find(sc => sc.id === selectedSubCategoryIdFromUrl);
         title = `${subCategory ? subCategory.name : 'Selected Subcategory'} in ${category.name}`;
       }
 
       return [{
         category,
-        products: filteredProducts,
+        products: formattedProducts,
         titleOverride: title
       }];
     }
@@ -78,9 +125,25 @@ export default function HomePage() {
       category,
       products: baseProducts
         .filter(product => product.categoryId === category.id)
-        .slice(0, PRODUCTS_PER_CATEGORY_HOME),
+        .slice(0, PRODUCTS_PER_CATEGORY_HOME)
+        .map(p => ({
+          id: p.id,
+          name: p.name,
+          description: p.description,
+          status: p.status,
+          stock: parseInt(p.stock),
+          categoryId: p.categoryId,
+          subCategoryId: p.subCategoryId,
+          sellerId: p.sellerId,
+          sellerName: p.sellerName,
+          imageUrl: p.imageUrl,
+          imageHint: p.imageHint,
+          createdAt: new Date(p.createdAt),
+          price: parseFloat(p.price),
+          selectedAttributes: p.selectedAttributes || []
+        })),
     })).filter(group => group.products.length > 0);
-  }, [selectedCategoryIdFromUrl, selectedSubCategoryIdFromUrl, categoriesToDisplay]);
+  }, [selectedCategoryIdFromUrl, selectedSubCategoryIdFromUrl, categoriesToDisplay, products, subCategories]);
 
   if (loading) {
     return (
@@ -88,7 +151,13 @@ export default function HomePage() {
         {(!selectedCategoryIdFromUrl && !selectedSubCategoryIdFromUrl) && (
           <>
             <CategoryBar />
-            <HeroBanner />
+          <div className="container mx-auto px-4 py-2">
+            <div className="text-center">
+              <Link href="/categories" className="text-sm text-muted-foreground hover:text-primary transition-colors">
+                See all categories →
+              </Link>
+            </div>
+          </div>            <HeroBanner />
           </>
         )}
         <div className="container mx-auto px-4 mt-6 md:mt-8">
@@ -112,7 +181,13 @@ export default function HomePage() {
       {(!selectedCategoryIdFromUrl && !selectedSubCategoryIdFromUrl) && (
         <>
           <CategoryBar />
-          <HeroBanner />
+          <div className="container mx-auto px-4 py-2">
+            <div className="text-center">
+              <Link href="/categories" className="text-sm text-muted-foreground hover:text-primary transition-colors">
+                See all categories →
+              </Link>
+            </div>
+          </div>          <HeroBanner />
         </>
       )}
 
@@ -124,7 +199,7 @@ export default function HomePage() {
                 <h2 className="text-2xl md:text-3xl font-bold">
                   {group.titleOverride || (selectedCategoryIdFromUrl ? `Products in ${group.category.name}` : `Latest in ${group.category.name}`)}
                 </h2>
-                {!selectedCategoryIdFromUrl && MOCK_PRODUCTS.filter(p => p.categoryId === group.category.id && p.status === 'approved' && p.stock > 0).length > PRODUCTS_PER_CATEGORY_HOME && (
+                {!selectedCategoryIdFromUrl && products.filter(p => p.categoryId === group.category.id).length > PRODUCTS_PER_CATEGORY_HOME && (
                    <Button variant="outline" asChild>
                     <Link href={`/category/${group.category.id}`}>
                       View All <ArrowRight className="ml-2 h-4 w-4" />
@@ -133,7 +208,7 @@ export default function HomePage() {
                 )}
               </div>
               {group.products.length > 0 ? (
-                <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-3 md:gap-4">
                   {group.products.map(product => (
                     <ProductCard key={product.id} product={product} />
                   ))}
@@ -165,7 +240,6 @@ export default function HomePage() {
   );
 }
 
-
 const ProductCardSkeleton = () => (
   <div className="flex flex-col overflow-hidden rounded-lg border shadow-lg">
     <Skeleton className="aspect-[4/3] w-full" />
@@ -178,3 +252,11 @@ const ProductCardSkeleton = () => (
     </div>
   </div>
 );
+
+export default function HomePage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <HomePageInner />
+    </Suspense>
+  );
+}

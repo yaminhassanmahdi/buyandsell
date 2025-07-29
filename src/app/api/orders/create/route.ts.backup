@@ -1,0 +1,110 @@
+import { NextResponse } from 'next/server';
+import { executeQuery, executeQuerySingle } from '@/lib/db';
+import { generateOrderId } from '@/lib/utils';
+
+export async function POST(request: Request) {
+  try {
+    const body = await request.json();
+    const {
+      userId,
+      shippingAddress,
+      paymentMethod,
+      totalAmount,
+      deliveryChargeAmount,
+      platformCommission,
+      notes,
+      items, // Array of { productId, quantity, price }
+    } = body;
+
+    console.log('Order creation request:', { userId, totalAmount, itemsCount: items?.length });
+
+    if (!userId || !shippingAddress || !items || items.length === 0) {
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    }
+
+    // Generate order ID with better format
+    const orderId = generateOrderId();
+
+    // Insert order
+    const orderQuery = `
+      INSERT INTO orders (
+        id, user_id, total_amount, delivery_charge_amount, platform_commission,
+        shipping_method_name, payment_status, status, shipping_address, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, 'unpaid', 'pending', ?, NOW(), NOW())
+    `;
+
+    await executeQuery(orderQuery, [
+      orderId,
+      userId,
+      totalAmount,
+      deliveryChargeAmount || 0,
+      platformCommission || 0,
+      paymentMethod || 'cod',
+      JSON.stringify(shippingAddress)
+    ]);
+
+    console.log('Order created with ID:', orderId);
+
+    // Insert order items with product details
+    for (const item of items) {
+      console.log('Processing item:', item);
+      
+      // Get product details including seller info
+      const productQuery = `
+        SELECT p.*, u.name as seller_name, pi.image_url 
+        FROM products p 
+        LEFT JOIN users u ON p.seller_id = u.id 
+        LEFT JOIN product_images pi ON p.id = pi.product_id AND pi.is_primary = true
+        WHERE p.id = ?
+      `;
+      const product = await executeQuerySingle(productQuery, [item.productId]);
+      
+      if (!product) {
+        console.error(`Product not found: ${item.productId}`);
+        continue;
+      }
+
+      console.log('Found product:', { id: product.id, name: product.name, seller_id: product.seller_id });
+
+      const itemQuery = `
+        INSERT INTO order_items (order_id, product_id, seller_id, name, price, quantity, image_url)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `;
+      
+      const itemParams = [
+        orderId,
+        item.productId,
+        product.seller_id,
+        product.name,
+        item.price,
+        item.quantity,
+        product.image_url || null
+      ];
+
+      console.log('Inserting order item with params:', itemParams);
+      
+      await executeQuery(itemQuery, itemParams);
+      console.log('Order item inserted successfully');
+    }
+
+    // Verify order items were created
+    const verifyQuery = `
+      SELECT COUNT(*) as item_count 
+      FROM order_items 
+      WHERE order_id = ?
+    `;
+    const verification = await executeQuerySingle(verifyQuery, [orderId]);
+    console.log('Order items verification:', verification);
+
+    // Return order details
+    return NextResponse.json({ 
+      orderId,
+      message: 'Order created successfully',
+      status: 'pending'
+    });
+
+  } catch (error) {
+    console.error('Order creation error:', error);
+    return NextResponse.json({ error: 'Failed to create order' }, { status: 500 });
+  }
+} 

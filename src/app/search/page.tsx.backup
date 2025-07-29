@@ -1,0 +1,268 @@
+"use client";
+import { useEffect, useState, useMemo } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { apiClient } from '@/lib/api-client';
+import type { Product, Category } from '@/lib/types';
+import { ProductCard } from '@/components/product-card';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Loader2, Search, SearchX, Filter, Grid, List, SlidersHorizontal, Tag, X } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Card, CardContent, CardFooter } from '@/components/ui/card';
+import { useSettings } from '@/contexts/settings-context';
+
+export default function SearchPage() {
+  const searchParams = useSearchParams();
+  const query = searchParams.get('q');
+  const categoryId = searchParams.get('category');
+  const attributeId = searchParams.get('attribute');
+  const { settings } = useSettings();
+  
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [sortBy, setSortBy] = useState('date_desc');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+
+  // Get current category and attribute info
+  const currentCategory = useMemo(() => {
+    return categories.find(c => c.id === categoryId);
+  }, [categories, categoryId]);
+
+  const currentAttribute = useMemo(() => {
+    if (!currentCategory || !attributeId) return null;
+    return currentCategory.attributeTypes?.find(attr => attr.id === attributeId);
+  }, [currentCategory, attributeId]);
+
+  const activeCurrency = useMemo(() => {
+    const safeAvailableCurrencies = settings?.availableCurrencies && Array.isArray(settings.availableCurrencies) && settings.availableCurrencies.length > 0
+      ? settings.availableCurrencies
+      : [{ code: 'BDT', symbol: '৳', name: 'Bangladeshi Taka' }];
+    const safeDefaultCurrencyCode = settings?.defaultCurrencyCode || 'BDT';
+    return safeAvailableCurrencies.find(c => c.code === safeDefaultCurrencyCode) || safeAvailableCurrencies[0] || { symbol: '৳' };
+  }, [settings]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        // Fetch categories with attributes
+        const categoriesData = await apiClient.getCategories({ includeAttributes: true });
+        setCategories(categoriesData);
+
+        // Build search parameters
+        const searchParams: any = {
+          status: 'approved',
+          sortBy: sortBy,
+          limit: 100
+        };
+
+        if (query) searchParams.search = query;
+        if (categoryId) searchParams.categoryId = categoryId;
+
+        const searchResults = await apiClient.getProducts(searchParams);
+
+        // Convert API format to component format and filter for in-stock
+        const convertedResults = searchResults
+          .filter((p: any) => p.stock > 0)
+          .map((p: any) => ({
+            ...p,
+            categoryId: p.categoryId,
+            subCategoryId: p.subCategoryId,
+            sellerId: p.seller_id,
+            sellerName: p.sellerName,
+            imageUrl: p.imageUrl,
+            imageHint: p.imageHint,
+            createdAt: new Date(p.createdAt),
+            price: parseFloat(p.price)
+          }));
+
+        setFilteredProducts(convertedResults);
+      } catch (error) {
+        console.error('Error searching products:', error);
+        setFilteredProducts([]);
+      }
+      setIsLoading(false);
+    };
+
+    fetchData();
+  }, [query, categoryId, attributeId, sortBy]);
+
+  const getSearchTitle = () => {
+    if (currentAttribute && currentCategory) {
+      return `Shop by ${currentAttribute.name} in ${currentCategory.name}`;
+    }
+    if (currentCategory) {
+      return `${currentCategory.name} Products`;
+    }
+    if (query) {
+      return `Search Results for "${query}"`;
+    }
+    return 'Search Products';
+  };
+
+  const getSearchDescription = () => {
+    if (currentAttribute && currentCategory) {
+      return `Browse all products by ${currentAttribute.name.toLowerCase()} in ${currentCategory.name.toLowerCase()}`;
+    }
+    if (currentCategory) {
+      return `Discover amazing ${currentCategory.name.toLowerCase()} products from trusted sellers`;
+    }
+    if (query) {
+      return `Found ${filteredProducts.length} products matching your search`;
+    }
+    return 'Use the search bar above to find products';
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-background to-gray-50/50">
+      {/* Header Section */}
+      <div className="bg-gradient-to-r from-primary/10 via-background to-primary/10 border-b">
+        <div className="container mx-auto px-4 py-8">
+          <div className="text-center">
+            <h1 className="text-3xl md:text-4xl font-bold mb-4 bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+              {getSearchTitle()}
+            </h1>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-6">
+              {getSearchDescription()}
+            </p>
+            
+            {/* Active Filters */}
+            <div className="flex flex-wrap justify-center gap-2 mb-4">
+              {query && (
+                <Badge variant="secondary" className="text-sm">
+                  <Search className="h-3 w-3 mr-1" />
+                  Search: {query}
+                </Badge>
+              )}
+              {currentCategory && (
+                <Badge variant="secondary" className="text-sm">
+                  <Tag className="h-3 w-3 mr-1" />
+                  Category: {currentCategory.name}
+                </Badge>
+              )}
+              {currentAttribute && (
+                <Badge variant="secondary" className="text-sm">
+                  <Filter className="h-3 w-3 mr-1" />
+                  {currentAttribute.name}
+                </Badge>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="container mx-auto px-4 py-8">
+        {/* Search Controls */}
+        {(query || categoryId || attributeId) && (
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-8">
+            <div className="flex items-center gap-4">
+              <span className="text-sm text-muted-foreground">
+                {isLoading ? 'Searching...' : `${filteredProducts.length} products found`}
+              </span>
+            </div>
+            
+            <div className="flex items-center gap-4">
+              {/* Sort Options */}
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger className="w-[180px]">
+                  <SlidersHorizontal className="h-4 w-4 mr-2" />
+                  <SelectValue placeholder="Sort by" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="date_desc">Newest First</SelectItem>
+                  <SelectItem value="date_asc">Oldest First</SelectItem>
+                  <SelectItem value="price_asc">Price: Low to High</SelectItem>
+                  <SelectItem value="price_desc">Price: High to Low</SelectItem>
+                  <SelectItem value="name_asc">Name: A to Z</SelectItem>
+                  <SelectItem value="name_desc">Name: Z to A</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {/* View Mode Toggle */}
+              <div className="flex rounded-lg border">
+                <Button
+                  variant={viewMode === 'grid' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setViewMode('grid')}
+                  className="rounded-r-none"
+                >
+                  <Grid className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant={viewMode === 'list' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setViewMode('list')}
+                  className="rounded-l-none"
+                >
+                  <List className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Loading State */}
+        {isLoading && (query || categoryId || attributeId) && (
+          <div className={`grid gap-4 md:gap-6 ${viewMode === 'grid' ? 'grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4' : 'grid-cols-1'}`}>
+            {[...Array(viewMode === 'grid' ? 8 : 6)].map((_, i) => (
+              <Card key={i} className="flex flex-col overflow-hidden rounded-lg">
+                <Skeleton className="aspect-[4/3] w-full" />
+                <CardContent className="p-3 flex-grow">
+                  <Skeleton className="h-5 w-3/4 mb-1" />
+                  <Skeleton className="h-7 w-1/3" />
+                </CardContent>
+                <CardFooter className="p-3 border-t">
+                  <Skeleton className="h-9 w-full" />
+                </CardFooter>
+              </Card>
+            ))}
+          </div>
+        )}
+
+        {/* Results */}
+        {!isLoading && (query || categoryId || attributeId) && filteredProducts.length > 0 && (
+          <div className={`grid gap-4 md:gap-6 ${viewMode === 'grid' ? 'grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4' : 'grid-cols-1 md:grid-cols-2'}`}>
+            {filteredProducts.map(product => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+        )}
+
+        {/* No Results */}
+        {!isLoading && (query || categoryId || attributeId) && filteredProducts.length === 0 && (
+          <div className="text-center py-12">
+            <div className="bg-white rounded-2xl shadow-lg p-8 max-w-md mx-auto">
+              <SearchX className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold mb-2">No Products Found</h3>
+              <p className="text-muted-foreground mb-4">
+                We couldn't find any products matching your criteria. Try adjusting your search or browse our categories.
+              </p>
+              <Button asChild>
+                <a href="/">Browse Categories</a>
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Initial State */}
+        {!query && !categoryId && !attributeId && (
+          <div className="text-center py-12">
+            <div className="bg-white rounded-2xl shadow-lg p-8 max-w-md mx-auto">
+              <Search className="h-16 w-16 text-primary mx-auto mb-4" />
+              <h3 className="text-xl font-semibold mb-2">Start Searching</h3>
+              <p className="text-muted-foreground mb-4">
+                Use the search bar above to find products, or browse by category.
+              </p>
+              <Button asChild>
+                <a href="/">Browse Categories</a>
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

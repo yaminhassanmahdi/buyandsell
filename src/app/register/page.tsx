@@ -1,13 +1,15 @@
-
 "use client";
+export const dynamic = 'force-dynamic';
+
 import { AuthForm } from "@/components/auth-form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
 import { useAuth } from '@/contexts/auth-context';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import { Suspense } from "react";
 
-export default function RegisterPage() {
+function RegisterPageInner() {
   const { isAuthenticated, loading } = useAuth();
   const router = useRouter();
 
@@ -43,5 +45,13 @@ export default function RegisterPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <RegisterPageInner />
+    </Suspense>
   );
 }

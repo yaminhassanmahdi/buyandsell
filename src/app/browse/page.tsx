@@ -1,8 +1,8 @@
-
 "use client";
-import React, { useState, useEffect, useMemo } from 'react';
+
+import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { MOCK_PRODUCTS, MOCK_CATEGORIES, MOCK_SUBCATEGORIES, MOCK_CATEGORY_ATTRIBUTE_TYPES, MOCK_CATEGORY_ATTRIBUTE_VALUES } from '@/lib/mock-data';
+import { apiClient } from '@/lib/api-client';
 import type { Product, Category, SubCategory, CategoryAttributeType, CategoryAttributeValue, SortByType } from '@/lib/types';
 import { ProductCard } from '@/components/product-card';
 import { ProductListFilters } from '@/components/product-list-filters';
@@ -25,7 +25,7 @@ const SORT_OPTIONS: { value: SortByType; label: string }[] = [
   { value: 'name_desc', label: 'Name: Z-A' },
 ];
 
-export default function BrowsePage() {
+function BrowsePageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isLoading, setIsLoading] = useState(true);
@@ -36,31 +36,68 @@ export default function BrowsePage() {
   const [sortBy, setSortBy] = useState<SortByType>(
     (searchParams.get('sortBy') as SortByType) || 'date_desc'
   );
+  
+  // API data state
+  const [allProducts, setAllProducts] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [subCategories, setSubCategories] = useState<any[]>([]);
+  const [attributeTypes, setAttributeTypes] = useState<any[]>([]);
+  const [attributeValues, setAttributeValues] = useState<any[]>([]);
 
   const categoryId = searchParams.get('categoryId');
   const activeSubCategoryIdsFromUrl = searchParams.getAll('subCategoryId'); // Used to check if a sub-category is active
 
   const subCategoriesForFilter = useMemo(() => {
     if (!categoryId) return [];
-    return MOCK_SUBCATEGORIES.filter(sc => sc.parentCategoryId === categoryId);
-  }, [categoryId]);
+    return subCategories.filter(sc => sc.parentCategoryId === categoryId);
+  }, [categoryId, subCategories]);
 
   const attributeTypesForFilter = useMemo(() => {
     if (!categoryId) return [];
-    return MOCK_CATEGORY_ATTRIBUTE_TYPES.filter(at => at.categoryId === categoryId);
-  }, [categoryId]);
+    return attributeTypes.filter(at => at.categoryId === categoryId);
+  }, [categoryId, attributeTypes]);
+
+  // Load initial data from API
+  useEffect(() => {
+    const loadInitialData = async () => {
+      try {
+        const [productsData, categoriesData] = await Promise.all([
+          apiClient.getProducts({ status: 'approved', limit: 100 }),
+          apiClient.getCategories({ includeSubCategories: true, includeAttributes: true, includeAttributeValues: true })
+        ]);
+
+        setAllProducts(productsData.filter((p: any) => p.stock > 0));
+        setCategories(categoriesData);
+        
+        // Extract subcategories and attributes
+        const allSubCategories = categoriesData.flatMap((cat: any) => cat.subCategories || []);
+        const allAttributeTypes = categoriesData.flatMap((cat: any) => cat.attributeTypes || []);
+        const allAttributeValues = allAttributeTypes.flatMap((attr: any) => attr.values || []);
+        
+        setSubCategories(allSubCategories);
+        setAttributeTypes(allAttributeTypes);
+        setAttributeValues(allAttributeValues);
+      } catch (error) {
+        console.error('Error loading browse page data:', error);
+      }
+    };
+
+    loadInitialData();
+  }, []);
 
   useEffect(() => {
+    if (allProducts.length === 0) return; // Wait for data to load
+    
     setIsLoading(true);
     const activeCategoryIdFromUrl = searchParams.get('categoryId');
-    const currentActiveSubCategoryIds = searchParams.getAll('subCategoryId'); // Renamed for clarity
+    const currentActiveSubCategoryIds = searchParams.getAll('subCategoryId');
     const activeMinPrice = searchParams.get('minPrice');
     const activeMaxPrice = searchParams.get('maxPrice');
     const currentSortBy = (searchParams.get('sortBy') as SortByType) || 'date_desc';
     setSortBy(currentSortBy);
 
     const activeDynamicAttributeFilters: Record<string, string[]> = {};
-    MOCK_CATEGORY_ATTRIBUTE_TYPES.forEach(attrType => {
+    attributeTypes.forEach(attrType => {
       const values = searchParams.getAll(attrType.id);
       if (values.length > 0) {
         activeDynamicAttributeFilters[attrType.id] = values;
@@ -68,33 +105,33 @@ export default function BrowsePage() {
     });
 
     if (activeCategoryIdFromUrl) {
-      const foundCategory = MOCK_CATEGORIES.find(c => c.id === activeCategoryIdFromUrl);
+      const foundCategory = categories.find(c => c.id === activeCategoryIdFromUrl);
       setCurrentCategory(foundCategory);
     } else {
       setCurrentCategory(undefined);
     }
 
-    let products = MOCK_PRODUCTS.filter(p => p.status === 'approved' && p.stock > 0);
+    let products = allProducts.slice(); // Copy the array
 
     if (activeCategoryIdFromUrl) {
       products = products.filter(p => p.categoryId === activeCategoryIdFromUrl);
     }
 
-    if (currentActiveSubCategoryIds.length > 0) {
+    if (activeSubCategoryIdsFromUrl.length > 0) {
       products = products.filter(p => p.subCategoryId && currentActiveSubCategoryIds.includes(p.subCategoryId));
     }
     
     if (activeMinPrice) {
-      products = products.filter(p => p.price >= parseFloat(activeMinPrice));
+      products = products.filter(p => parseFloat(p.price) >= parseFloat(activeMinPrice));
     }
     if (activeMaxPrice) {
-      products = products.filter(p => p.price <= parseFloat(activeMaxPrice));
+      products = products.filter(p => parseFloat(p.price) <= parseFloat(activeMaxPrice));
     }
 
     Object.entries(activeDynamicAttributeFilters).forEach(([attrTypeId, valueIds]) => {
       if (valueIds.length > 0) {
         products = products.filter(p => 
-          p.selectedAttributes?.some(selAttr => 
+          p.selectedAttributes?.some((selAttr: any) => 
             selAttr.attributeTypeId === attrTypeId && valueIds.includes(selAttr.attributeValueId)
           )
         );
@@ -105,9 +142,9 @@ export default function BrowsePage() {
     products.sort((a, b) => {
       switch (currentSortBy) {
         case 'price_asc':
-          return a.price - b.price;
+          return parseFloat(a.price) - parseFloat(b.price);
         case 'price_desc':
-          return b.price - a.price;
+          return parseFloat(b.price) - parseFloat(a.price);
         case 'name_asc':
           return a.name.localeCompare(b.name);
         case 'name_desc':
@@ -120,9 +157,22 @@ export default function BrowsePage() {
       }
     });
     
-    setDisplayedProducts(products);
+    // Convert API format to component format
+    const convertedProducts = products.map(p => ({
+      ...p,
+      categoryId: p.categoryId,
+      subCategoryId: p.subCategoryId,
+      sellerId: p.seller_id,
+      sellerName: p.sellerName,
+      imageUrl: p.imageUrl,
+      imageHint: p.imageHint,
+      createdAt: new Date(p.createdAt),
+      price: parseFloat(p.price)
+    }));
+    
+    setDisplayedProducts(convertedProducts);
     setIsLoading(false);
-  }, [searchParams]);
+  }, [searchParams, allProducts, categories, attributeTypes]);
 
   const handleSortChange = (newSortBy: SortByType) => {
     setSortBy(newSortBy);
@@ -135,7 +185,7 @@ export default function BrowsePage() {
     const selectedSubCategoryIdsFromUrl = searchParams.getAll('subCategoryId');
     if (!currentCategory) return "Browse All Products";
     if (selectedSubCategoryIdsFromUrl.length === 1) {
-      const subCat = MOCK_SUBCATEGORIES.find(sc => sc.id === selectedSubCategoryIdsFromUrl[0]);
+      const subCat = subCategories.find(sc => sc.id === selectedSubCategoryIdsFromUrl[0]);
       return subCat ? `${subCat.name} in ${currentCategory.name}` : currentCategory.name;
     }
     if (selectedSubCategoryIdsFromUrl.length > 1) {
@@ -147,10 +197,10 @@ export default function BrowsePage() {
   const breadcrumbSubCategory = useMemo(() => {
     const subCategoryIds = searchParams.getAll('subCategoryId');
     if (subCategoryIds.length === 1) {
-      return MOCK_SUBCATEGORIES.find(sc => sc.id === subCategoryIds[0]);
+      return subCategories.find(sc => sc.id === subCategoryIds[0]);
     }
     return null;
-  }, [searchParams]);
+  }, [searchParams, subCategories]);
 
   const showSubCategoryScroller = categoryId && activeSubCategoryIdsFromUrl.length === 0 && subCategoriesForFilter.length > 0;
 
@@ -210,7 +260,7 @@ export default function BrowsePage() {
             currentCategory={currentCategory} 
             subCategoriesForCurrentCategory={subCategoriesForFilter}
             attributeTypesForCurrentCategory={attributeTypesForFilter}
-            allAttributeValues={MOCK_CATEGORY_ATTRIBUTE_VALUES}
+            allAttributeValues={attributeValues}
           />
         </div>
 
@@ -237,7 +287,7 @@ export default function BrowsePage() {
                             currentCategory={currentCategory} 
                             subCategoriesForCurrentCategory={subCategoriesForFilter}
                             attributeTypesForCurrentCategory={attributeTypesForFilter}
-                            allAttributeValues={MOCK_CATEGORY_ATTRIBUTE_VALUES}
+                            allAttributeValues={attributeValues}
                             onApplyFilters={() => setIsFilterSheetOpen(false)} // Close sheet on apply
                         />
                      </div>
@@ -264,11 +314,11 @@ export default function BrowsePage() {
           </div>
 
           {isLoading ? (
-            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 md:gap-6">
               {[...Array(8)].map((_, i) => <ProductCardSkeleton key={i} />)}
             </div>
           ) : displayedProducts.length > 0 ? (
-            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 md:gap-6">
               {displayedProducts.map(product => (
                 <ProductCard key={product.id} product={product} />
               ))}
@@ -301,5 +351,10 @@ const ProductCardSkeleton = () => (
   </div>
 );
 
-
-    
+export default function BrowsePage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <BrowsePageInner />
+    </Suspense>
+  );
+}

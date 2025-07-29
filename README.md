@@ -1,128 +1,191 @@
 
-# 2ndhandbajar.com - Online Marketplace
+# Buy and Sell - Online Marketplace
 
-This is a Next.js application for 2ndhandbajar.com, an online marketplace for buying and selling second-hand goods. This version is a prototype and uses mock data.
+A modern online marketplace built with Next.js 15, TypeScript, and MySQL for buying and selling second-hand goods.
 
-## Getting Started
+## Features
 
-This project is built with Next.js and TypeScript, utilizing ShadCN UI components and Tailwind CSS for styling.
-
-To get started with development:
-
-1.  **Install dependencies:**
-    ```bash
-    npm install
-    # or
-    yarn install
-    ```
-
-2.  **Set up the database:**
-    *   This project is designed to work with a PostgreSQL database.
-    *   A complete database schema is provided in `schema.sql` in the project root.
-    *   Execute this SQL script in your PostgreSQL database instance to create all the necessary tables.
-
-3.  **Configure Environment Variables:**
-    *   Create a file named `.env.local` in the project root.
-    *   This file is for local development and should **NOT** be committed to version control (ensure it's in your `.gitignore` file).
-    *   Populate `.env.local` with your PostgreSQL database credentials:
-        ```env
-        # .env.local
-        DB_USER="your_database_user"
-        DB_PASSWORD="your_database_password"
-        DB_HOST="your_database_host"
-        DB_PORT="your_database_port"
-        DB_NAME="your_database_name"
-        
-        # If your database requires an SSL CA certificate, add it here.
-        # Enclose the multi-line certificate in double quotes.
-        DB_SSL_CA="-----BEGIN CERTIFICATE-----\n...\n-----END CERTIFICATE-----"
-        ```
-
-4.  **Run the development server:**
-    ```bash
-    npm run dev
-    # or
-    yarn dev
-    ```
-    The application will be available at `http://localhost:9002` (or the port specified in `package.json`).
-
-## Core Features (Prototype)
-
-*   **Product Browsing**: Users can browse products with filtering by category/brand.
-*   **Shopping Cart**: Users can add products to their cart and proceed to checkout.
-*   **User Authentication**: Mock user login/registration with email/phone and Google Sign-In.
-*   **Product Listing**: Users can upload and list their own products for sale (admin approval).
-*   **Admin Panel**:
-    *   Product approval queue.
-    *   Management of categories, sub-categories, and category-specific attributes.
-    *   Order management (view details, update status, update payment status).
-    *   Location management (view predefined locations, manage delivery charges, shipping methods).
-    *   Financials (withdrawal request processing, commission setting, cash-in-hand view).
-    *   General settings (business branding, homepage banners, custom pages, Google login config).
-    *   User management (view user details).
-*   **Shipping Address Input**: Users can set their shipping address during checkout and in account settings.
-*   **Order Tracking**: Buyers can view their order status in their account.
-*   **Seller Earnings & Withdrawals**: Sellers can view earnings and request withdrawals.
+- 🛍️ **Product Management**: List, browse, and manage products with dynamic attributes
+- 👥 **User Authentication**: Secure login/register with Google OAuth support
+- 🛒 **Shopping Cart**: Full cart functionality with quantity management
+- 💳 **Checkout System**: Complete checkout process with delivery calculations
+- 👨‍💼 **Admin Panel**: Comprehensive admin dashboard for managing the platform
+- 💰 **Commission System**: Automated commission calculation and withdrawal management
+- 📱 **Responsive Design**: Mobile-first design with Tailwind CSS
+- 🎨 **Modern UI**: Beautiful interface with ShadCN UI components
 
 ## Tech Stack
 
-*   **Frontend:**
-    *   Language: TypeScript
-    *   Framework: Next.js (v15) with App Router
-    *   UI Library: React (v18)
-    *   UI Components: ShadCN UI
-    *   Styling: Tailwind CSS
-    *   Icons: Lucide React
-*   **Backend (Prototype):**
-    *   Runtime: Next.js (Node.js environment) for Server Components and mock data handling.
-    *   No dedicated external database is currently integrated.
-*   **AI (Potential):**
-    *   Genkit (if AI features are implemented).
+- **Frontend**: Next.js 15, React 18, TypeScript
+- **Styling**: Tailwind CSS, ShadCN UI
+- **Database**: MySQL
+- **Authentication**: Custom JWT + Google OAuth
+- **Deployment**: Vercel
 
-## Data Management (Current Prototype)
+## Getting Started
 
-*   **Mock Data:** Most application data (products, users, orders, initial categories, locations) is sourced from static arrays defined in `src/lib/mock-data.ts` and `src/lib/constants.ts`. This data is **in-memory** and will reset when the development server restarts.
-*   **`localStorage`:** Admin-configurable settings (e.g., delivery charges, commission percentages, business settings, dynamic categories, banners, custom pages, shipping methods, attribute types/values) and user-specific data (like `currentUser`, `cartItems`) are persisted in the browser's `localStorage`. This means:
-    *   Data is specific to the browser instance.
-    *   Data is not shared between users or across different browsers/devices.
-    *   Clearing browser data will erase these settings and user sessions.
+### Prerequisites
 
-**This data management approach is suitable for prototyping and local development ONLY.**
+- Node.js 18+ 
+- MySQL database
+- Vercel account (for deployment)
 
-## Security Considerations (Current Prototype)
+### Local Development
 
-*   **NOT PRODUCTION READY:** The current version of this application is **NOT secure** and should **NOT** be deployed to a public environment or used with real, sensitive data.
-*   **Authentication:** The authentication system is a mock implementation. User credentials are checked against in-memory data, and there is no secure password hashing or robust session management.
-*   **Authorization:** Admin panel access is based on a simple `isAdmin` flag in the mock user data. There are no comprehensive authorization checks for specific admin actions.
-*   **Data Storage:** Using `localStorage` for settings and mock arrays for core data is inherently insecure for a real application.
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/yaminhassanmahdi/buyandsell.git
+   cd buyandsell
+   ```
 
-## Future Work: Towards a Production-Ready Application
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
 
-To make this application production-ready, the following key areas need to be addressed:
+3. **Set up environment variables**
+   Create a `.env.local` file with:
+   ```env
+   # Database Configuration
+   DB_HOST=localhost
+   DB_USER=your_db_user
+   DB_PASSWORD=your_db_password
+   DB_NAME=your_db_name
+   DB_PORT=3306
 
-1.  **Backend & Database Integration:**
-    *   Implement a robust backend (e.g., using Node.js/Express, Python/Django, or a BaaS like Firebase/Supabase).
-    *   Set up a persistent database (e.g., PostgreSQL, MongoDB, Firebase Firestore).
-    *   Create API endpoints for all data operations (CRUD for products, users, orders, settings, etc.).
-    *   Replace all mock data and `localStorage` interactions with API calls to this backend.
-2.  **Secure Authentication & Authorization:**
-    *   Integrate a secure authentication system (e.g., JWT, OAuth 2.0).
-    *   Implement proper password hashing and storage.
-    *   Develop role-based access control (RBAC) for admin functionalities.
-3.  **Payment Gateway Integration:** For handling real financial transactions.
-4.  **Image & File Management:** Implement secure image/file uploads and storage (e.g., using AWS S3, Google Cloud Storage, Firebase Storage).
-5.  **Security Hardening:** Address common web vulnerabilities (XSS, CSRF, etc.).
-6.  **Scalable Deployment:** Choose and configure a suitable hosting solution (e.g., Vercel, AWS, Google Cloud).
+   # Application Configuration
+   NODE_ENV=development
+   NEXT_PUBLIC_APP_NAME=Buy and Sell
+   NEXT_PUBLIC_APP_URL=http://localhost:3000
+
+   # Authentication
+   JWT_SECRET=your-jwt-secret-key
+   NEXTAUTH_SECRET=your-nextauth-secret
+   NEXTAUTH_URL=http://localhost:3000
+
+   # Google OAuth (optional)
+   GOOGLE_CLIENT_ID=your-google-client-id
+   GOOGLE_CLIENT_SECRET=your-google-client-secret
+   ```
+
+4. **Set up the database**
+   ```bash
+   # Import the schema
+   mysql -u your_user -p your_database < schema-mysql.sql
+   ```
+
+5. **Run the development server**
+   ```bash
+   npm run dev
+   ```
+
+6. **Open your browser**
+   Navigate to [http://localhost:3000](http://localhost:3000)
+
+## Deployment on Vercel
+
+### 1. Connect to Vercel
+
+1. Install Vercel CLI:
+   ```bash
+   npm i -g vercel
+   ```
+
+2. Login to Vercel:
+   ```bash
+   vercel login
+   ```
+
+3. Deploy to Vercel:
+   ```bash
+   vercel
+   ```
+
+### 2. Set Environment Variables
+
+In your Vercel dashboard, add these environment variables:
+
+```env
+# Database Configuration (Use your production MySQL database)
+DB_HOST=your-production-db-host
+DB_USER=your-production-db-user
+DB_PASSWORD=your-production-db-password
+DB_NAME=your-production-db-name
+DB_PORT=3306
+
+# Application Configuration
+NODE_ENV=production
+NEXT_PUBLIC_APP_NAME=Buy and Sell
+NEXT_PUBLIC_APP_URL=https://your-app.vercel.app
+
+# Authentication
+JWT_SECRET=your-production-jwt-secret
+NEXTAUTH_SECRET=your-production-nextauth-secret
+NEXTAUTH_URL=https://your-app.vercel.app
+
+# Google OAuth (if using)
+GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+```
+
+### 3. Database Setup
+
+1. **Set up a MySQL database** (you can use PlanetScale, Railway, or any MySQL provider)
+2. **Import the schema**: Use the `schema-mysql.sql` file
+3. **Update environment variables** with your database credentials
+
+### 4. Deploy
+
+```bash
+vercel --prod
+```
 
 ## Project Structure
 
-*   `src/app/`: Contains all the pages and layouts for the Next.js App Router.
-    *   `src/app/admin/`: Admin panel specific pages and layouts.
-    *   `src/app/api/`: (If used) For Next.js API route handlers.
-*   `src/components/`: Reusable UI components.
-    *   `src/components/ui/`: ShadCN UI components.
-    *   `src/components/admin/`: Components specific to the admin panel.
-*   `src/contexts/`: React Context providers (e.g., AuthContext, CartContext).
-*   `src/hooks/`: Custom React hooks (e.g., `useLocalStorage`, `useToast`).
-*   `src/lib/`: Utility functions, type definitions, constants, and mock data.
-*   `src/ai/`: Genkit AI related files (if used).
+```
+src/
+├── app/                    # Next.js App Router pages
+│   ├── api/               # API routes
+│   ├── admin/             # Admin panel pages
+│   ├── account/           # User account pages
+│   └── ...
+├── components/            # Reusable UI components
+│   ├── ui/               # ShadCN UI components
+│   └── ...
+├── lib/                  # Utility functions and configurations
+├── hooks/                # Custom React hooks
+└── contexts/             # React contexts
+```
+
+## Key Features
+
+### For Users
+- Browse products by category
+- Search and filter products
+- Add items to cart
+- Complete checkout process
+- Manage orders and earnings
+- List products for sale
+
+### For Admins
+- Product approval system
+- Order management
+- User management
+- Commission settings
+- Business configuration
+- Analytics dashboard
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
+
+## License
+
+This project is licensed under the MIT License.
+
+## Support
+
+For support, email support@buyandsell.com or create an issue in this repository.

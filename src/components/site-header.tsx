@@ -1,12 +1,10 @@
-
 "use client";
 import Link from 'next/link';
 import { Button } from './ui/button';
 import { PlusCircle, Search, Menu, Handshake, ShoppingCart, ChevronDown, MoreVertical } from 'lucide-react'; 
 import { Input } from './ui/input';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetClose } from '@/components/ui/sheet'; 
-import { MOCK_CATEGORIES } from '@/lib/mock-data';
-import { USER_NAVIGATION, ADMIN_NAVIGATION, CATEGORIES_STORAGE_KEY, INITIAL_CATEGORIES } from '@/lib/constants'; 
+import { USER_NAVIGATION, ADMIN_NAVIGATION } from '@/lib/constants'; 
 import { useAuth } from '@/contexts/auth-context';
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -15,9 +13,11 @@ import useLocalStorage from '@/hooks/use-local-storage';
 import type { BusinessSettings, Category } from '@/lib/types';
 import { BUSINESS_SETTINGS_STORAGE_KEY, DEFAULT_BUSINESS_SETTINGS, APP_NAME } from '@/lib/constants';
 import { CartSidebar } from './cart-sidebar';
+import { SearchBox } from './search-box';
 import { useCart } from '@/contexts/cart-context';
 import { UserNav } from './user-nav';
 import { Logo } from './logo';
+import { apiClient } from '@/lib/api-client';
 
 export function SiteHeader() {
   const { isAuthenticated } = useAuth();
@@ -29,36 +29,39 @@ export function SiteHeader() {
     BUSINESS_SETTINGS_STORAGE_KEY,
     DEFAULT_BUSINESS_SETTINGS
   );
-  const [storedCategories] = useLocalStorage<Category[]>(CATEGORIES_STORAGE_KEY, INITIAL_CATEGORIES);
-
 
   const [isClient, setIsClient] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isCartSidebarOpen, setIsCartSidebarOpen] = useState(false);
-  const [sortedCategoriesForDrawer, setSortedCategoriesForDrawer] = useState<Category[]>([]);
-
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
   }, []);
 
   useEffect(() => {
-    const categoriesToDisplay = Array.isArray(storedCategories) && storedCategories.length > 0 ? storedCategories : INITIAL_CATEGORIES;
-    const sorted = [...categoriesToDisplay].sort((a, b) => 
-      (a.sortOrder ?? 999) - (b.sortOrder ?? 999) || a.name.localeCompare(b.name)
-    );
-    setSortedCategoriesForDrawer(sorted);
-  }, [storedCategories]);
+    const fetchCategories = async () => {
+      setCategoriesLoading(true);
+      try {
+        const fetchedCategories = await apiClient.getCategories();
+        const sortedCategories = fetchedCategories.sort((a: any, b: any) => 
+          (a.sortOrder ?? 999) - (b.sortOrder ?? 999) || a.name.localeCompare(b.name)
+        );
+        setCategories(sortedCategories);
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+        setCategories([]);
+      } finally {
+        setCategoriesLoading(false);
+      }
+    };
+
+    fetchCategories();
+  }, []);
 
   const appNameToUse = isClient ? storedBusinessSettings.appName || APP_NAME : APP_NAME;
   const faviconUrl = isClient ? storedBusinessSettings.faviconUrl : null;
-
-  const handleSearchSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (searchTerm.trim()) {
-      router.push(`/search?q=${encodeURIComponent(searchTerm.trim())}`);
-    }
-  };
 
   return (
     <>
@@ -88,11 +91,17 @@ export function SiteHeader() {
                     )}
                     <div className="pt-4">
                       <h3 className="mb-2 px-0 text-lg font-semibold tracking-tight">Categories</h3>
-                      {sortedCategoriesForDrawer.map((category) => (
-                         <Link key={category.id} href={`/category/${category.id}`} className="block py-2 text-muted-foreground hover:text-primary" onClick={() => setIsMobileMenuOpen(false)}>
-                          {category.name}
-                        </Link>
-                      ))}
+                      {categoriesLoading ? (
+                        <div className="py-2 text-muted-foreground">Loading categories...</div>
+                      ) : categories.length > 0 ? (
+                        categories.map((category) => (
+                          <Link key={category.id} href={`/category/${category.id}`} className="block py-2 text-muted-foreground hover:text-primary" onClick={() => setIsMobileMenuOpen(false)}>
+                            {category.name}
+                          </Link>
+                        ))
+                      ) : (
+                        <div className="py-2 text-muted-foreground">No categories available</div>
+                      )}
                     </div>
                      {isAuthenticated && (
                        <>
@@ -114,9 +123,9 @@ export function SiteHeader() {
           
           {/* Logo / Favicon Section */}
           <div className="flex items-center flex-shrink-0 mr-2 sm:mr-4">
-            {/* Desktop: Render the full Logo component */}
+            {/* Desktop: Render the wide/horizontal Logo component */}
             <div className="hidden md:block">
-              <Logo />
+              <Logo variant="horizontal" className="max-w-[180px]" />
             </div>
             {/* Mobile: Render Favicon */}
             <Link href="/" className="md:hidden text-primary hover:text-primary/90 transition-colors">
@@ -138,16 +147,7 @@ export function SiteHeader() {
           
           {/* Search Bar Wrapper */}
           <div className="flex-1 flex justify-center items-center mx-1 sm:mx-2 px-1 sm:px-2">
-            <form onSubmit={handleSearchSubmit} className="relative w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-              <Input
-                type="search"
-                placeholder="Search products..."
-                className="w-full rounded-lg bg-muted pl-10 pr-4 py-2 h-10"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </form>
+            <SearchBox className="w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg" compact />
           </div>
 
           {/* Desktop Right side actions */}

@@ -1,4 +1,3 @@
-
 "use client";
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
@@ -8,15 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from '@/hooks/use-toast';
-import useLocalStorage from '@/hooks/use-local-storage';
-import {
-  CATEGORIES_STORAGE_KEY,
-  INITIAL_CATEGORIES,
-  CATEGORY_ATTRIBUTES_TYPES_STORAGE_KEY,
-  INITIAL_CATEGORY_ATTRIBUTE_TYPES,
-  CATEGORY_ATTRIBUTE_VALUES_STORAGE_KEY,
-  INITIAL_CATEGORY_ATTRIBUTE_VALUES
-} from '@/lib/constants';
+import { apiClient } from '@/lib/api-client';
+import ImageUpload from '@/components/admin/image-upload';
 import type { Category, CategoryAttributeType, CategoryAttributeValue } from '@/lib/types';
 import { Loader2, PlusCircle, Trash2, Tags, ListFilter, Edit3, Image as ImageIcon } from 'lucide-react';
 import Image from 'next/image';
@@ -26,29 +18,95 @@ const generateId = () => `attr_val-${Date.now()}-${Math.random().toString(36).su
 export default function AdminManageAttributeValuesPage() {
   const { toast } = useToast();
 
-  const [parentCategories, setParentCategories] = useLocalStorage<Category[]>(
-    CATEGORIES_STORAGE_KEY,
-    INITIAL_CATEGORIES
-  );
+  const [parentCategories, setParentCategories] = useState<Category[]>([]);
   const [selectedParentCategoryId, setSelectedParentCategoryId] = useState<string | null>(null);
+  const [isLoadingCategories, setIsLoadingCategories] = useState(true);
 
-  const [attributeTypes, setAttributeTypes] = useLocalStorage<CategoryAttributeType[]>(
-    CATEGORY_ATTRIBUTES_TYPES_STORAGE_KEY,
-    INITIAL_CATEGORY_ATTRIBUTE_TYPES
-  );
+  const [attributeTypes, setAttributeTypes] = useState<CategoryAttributeType[]>([]);
   const [availableAttributeTypes, setAvailableAttributeTypes] = useState<CategoryAttributeType[]>([]);
   const [selectedAttributeTypeId, setSelectedAttributeTypeId] = useState<string | null>(null);
+  const [isLoadingAttributeTypes, setIsLoadingAttributeTypes] = useState(true);
 
-  const [attributeValues, setAttributeValues] = useLocalStorage<CategoryAttributeValue[]>(
-    CATEGORY_ATTRIBUTE_VALUES_STORAGE_KEY,
-    INITIAL_CATEGORY_ATTRIBUTE_VALUES
-  );
+  const [attributeValues, setAttributeValues] = useState<CategoryAttributeValue[]>([]);
   const [filteredAttributeValues, setFilteredAttributeValues] = useState<CategoryAttributeValue[]>([]);
+  const [isLoadingAttributeValues, setIsLoadingAttributeValues] = useState(true);
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [currentAttributeValue, setCurrentAttributeValue] = useState<Partial<CategoryAttributeValue>>({});
   const [isEditing, setIsEditing] = useState(false);
   const [formSubmitting, setFormSubmitting] = useState(false);
+
+  // Fetch categories from API
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        setIsLoadingCategories(true);
+        const categories = await apiClient.getCategories();
+        setParentCategories(categories);
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+        toast({ 
+          title: "Error", 
+          description: "Failed to load categories. Please try again.", 
+          variant: "destructive" 
+        });
+      } finally {
+        setIsLoadingCategories(false);
+      }
+    };
+
+    fetchCategories();
+  }, [toast]);
+
+  // Fetch attribute types from API
+  useEffect(() => {
+    const fetchAttributeTypes = async () => {
+      try {
+        setIsLoadingAttributeTypes(true);
+        const categoriesWithAttributes = await apiClient.getCategories({ includeAttributes: true, includeAttributeValues: true });
+        const allAttributeTypes = categoriesWithAttributes.flatMap(cat => cat.attributeTypes || []);
+        setAttributeTypes(allAttributeTypes);
+      } catch (error) {
+        console.error('Error fetching attribute types:', error);
+        toast({ 
+          title: "Error", 
+          description: "Failed to load attribute types. Please try again.", 
+          variant: "destructive" 
+        });
+      } finally {
+        setIsLoadingAttributeTypes(false);
+      }
+    };
+
+    fetchAttributeTypes();
+  }, [toast]);
+
+  // Fetch attribute values from API
+  useEffect(() => {
+    const fetchAttributeValues = async () => {
+      try {
+        setIsLoadingAttributeValues(true);
+        // For now, we'll use a simple approach to get all attribute values
+        // In a real implementation, you might want to create a specific API endpoint
+        const categoriesWithAttributes = await apiClient.getCategories({ includeAttributes: true, includeAttributeValues: true });
+        const allAttributeValues = categoriesWithAttributes.flatMap(cat => 
+          cat.attributeTypes?.flatMap(attrType => attrType.values || []) || []
+        );
+        setAttributeValues(allAttributeValues);
+      } catch (error) {
+        console.error('Error fetching attribute values:', error);
+        toast({ 
+          title: "Error", 
+          description: "Failed to load attribute values. Please try again.", 
+          variant: "destructive" 
+        });
+      } finally {
+        setIsLoadingAttributeValues(false);
+      }
+    };
+
+    fetchAttributeValues();
+  }, [toast]);
 
   useEffect(() => {
     if (selectedParentCategoryId) {
@@ -79,7 +137,7 @@ export default function AdminManageAttributeValuesPage() {
       setCurrentAttributeValue({
         attributeTypeId: selectedAttributeTypeId || '',
         value: '',
-        imageUrl: 'https://placehold.co/40x40.png',
+        imageUrl: '',
         imageHint: ''
       });
       setIsEditing(false);
@@ -92,6 +150,14 @@ export default function AdminManageAttributeValuesPage() {
     setCurrentAttributeValue(prev => ({ ...prev, [name]: value }));
   };
 
+  const handleImageChange = (urls: string[]) => {
+    setCurrentAttributeValue(prev => ({ 
+      ...prev, 
+      imageUrl: urls[0] || '',
+      imageHint: prev.imageHint || prev.value?.toLowerCase() || ''
+    }));
+  };
+
   const handleSaveAttributeValue = async () => {
     if (!currentAttributeValue.value?.trim()) {
       toast({ title: "Error", description: "Attribute value cannot be empty.", variant: "destructive" });
@@ -102,25 +168,38 @@ export default function AdminManageAttributeValuesPage() {
       return;
     }
     setFormSubmitting(true);
-    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    try {
+      // Here you would typically call an API to save the attribute value
+      // For now, we'll simulate the save operation
+      await new Promise(resolve => setTimeout(resolve, 500));
 
-    if (isEditing && currentAttributeValue.id) {
-      setAttributeValues(prev => prev.map(val => val.id === currentAttributeValue.id ? (currentAttributeValue as CategoryAttributeValue) : val));
-      toast({ title: "Attribute Value Updated", description: `Value "${currentAttributeValue.value}" has been updated.` });
-    } else {
-      const newAttrValue: CategoryAttributeValue = {
-        id: generateId(),
-        attributeTypeId: currentAttributeValue.attributeTypeId,
-        value: currentAttributeValue.value.trim(),
-        imageUrl: currentAttributeValue.imageUrl?.trim() || 'https://placehold.co/40x40.png',
-        imageHint: currentAttributeValue.imageHint?.trim() || currentAttributeValue.value.toLowerCase(),
-      };
-      setAttributeValues(prev => [...prev, newAttrValue]);
-      toast({ title: "Attribute Value Added", description: `Value "${newAttrValue.value}" added.` });
+      if (isEditing && currentAttributeValue.id) {
+        setAttributeValues(prev => prev.map(val => val.id === currentAttributeValue.id ? (currentAttributeValue as CategoryAttributeValue) : val));
+        toast({ title: "Attribute Value Updated", description: `Value "${currentAttributeValue.value}" has been updated.` });
+      } else {
+        const newAttrValue: CategoryAttributeValue = {
+          id: generateId(),
+          attributeTypeId: currentAttributeValue.attributeTypeId,
+          value: currentAttributeValue.value.trim(),
+          imageUrl: currentAttributeValue.imageUrl?.trim() || '',
+          imageHint: currentAttributeValue.imageHint?.trim() || currentAttributeValue.value.toLowerCase(),
+        };
+        setAttributeValues(prev => [...prev, newAttrValue]);
+        toast({ title: "Attribute Value Added", description: `Value "${newAttrValue.value}" added.` });
+      }
+      setIsDialogOpen(false);
+      setCurrentAttributeValue({});
+    } catch (error) {
+      console.error('Error saving attribute value:', error);
+      toast({ 
+        title: "Error", 
+        description: "Failed to save attribute value. Please try again.", 
+        variant: "destructive" 
+      });
+    } finally {
+      setFormSubmitting(false);
     }
-    setIsDialogOpen(false);
-    setCurrentAttributeValue({});
-    setFormSubmitting(false);
   };
 
   const handleDeleteAttributeValue = (attrValueId: string) => {
@@ -130,8 +209,8 @@ export default function AdminManageAttributeValuesPage() {
     }
   };
 
-  const selectedParentCategoryName = parentCategories.find(c => c.id === selectedParentCategoryId)?.name || "";
-  const selectedAttributeTypeName = availableAttributeTypes.find(t => t.id === selectedAttributeTypeId)?.name || "";
+  const selectedParentCategoryName = parentCategories?.find(c => c.id === selectedParentCategoryId)?.name || "";
+  const selectedAttributeTypeName = availableAttributeTypes?.find(t => t.id === selectedAttributeTypeId)?.name || "";
 
   return (
     <div className="space-y-8 py-4">
@@ -151,9 +230,13 @@ export default function AdminManageAttributeValuesPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1">
               <Label htmlFor="parent-category-select">Parent Category</Label>
-              <Select onValueChange={(value) => setSelectedParentCategoryId(value === 'none' ? null : value)} value={selectedParentCategoryId || 'none'}>
+              <Select 
+                onValueChange={(value) => setSelectedParentCategoryId(value === 'none' ? null : value)} 
+                value={selectedParentCategoryId || 'none'}
+                disabled={isLoadingCategories}
+              >
                 <SelectTrigger id="parent-category-select">
-                  <SelectValue placeholder="Select a category" />
+                  <SelectValue placeholder={isLoadingCategories ? "Loading categories..." : "Select a category"} />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">-- Select Parent Category --</SelectItem>
@@ -168,10 +251,14 @@ export default function AdminManageAttributeValuesPage() {
               <Select
                 onValueChange={(value) => setSelectedAttributeTypeId(value === 'none' ? null : value)}
                 value={selectedAttributeTypeId || 'none'}
-                disabled={!selectedParentCategoryId || availableAttributeTypes.length === 0}
+                disabled={!selectedParentCategoryId || availableAttributeTypes.length === 0 || isLoadingAttributeTypes}
               >
                 <SelectTrigger id="attribute-type-select">
-                  <SelectValue placeholder={!selectedParentCategoryId ? "Select category first" : (availableAttributeTypes.length === 0 ? "No types for category" : "Select attribute type")} />
+                  <SelectValue placeholder={
+                    isLoadingAttributeTypes ? "Loading attribute types..." :
+                    !selectedParentCategoryId ? "Select category first" : 
+                    (availableAttributeTypes.length === 0 ? "No types for category" : "Select attribute type")
+                  } />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">-- Select Attribute Type --</SelectItem>
@@ -187,7 +274,12 @@ export default function AdminManageAttributeValuesPage() {
           <CardContent>
             <CardTitle className="text-xl mt-4 mb-2">Values for "{selectedAttributeTypeName}" (in {selectedParentCategoryName})</CardTitle>
             <CardDescription className="mb-4">These are the specific options users can pick for the selected attribute type.</CardDescription>
-            {filteredAttributeValues.length > 0 ? (
+            {isLoadingAttributeValues ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin mr-2" />
+                <span>Loading attribute values...</span>
+              </div>
+            ) : filteredAttributeValues.length > 0 ? (
               <div className="space-y-3">
                 {filteredAttributeValues.map(attrVal => (
                   <div key={attrVal.id} className="flex items-center justify-between p-3 border rounded-md hover:shadow-sm">
@@ -242,16 +334,18 @@ export default function AdminManageAttributeValuesPage() {
                 placeholder="e.g., Red, Mr. Rahim"
               />
             </div>
+            
             <div className="space-y-2">
-              <Label htmlFor="attribute-value-image-url">Image URL</Label>
-              <Input
-                id="attribute-value-image-url"
-                name="imageUrl"
-                value={currentAttributeValue.imageUrl || ''}
-                onChange={handleInputChange}
-                placeholder="https://placehold.co/40x40.png"
+              <Label>Attribute Value Image (Optional)</Label>
+              <ImageUpload
+                value={currentAttributeValue.imageUrl ? [currentAttributeValue.imageUrl] : []}
+                onChange={handleImageChange}
+                maxFiles={1}
+                maxSize={2}
+                showPreview={true}
               />
             </div>
+            
             <div className="space-y-2">
               <Label htmlFor="attribute-value-image-hint">Image Hint (for AI)</Label>
               <Input

@@ -1,0 +1,252 @@
+"use client";
+import React, { useState, useMemo, useEffect } from 'react';
+import { ProductCard } from '@/components/product-card';
+import { apiClient } from '@/lib/api-client';
+import type { Product, Category as CategoryType } from '@/lib/types';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { SearchX, ArrowRight, Loader2 } from 'lucide-react'; 
+import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
+import Link from 'next/link';
+import { CategoryBar } from '@/components/category-bar';
+import { HeroBanner } from '@/components/hero-banner';
+import { useSearchParams } from 'next/navigation';
+import useLocalStorage from '@/hooks/use-local-storage';
+import { CATEGORIES_STORAGE_KEY, INITIAL_CATEGORIES } from '@/lib/constants';
+
+
+const PRODUCTS_PER_CATEGORY_HOME = 8;
+
+interface ProductGroup {
+  category: CategoryType;
+  products: Product[];
+  titleOverride?: string;
+}
+
+export default function HomePage() {
+  const searchParams = useSearchParams();
+  const selectedCategoryIdFromUrl = searchParams.get('category');
+  const selectedSubCategoryIdFromUrl = searchParams.get('subcategory');
+
+  const [loading, setLoading] = useState(true); 
+  const [categoriesToDisplay, setCategoriesToDisplay] = useState<CategoryType[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [subCategories, setSubCategories] = useState<any[]>([]);
+
+  const [storedCategories] = useLocalStorage<CategoryType[]>(
+    CATEGORIES_STORAGE_KEY,
+    INITIAL_CATEGORIES
+  );
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        // Fetch categories
+        const categoriesData = await apiClient.getCategories({ includeSubCategories: true });
+        setCategoriesToDisplay(categoriesData);
+        
+        // Extract subcategories for later use
+        const allSubCategories = categoriesData.flatMap((cat: any) => cat.subCategories || []);
+        setSubCategories(allSubCategories);
+
+        // Fetch products
+        const productsData = await apiClient.getProducts({ 
+          status: 'approved',
+          limit: 50 
+        });
+        // Filter products with stock > 0
+        setProducts(productsData.filter((p: any) => p.stock > 0));
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        // Fallback to stored categories if API fails
+        const currentCategories = Array.isArray(storedCategories) && storedCategories.length > 0 ? storedCategories : INITIAL_CATEGORIES;
+        const sorted = [...currentCategories].sort((a, b) => 
+          (a.sortOrder ?? 999) - (b.sortOrder ?? 999) || a.name.localeCompare(b.name)
+        );
+        setCategoriesToDisplay(sorted);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [storedCategories]);
+
+  const productsByCategory: ProductGroup[] = useMemo(() => {
+    // Use products from API
+    let baseProducts = products;
+
+    if (selectedCategoryIdFromUrl) {
+      const category = categoriesToDisplay.find(c => c.id === selectedCategoryIdFromUrl);
+      if (!category) return [];
+
+      let filteredProducts = baseProducts.filter(p => p.categoryId === selectedCategoryIdFromUrl);
+      
+      if (selectedSubCategoryIdFromUrl) {
+        filteredProducts = filteredProducts.filter(p => p.subCategoryId === selectedSubCategoryIdFromUrl);
+      }
+      
+      const formattedProducts = filteredProducts.map(p => ({
+        id: p.id,
+        name: p.name,
+        description: p.description,
+        status: p.status,
+        stock: parseInt(p.stock),
+        categoryId: p.categoryId,
+        subCategoryId: p.subCategoryId,
+        sellerId: p.sellerId,
+        sellerName: p.sellerName,
+        imageUrl: p.imageUrl,
+        imageHint: p.imageHint,
+        createdAt: new Date(p.createdAt),
+        price: parseFloat(p.price)
+      }));
+
+      let title = `Products in ${category.name}`;
+
+      if (selectedSubCategoryIdFromUrl) {
+        const subCategory = subCategories.find(sc => sc.id === selectedSubCategoryIdFromUrl);
+        title = `${subCategory ? subCategory.name : 'Selected Subcategory'} in ${category.name}`;
+      }
+
+      return [{
+        category,
+        products: formattedProducts,
+        titleOverride: title
+      }];
+    }
+
+    // Default view on homepage: Group products by category
+    return categoriesToDisplay.map(category => ({
+      category,
+      products: baseProducts
+        .filter(product => product.categoryId === category.id)
+        .slice(0, PRODUCTS_PER_CATEGORY_HOME)
+        .map(p => ({
+          id: p.id,
+          name: p.name,
+          description: p.description,
+          status: p.status,
+          stock: parseInt(p.stock),
+          categoryId: p.categoryId,
+          subCategoryId: p.subCategoryId,
+          sellerId: p.sellerId,
+          sellerName: p.sellerName,
+          imageUrl: p.imageUrl,
+          imageHint: p.imageHint,
+          createdAt: new Date(p.createdAt),
+          price: parseFloat(p.price),
+          selectedAttributes: p.selectedAttributes || []
+        })),
+    })).filter(group => group.products.length > 0);
+  }, [selectedCategoryIdFromUrl, selectedSubCategoryIdFromUrl, categoriesToDisplay, products, subCategories]);
+
+  if (loading) {
+    return (
+      <div>
+        {(!selectedCategoryIdFromUrl && !selectedSubCategoryIdFromUrl) && (
+          <>
+            <CategoryBar />
+          <div className="container mx-auto px-4 py-2">
+            <div className="text-center">
+              <Link href="/categories" className="text-sm text-muted-foreground hover:text-primary transition-colors">
+                See all categories →
+              </Link>
+            </div>
+          </div>            <HeroBanner />
+          </>
+        )}
+        <div className="container mx-auto px-4 mt-6 md:mt-8">
+          {[1, 2, 3].map(categoryKey => ( 
+            <div key={categoryKey} className="mb-12">
+              <Skeleton className="h-8 w-1/2 md:w-1/4 mb-6" />
+              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+                {[...Array(PRODUCTS_PER_CATEGORY_HOME)].map((_, i) => (
+                  <ProductCardSkeleton key={i} />
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      {(!selectedCategoryIdFromUrl && !selectedSubCategoryIdFromUrl) && (
+        <>
+          <CategoryBar />
+          <div className="container mx-auto px-4 py-2">
+            <div className="text-center">
+              <Link href="/categories" className="text-sm text-muted-foreground hover:text-primary transition-colors">
+                See all categories →
+              </Link>
+            </div>
+          </div>          <HeroBanner />
+        </>
+      )}
+
+      <div className="container mx-auto px-4 mt-6 md:mt-8">
+        {productsByCategory.length > 0 ? (
+          productsByCategory.map((group) => (
+            <section key={group.category.id} className="mb-10 md:mb-12">
+              <div className="flex items-center justify-between mb-4 md:mb-6">
+                <h2 className="text-2xl md:text-3xl font-bold">
+                  {group.titleOverride || (selectedCategoryIdFromUrl ? `Products in ${group.category.name}` : `Latest in ${group.category.name}`)}
+                </h2>
+                {!selectedCategoryIdFromUrl && products.filter(p => p.categoryId === group.category.id).length > PRODUCTS_PER_CATEGORY_HOME && (
+                   <Button variant="outline" asChild>
+                    <Link href={`/category/${group.category.id}`}>
+                      View All <ArrowRight className="ml-2 h-4 w-4" />
+                    </Link>
+                  </Button>
+                )}
+              </div>
+              {group.products.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 md:gap-6">
+                  {group.products.map(product => (
+                    <ProductCard key={product.id} product={product} />
+                  ))}
+                </div>
+              ) : (
+                 <Alert variant="default">
+                    <SearchX className="h-5 w-5" />
+                    <AlertTitle>No Products Yet</AlertTitle>
+                    <AlertDescription>
+                      There are currently no products listed for {group.titleOverride || group.category.name}. Check back soon!
+                    </AlertDescription>
+                  </Alert>
+              )}
+            </section>
+          ))
+        ) : (
+          <div className="py-12 text-center">
+             <Alert variant="default" className="col-span-full max-w-lg mx-auto">
+                <SearchX className="h-5 w-5" />
+                <AlertTitle>No Products Found</AlertTitle>
+                <AlertDescription>
+                  We couldn't find any products matching your criteria. Try exploring different categories or check back later!
+                </AlertDescription>
+             </Alert>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+
+const ProductCardSkeleton = () => (
+  <div className="flex flex-col overflow-hidden rounded-lg border shadow-lg">
+    <Skeleton className="aspect-[4/3] w-full" />
+    <div className="p-3 flex-grow">
+      <Skeleton className="h-5 w-3/4 mb-1" />
+      <Skeleton className="h-7 w-1/3" />
+    </div>
+    <div className="p-3 border-t mt-auto">
+      <Skeleton className="h-9 w-full" />
+    </div>
+  </div>
+);

@@ -1,0 +1,99 @@
+import { NextResponse } from 'next/server';
+import { executeQuery, executeQuerySingle } from '@/lib/db';
+
+// GET /api/settings - Get business settings
+export async function GET(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const key = searchParams.get('key') || 'business';
+
+    const query = `
+      SELECT 
+        setting_key,
+        app_name,
+        logo_url,
+        favicon_url,
+        primary_color,
+        secondary_color,
+        available_currencies,
+        default_currency_code,
+        google_client_id,
+        google_client_secret
+      FROM business_settings 
+      WHERE setting_key = ?
+    `;
+    const result = await executeQuerySingle(query, [key]);
+
+    if (!result) {
+      return NextResponse.json({ error: 'Settings not found' }, { status: 404 });
+    }
+
+    // Convert to the expected format for frontend compatibility
+    const settings = {
+      appName: result.app_name,
+      logoUrl: result.logo_url || '',
+      faviconUrl: result.favicon_url || '',
+      primaryColor: result.primary_color,
+      secondaryColor: result.secondary_color,
+      availableCurrencies: result.available_currencies ? JSON.parse(result.available_currencies) : [],
+      defaultCurrencyCode: result.default_currency_code,
+      googleClientId: result.google_client_id,
+      googleClientSecret: result.google_client_secret
+    };
+
+    return NextResponse.json(settings);
+  } catch (error) {
+    console.error('Error fetching settings:', error);
+    return NextResponse.json({ error: 'Failed to fetch settings' }, { status: 500 });
+  }
+}
+
+// PUT /api/settings - Update business settings
+export async function PUT(request: Request) {
+  try {
+    const body = await request.json();
+    const { key = 'business', settings } = body;
+
+    // Validate required fields
+    if (!settings.appName) {
+      return NextResponse.json({ error: 'App name is required' }, { status: 400 });
+    }
+
+    const query = `
+      INSERT INTO business_settings (
+        setting_key, app_name, logo_url, favicon_url, 
+        primary_color, secondary_color, available_currencies, 
+        default_currency_code, google_client_id, google_client_secret
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON DUPLICATE KEY UPDATE
+        app_name = VALUES(app_name),
+        logo_url = VALUES(logo_url),
+        favicon_url = VALUES(favicon_url),
+        primary_color = VALUES(primary_color),
+        secondary_color = VALUES(secondary_color),
+        available_currencies = VALUES(available_currencies),
+        default_currency_code = VALUES(default_currency_code),
+        google_client_id = VALUES(google_client_id),
+        google_client_secret = VALUES(google_client_secret),
+        updated_at = CURRENT_TIMESTAMP
+    `;
+    
+    await executeQuery(query, [
+      key,
+      settings.appName,
+      settings.logoUrl || '',
+      settings.faviconUrl || '',
+      settings.primaryColor || '217 91% 60%',
+      settings.secondaryColor || '216 34% 90%',
+      JSON.stringify(settings.availableCurrencies || []),
+      settings.defaultCurrencyCode || 'BDT',
+      settings.googleClientId || null,
+      settings.googleClientSecret || null
+    ]);
+
+    return NextResponse.json({ success: true, message: 'Settings updated successfully' });
+  } catch (error) {
+    console.error('Error updating settings:', error);
+    return NextResponse.json({ error: 'Failed to update settings' }, { status: 500 });
+  }
+} 

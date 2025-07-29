@@ -1,51 +1,36 @@
-
-import type { OrderStatus } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
-import { ORDER_STATUSES, getStatusIcon } from '@/lib/constants';
+import { OrderStatus } from '@/lib/types';
 
 interface OrderStatusBadgeProps {
   status: OrderStatus;
+  className?: string;
 }
 
-export function OrderStatusBadge({ status }: OrderStatusBadgeProps) {
-  const statusInfo = ORDER_STATUSES.find(s => s.value === status) || { value: status, label: status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) };
-  const IconComponent = getStatusIcon(status);
+export function OrderStatusBadge({ status, className }: OrderStatusBadgeProps) {
+  const getStatusConfig = (status: OrderStatus) => {
+    switch (status) {
+      case 'pending':
+        return { label: 'Pending', variant: 'secondary' as const };
+      case 'processing':
+        return { label: 'Processing', variant: 'default' as const };
+      case 'shipped':
+        return { label: 'Shipped', variant: 'default' as const };
+      case 'delivered':
+        return { label: 'Delivered', variant: 'default' as const };
+      case 'cancelled':
+        return { label: 'Cancelled', variant: 'destructive' as const };
+      case 'refunded':
+        return { label: 'Refunded', variant: 'destructive' as const };
+      default:
+        return { label: status, variant: 'secondary' as const };
+    }
+  };
 
-  let variant: "default" | "secondary" | "destructive" | "outline" = "default";
-  switch (status) {
-    case 'pending':
-    case 'processing':
-    case 'accepted':
-    case 'handed_over':
-    case 'in_shipping':
-      variant = 'outline';
-      break;
-    case 'shipped':
-      variant = 'default'; // Primary color for active positive status
-      break;
-    case 'delivered':
-      variant = 'secondary'; // Using accent color for completion
-      break;
-    case 'cancelled':
-      variant = 'destructive';
-      break;
-    default:
-      variant = 'outline';
-  }
-
-  // Custom styling for 'delivered' to use accent color
-  const badgeClass = cn(
-    "capitalize",
-    status === 'delivered' ? 'bg-accent text-accent-foreground border-accent' : '',
-    status === 'shipped' ? 'bg-primary/80 text-primary-foreground border-primary/80' : ''
-  );
-
+  const config = getStatusConfig(status);
 
   return (
-    <Badge variant={variant} className={badgeClass}>
-      {IconComponent && <IconComponent className="mr-1.5 h-3.5 w-3.5" />}
-      {statusInfo.label}
+    <Badge variant={config.variant} className={className}>
+      {config.label}
     </Badge>
   );
 }

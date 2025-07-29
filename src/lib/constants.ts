@@ -1,4 +1,3 @@
-
 import type { OrderStatus, Division, District, Thana as Upazilla, Category, CommissionSetting, AdminNavItem, BusinessSettings, HeroBannerSlide, CustomPage, ShippingMethod, Currency, SubCategory, CategoryAttributeType, CategoryAttributeValue, FeaturedImage } from './types';
 import {
   Smartphone, Laptop, Shirt, Armchair, BookOpen, Tag,
@@ -294,6 +293,10 @@ export const DEFAULT_DELIVERY_CHARGES: DeliveryChargeSettings = {
   intraThana: 70, // Intra Upazilla
   intraDistrict: 110,
   interDistrict: 130,
+  // Weight-based extra charges per KG (above 1KG)
+  intraThanaExtraKg: 20,
+  intraDistrictExtraKg: 30,
+  interDistrictExtraKg: 40,
 };
 
 export const DEFAULT_COMMISSION_SETTINGS: CommissionSetting[] = [];

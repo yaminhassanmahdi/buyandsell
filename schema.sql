@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS shipping_addresses (
     country VARCHAR(100) NOT NULL,
     division VARCHAR(100) NOT NULL,
     district VARCHAR(100) NOT NULL,
-    thana VARCHAR(100) NOT NULL,
+    upazilla VARCHAR(100),
     house_address TEXT NOT NULL,
     road_number VARCHAR(255),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
@@ -91,7 +91,13 @@ CREATE TABLE IF NOT EXISTS products (
     seller_id VARCHAR(255) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     category_id VARCHAR(255) REFERENCES categories(id) ON DELETE SET NULL,
     sub_category_id VARCHAR(255) REFERENCES sub_categories(id) ON DELETE SET NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    -- New fields for enhanced product information
+    purchase_date DATE,
+    weight_kg DECIMAL(8, 3),
+    purchase_price DECIMAL(10, 2),
+    expected_selling_price DECIMAL(10, 2),
+    quantity_parameter VARCHAR(20) DEFAULT 'PC', -- PC, KG, Pound, Ounce
+    commission_percentage DECIMAL(5, 2) DEFAULT 5.00, -- Commission percentage for this product    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS product_images (

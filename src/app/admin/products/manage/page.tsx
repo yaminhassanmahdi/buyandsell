@@ -1,20 +1,19 @@
-
 "use client";
 import { useEffect, useState, useMemo } from 'react';
-import { MOCK_PRODUCTS, MOCK_CATEGORIES, MOCK_SUBCATEGORIES, MOCK_CATEGORY_ATTRIBUTE_TYPES, MOCK_CATEGORY_ATTRIBUTE_VALUES } from '@/lib/mock-data';
-import type { Product, BusinessSettings, CategoryAttributeType, CategoryAttributeValue } from '@/lib/types';
+import type { Product, BusinessSettings } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Loader2, ListChecks, PlusCircle, Search, Filter, Edit3, Trash2 } from 'lucide-react';
+import { Loader2, ListChecks, PlusCircle, Edit3, Trash2 } from 'lucide-react';
 import Image from 'next/image';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import useLocalStorage from '@/hooks/use-local-storage';
 import { BUSINESS_SETTINGS_STORAGE_KEY, DEFAULT_BUSINESS_SETTINGS } from '@/lib/constants';
+import { apiClient } from '@/lib/api-client';
 
 type ProductStatus = Product['status'] | 'all';
 
@@ -22,25 +21,43 @@ export default function AdminManageProductsPage() {
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [categories, setCategories] = useState<any[]>([]);
   const { toast } = useToast();
   
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<ProductStatus>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
-  // Brand filter is removed as global brands are replaced by dynamic attributes
 
   const [settings] = useLocalStorage<BusinessSettings>(BUSINESS_SETTINGS_STORAGE_KEY, DEFAULT_BUSINESS_SETTINGS);
-  const activeCurrency = useMemo(() => settings.availableCurrencies.find(c => c.code === settings.defaultCurrencyCode) || settings.availableCurrencies[0] || { symbol: '?' }, [settings]);
+  const activeCurrency = useMemo(() => settings?.availableCurrencies?.find(c => c.code === settings?.defaultCurrencyCode) || 
+    settings?.availableCurrencies?.[0] || 
+    { code: 'BDT', symbol: '৳', name: 'Bangladeshi Taka' }, [settings]);
   const currencySymbol = activeCurrency.symbol;
 
-  useEffect(() => {
+  const fetchData = async () => {
     setIsLoading(true);
-    setTimeout(() => {
-      const sortedProducts = [...MOCK_PRODUCTS].sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-      setAllProducts(sortedProducts);
-      setFilteredProducts(sortedProducts);
+    try {
+      const [productsData, categoriesData] = await Promise.all([
+        apiClient.getProducts({ sortBy: 'date_desc', limit: 500 }),
+        apiClient.getCategories({ includeSubCategories: true })
+      ]);
+      setAllProducts(productsData);
+      setFilteredProducts(productsData);
+      setCategories(categoriesData);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch products. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
       setIsLoading(false);
-    }, 300);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
   }, []);
 
   useEffect(() => {
@@ -58,21 +75,27 @@ export default function AdminManageProductsPage() {
     if (categoryFilter !== 'all') {
       tempProducts = tempProducts.filter(product => product.categoryId === categoryFilter);
     }
-    // Filtering by dynamic attributes in the table is complex and omitted for now.
     setFilteredProducts(tempProducts);
   }, [searchTerm, statusFilter, categoryFilter, allProducts]);
 
   const handleEditProduct = (productId: string) => {
-    toast({ title: "Edit Product", description: `Functionality to edit product #${productId} is not yet implemented.` });
+    // Admin can edit any product by redirecting to the edit page
+    window.open(`/sell/edit/${productId}`, '_blank');
   };
 
-  const handleDeleteProduct = (productId: string) => {
+  const handleDeleteProduct = async (productId: string) => {
     if (window.confirm("Are you sure you want to delete this product? This cannot be undone.")) {
-      const productIndex = MOCK_PRODUCTS.findIndex(p => p.id === productId);
-      if (productIndex !== -1) {
-        MOCK_PRODUCTS.splice(productIndex, 1);
-        setAllProducts([...MOCK_PRODUCTS]); 
+      try {
+        await apiClient.deleteProduct(productId);
+        setAllProducts(prev => prev.filter(p => p.id !== productId));
         toast({ title: "Product Deleted", description: `Product ID ${productId} has been deleted.`, variant: "destructive" });
+      } catch (error) {
+        console.error('Error deleting product:', error);
+        toast({
+          title: "Error",
+          description: "Failed to delete product. Please try again.",
+          variant: "destructive"
+        });
       }
     }
   };
@@ -125,25 +148,27 @@ export default function AdminManageProductsPage() {
         </div>
         <div>
           <label htmlFor="filter-category" className="text-sm font-medium">Category</label>
-          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+          <Select value={categoryFilter} onValueChange={(value) => setCategoryFilter(value)}>
             <SelectTrigger className="h-10 mt-1">
               <SelectValue placeholder="Filter by category" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Categories</SelectItem>
-              {MOCK_CATEGORIES.map(cat => <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>)}
+              {categories.filter(cat => !cat.parent_id).map(category => (
+                <SelectItem key={category.id} value={category.id}>{category.name}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
-        {/* Brand filter removed */}
       </div>
 
       {filteredProducts.length === 0 ? (
         <Alert>
-          <Search className="h-5 w-5" />
           <AlertTitle>No Products Found</AlertTitle>
           <AlertDescription>
-            No products match your current filters. Try adjusting your search or filter criteria.
+            {allProducts.length === 0 
+              ? "No products have been created yet." 
+              : "No products match your current filters."}
           </AlertDescription>
         </Alert>
       ) : (
@@ -156,29 +181,26 @@ export default function AdminManageProductsPage() {
                 <TableHead>Seller</TableHead>
                 <TableHead>Price</TableHead>
                 <TableHead>Category</TableHead>
-                <TableHead>Sub-Category</TableHead>
-                {/* <TableHead>Brand</TableHead> Removed Brand column */}
-                <TableHead>Attributes</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Listed On</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredProducts.map((product) => {
-                const categoryName = MOCK_CATEGORIES.find(c => c.id === product.categoryId)?.name || 'N/A';
-                const subCategoryName = MOCK_SUBCATEGORIES.find(sc => sc.id === product.subCategoryId)?.name || 'N/A';
+              {filteredProducts.map(product => {
+                const categoryName = categories.find(c => c.id === product.categoryId)?.name || 'N/A';
                 
-                const productAttributes = product.selectedAttributes?.map(attr => {
-                  const type = MOCK_CATEGORY_ATTRIBUTE_TYPES.find(t => t.id === attr.attributeTypeId);
-                  const value = MOCK_CATEGORY_ATTRIBUTE_VALUES.find(v => v.id === attr.attributeValueId);
-                  return type && value ? `${type.name}: ${value.value}` : '';
-                }).filter(Boolean).join(', ');
-
                 return (
                 <TableRow key={product.id}>
                   <TableCell>
-                    <Image src={product.imageUrl} alt={product.name} width={50} height={50} className="rounded aspect-square object-cover" data-ai-hint={product.imageHint || "product photo"} />
+                    <Image 
+                      src={product.imageUrl || 'https://placehold.co/600x400.png'} 
+                      alt={product.name} 
+                      width={50} 
+                      height={50} 
+                      className="rounded aspect-square object-cover" 
+                      data-ai-hint={product.imageHint || "product photo"} 
+                    />
                   </TableCell>
                   <TableCell>
                     <div className="font-medium">{product.name}</div>
@@ -187,11 +209,16 @@ export default function AdminManageProductsPage() {
                   <TableCell>{product.sellerName || product.sellerId}</TableCell>
                   <TableCell>{currencySymbol}{product.price.toFixed(2)}</TableCell>
                   <TableCell>{categoryName}</TableCell>
-                  <TableCell>{subCategoryName}</TableCell>
-                  {/* <TableCell>{brandName}</TableCell> Removed Brand cell */}
-                  <TableCell className="text-xs max-w-[150px] truncate">{productAttributes || 'N/A'}</TableCell>
-                  <TableCell><Badge variant={product.status === 'approved' ? 'default' : product.status === 'pending' ? 'secondary' : 'destructive'}>{product.status}</Badge></TableCell>
-                  <TableCell>{format(new Date(product.createdAt), 'dd MMM yyyy')}</TableCell>
+                  <TableCell>
+                    <Badge variant={
+                      product.status === 'approved' ? 'default' : 
+                      product.status === 'pending' ? 'secondary' : 
+                      'destructive'
+                    }>
+                      {product.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>{product.createdAt ? format(new Date(product.createdAt), 'dd MMM yyyy') : 'Date not available'}</TableCell>
                   <TableCell className="text-right">
                     <Button variant="ghost" size="icon" onClick={() => handleEditProduct(product.id)} className="mr-1 hover:text-primary">
                       <Edit3 className="h-4 w-4" />

@@ -1,94 +1,169 @@
-
 "use client";
-import { useEffect, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
-import { MOCK_PRODUCTS } from '@/lib/mock-data';
-import type { Product } from '@/lib/types';
-import { ProductCard } from '@/components/product-card';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Loader2, Search, SearchX } from 'lucide-react';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Card, CardContent, CardFooter } from '@/components/ui/card'; // For skeleton
 
-export default function SearchPage() {
+import { useEffect, useState, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { ProductCard } from '@/components/product-card';
+import { SearchBox } from '@/components/search-box';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Loader2, Search, Package } from 'lucide-react';
+import { Product } from '@/lib/types';
+
+function SearchContent() {
   const searchParams = useSearchParams();
-  const query = searchParams.get('q');
-  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
+  const query = searchParams.get('q') || '';
+  const categoryId = searchParams.get('categoryId') || '';
+  
+  const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [totalResults, setTotalResults] = useState(0);
+  const [categoryName, setCategoryName] = useState<string>('');
 
   useEffect(() => {
-    setIsLoading(true);
-    if (query) {
-      // Simulate API call delay
-      setTimeout(() => {
-        const lowerCaseQuery = query.toLowerCase();
-        const results = MOCK_PRODUCTS.filter(product =>
-          product.status === 'approved' &&
-          product.stock > 0 && ( // Filter for in-stock
-            product.name.toLowerCase().includes(lowerCaseQuery) ||
-            product.description.toLowerCase().includes(lowerCaseQuery) ||
-            product.id.toLowerCase().includes(lowerCaseQuery)
-          )
-        ).sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-        setFilteredProducts(results);
+    const fetchCategoryName = async () => {
+      if (categoryId) {
+        try {
+          const response = await fetch('/api/categories');
+          if (response.ok) {
+            const categories = await response.json();
+            const category = categories.find((c: any) => c.id === categoryId);
+            setCategoryName(category?.name || '');
+          }
+        } catch (error) {
+          console.error('Error fetching category name:', error);
+        }
+      }
+    };
+
+    fetchCategoryName();
+  }, [categoryId]);
+
+  useEffect(() => {
+    const fetchSearchResults = async () => {
+      if (!query.trim()) {
+        setProducts([]);
         setIsLoading(false);
-      }, 500);
-    } else {
-      setFilteredProducts([]);
-      setIsLoading(false);
-    }
-  }, [query]);
+        return;
+      }
+
+      try {
+        setIsLoading(true);
+        const params = new URLSearchParams({
+          q: query,
+          limit: '50'
+        });
+        
+        if (categoryId) {
+          params.append('categoryId', categoryId);
+        }
+
+        const response = await fetch(`/api/search?${params}`);
+        if (response.ok) {
+          const data = await response.json();
+          setProducts(data.products || []);
+          setTotalResults(data.products?.length || 0);
+        }
+      } catch (error) {
+        console.error('Search error:', error);
+        setProducts([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchSearchResults();
+  }, [query, categoryId]);
+
+  if (isLoading) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">
-      {query ? (
-        <h1 className="text-3xl font-bold mb-8">
-          Search Results for: <span className="text-primary">&quot;{query}&quot;</span>
-        </h1>
-      ) : (
-        <Alert variant="default" className="max-w-md mx-auto">
-          <Search className="h-5 w-5" />
-          <AlertTitle>Start Searching</AlertTitle>
-          <AlertDescription>
-            Please enter a search term in the bar above to find products.
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {isLoading && query && (
-        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-          {[...Array(8)].map((_, i) => (
-            <Card key={i} className="flex flex-col overflow-hidden rounded-lg">
-              <Skeleton className="aspect-[4/3] w-full" />
-              <CardContent className="p-3 flex-grow">
-                <Skeleton className="h-5 w-3/4 mb-1" />
-                <Skeleton className="h-7 w-1/3" />
-              </CardContent>
-              <CardFooter className="p-3 border-t">
-                <Skeleton className="h-9 w-full" />
-              </CardFooter>
-            </Card>
-          ))}
+      {/* Search Header */}
+      <div className="mb-8">
+        <div className="flex items-center gap-2">
+          <Badge variant="secondary" className="flex items-center gap-1">
+            <Package className="h-3 w-3" />
+            {totalResults} results
+          </Badge>
         </div>
-      )}
+        {query && (
+          <div className="flex items-center gap-2 text-lg mt-4">
+            <Search className="h-5 w-5 text-muted-foreground" />
+            <span className="font-medium">Search results for:</span>
+            <span className="text-primary font-semibold">"{query}"</span>
+            {categoryId && categoryName && (
+              <>
+                <span className="text-muted-foreground">in</span>
+                <Badge variant="outline">{categoryName}</Badge>
+              </>
+            )}
+          </div>
+        )}
+      </div>
 
-      {!isLoading && query && filteredProducts.length > 0 && (
-        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-          {filteredProducts.map(product => (
+      {/* Results */}
+      {products.length > 0 ? (
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 md:gap-6">
+          {products.map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}
         </div>
-      )}
-
-      {!isLoading && query && filteredProducts.length === 0 && (
-        <Alert variant="default" className="max-w-lg mx-auto">
-          <SearchX className="h-5 w-5" />
-          <AlertTitle>No Products Found</AlertTitle>
-          <AlertDescription>
-            We couldn&apos;t find any products matching your search for &quot;{query}&quot;. Try a different term or browse our categories.
-          </AlertDescription>
-        </Alert>
+      ) : query ? (
+        <Card className="text-center py-12">
+          <CardContent>
+            <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-semibold mb-2">No products found</h3>
+            <p className="text-muted-foreground mb-4">
+              We couldn't find any products matching "{query}"
+              {categoryId && categoryName && ` in ${categoryName}`}
+            </p>
+            <Button onClick={() => window.history.back()}>
+              Go Back
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card className="text-center py-12">
+          <CardContent>
+            <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-semibold mb-2">Search for products</h3>
+            <p className="text-muted-foreground">
+              Enter a search term to find products
+            </p>
+          </CardContent>
+        </Card>
       )}
     </div>
+  );
+}
+
+function SearchPageInner() {
+  return (
+    <Suspense fallback={
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        </div>
+      </div>
+    }>
+      <SearchContent />
+    </Suspense>
+  );
+}
+
+export default function SearchPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <SearchPageInner />
+    </Suspense>
   );
 }

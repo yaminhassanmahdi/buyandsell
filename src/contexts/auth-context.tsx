@@ -1,7 +1,5 @@
-
 "use client";
 import type { User, ShippingAddress, WithdrawalMethod } from '@/lib/types';
-import { MOCK_USERS } from '@/lib/mock-data';
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import useLocalStorage from '@/hooks/use-local-storage';
 import { useRouter } from 'next/navigation';
@@ -34,13 +32,6 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Mock Google User for simulation
-const MOCK_GOOGLE_USER = {
-  email: 'new.googleuser@example.com',
-  name: 'Google User New',
-  // No phone number initially
-};
-
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [currentUser, setCurrentUser] = useLocalStorage<User | null>('currentUser', null);
   const [loading, setLoading] = useState(true);
@@ -51,136 +42,75 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setLoading(false);
   }, []);
 
-  const login = async (identifier: string, _pass: string, loginType: 'email' | 'phone'): Promise<User | null> => {
+  const login = async (identifier: string, password: string, loginType: 'email' | 'phone'): Promise<User | null> => {
     setLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 500));
-    let userFromMock: User | undefined;
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ identifier, password }),
+      });
 
-    if (loginType === 'email') {
-      userFromMock = MOCK_USERS.find(u => u.email?.toLowerCase() === identifier.toLowerCase());
-    } else {
-      userFromMock = MOCK_USERS.find(u => u.phoneNumber === identifier);
-    }
-
-    if (userFromMock) {
-      const userToStore: User = {
-        ...userFromMock,
-        defaultShippingAddress: userFromMock.defaultShippingAddress || null,
-        withdrawalMethods: userFromMock.withdrawalMethods || [],
-      };
-      setCurrentUser(userToStore);
-      setLoading(false);
-      return userToStore;
-    }
-    setLoading(false);
-    return null;
-  };
-
-  const register = async (name: string, phoneNumber: string, _pass: string, email?: string): Promise<User | null> => {
-    setLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 500));
-
-    const existingUserByPhone = MOCK_USERS.find(u => u.phoneNumber === phoneNumber);
-    if (existingUserByPhone) {
-      setLoading(false);
-      return null; 
-    }
-    if (email) {
-      const existingUserByEmail = MOCK_USERS.find(u => u.email?.toLowerCase() === email.toLowerCase());
-      if (existingUserByEmail) {
+      if (response.ok) {
+        const data = await response.json();
+        const userToStore: User = data.user;
+        setCurrentUser(userToStore);
+        setLoading(false);
+        return userToStore;
+      } else {
         setLoading(false);
         return null;
       }
+    } catch (error) {
+      console.error('Login error:', error);
+      setLoading(false);
+      return null;
     }
+  };
 
-    const newUser: User = {
-      id: `user${MOCK_USERS.length + 1}-${Date.now()}`,
-      phoneNumber,
-      email: email || undefined,
-      name,
-      isAdmin: false,
-      defaultShippingAddress: null,
-      withdrawalMethods: []
-    };
-    MOCK_USERS.push(newUser); 
-    setCurrentUser(newUser);
-    setLoading(false);
-    return newUser;
+  const register = async (name: string, phoneNumber: string, password: string, email?: string): Promise<User | null> => {
+    setLoading(true);
+    try {
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name, phoneNumber, password, email }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const newUser: User = data.user;
+        setCurrentUser(newUser);
+        setLoading(false);
+        return newUser;
+      } else {
+        setLoading(false);
+        return null;
+      }
+    } catch (error) {
+      console.error('Registration error:', error);
+      setLoading(false);
+      return null;
+    }
   };
 
   const signInWithGoogle = async (): Promise<GoogleSignInResult | null> => {
     setLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    const googleProvidedEmail = MOCK_GOOGLE_USER.email;
-    const googleProvidedName = MOCK_GOOGLE_USER.name;
-
-    const existingUser = MOCK_USERS.find(u => u.email?.toLowerCase() === googleProvidedEmail.toLowerCase());
-
-    if (existingUser) {
-      if (existingUser.phoneNumber) {
-        setCurrentUser(existingUser);
-        setPendingGoogleUserEmail(null);
-        setLoading(false);
-        return { user: existingUser, needsPhoneNumber: false };
-      } else {
-        setPendingGoogleUserEmail(googleProvidedEmail); 
-        setCurrentUser(null); 
-        setLoading(false);
-        return { user: existingUser, needsPhoneNumber: true, googleEmail: googleProvidedEmail };
-      }
-    } else {
-      const newUserDraft: User = {
-        id: `user-google-${Date.now()}`,
-        email: googleProvidedEmail,
-        name: googleProvidedName,
-        phoneNumber: '', 
-        isAdmin: false,
-        defaultShippingAddress: null,
-        withdrawalMethods: [],
-        isAwaitingPhoneNumber: true, 
-        googleEmail: googleProvidedEmail,
-      };
-      setPendingGoogleUserEmail(googleProvidedEmail);
-      setCurrentUser(null);
-      setLoading(false);
-      return { user: newUserDraft, needsPhoneNumber: true, googleEmail: googleProvidedEmail };
-    }
+    // Google OAuth is not implemented in this demo
+    // In a real app, you would integrate with Google OAuth
+    setLoading(false);
+    return { user: null, error: "Google Sign-In not implemented in demo" };
   };
 
   const completeGoogleSignInWithPhoneNumber = async (googleEmailToLink: string, phoneNumber: string): Promise<User | null> => {
     setLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 500));
-
-    const existingUserByPhone = MOCK_USERS.find(u => u.phoneNumber === phoneNumber);
-    if (existingUserByPhone && existingUserByPhone.email?.toLowerCase() !== googleEmailToLink.toLowerCase()) {
-        setLoading(false);
-        return null; 
-    }
-
-    let userToUpdate = MOCK_USERS.find(u => u.email?.toLowerCase() === googleEmailToLink.toLowerCase());
-
-    if (userToUpdate) {
-      userToUpdate.phoneNumber = phoneNumber;
-      userToUpdate.isAwaitingPhoneNumber = false;
-    } else {
-      userToUpdate = {
-        id: `user-google-${Date.now()}`,
-        email: googleEmailToLink,
-        name: MOCK_GOOGLE_USER.name, 
-        phoneNumber: phoneNumber,
-        isAdmin: false,
-        defaultShippingAddress: null,
-        withdrawalMethods: [],
-        isAwaitingPhoneNumber: false,
-      };
-      MOCK_USERS.push(userToUpdate);
-    }
-    
-    setCurrentUser(userToUpdate);
-    setPendingGoogleUserEmail(null); 
+    // Google OAuth completion is not implemented in this demo
     setLoading(false);
-    return userToUpdate;
+    return null;
   };
 
   const logout = () => {
@@ -189,14 +119,39 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     router.push('/');
   };
 
-  const updateCurrentUserData = (dataToUpdate: Partial<User>) => {
+  const updateCurrentUserData = async (dataToUpdate: Partial<User>) => {
     setCurrentUser(prevUser => {
       if (!prevUser) return null;
       const updatedUser = { ...prevUser, ...dataToUpdate };
-      const userIndex = MOCK_USERS.findIndex(u => u.id === prevUser.id);
-      if (userIndex !== -1) {
-        MOCK_USERS[userIndex] = { ...MOCK_USERS[userIndex], ...updatedUser };
+      
+      // If updating shipping address, save to database
+      if (dataToUpdate.defaultShippingAddress) {
+        // Save to database asynchronously
+        fetch(`/api/users/${prevUser.id}/shipping-address`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(dataToUpdate.defaultShippingAddress),
+        }).catch(error => {
+          console.error('Error saving shipping address:', error);
+        });
       }
+      
+      // If updating withdrawal methods, save to database
+      if (dataToUpdate.withdrawalMethods) {
+        // Save to database asynchronously
+        fetch(`/api/users/${prevUser.id}/withdrawal-methods`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(dataToUpdate.withdrawalMethods),
+        }).catch(error => {
+          console.error('Error saving withdrawal methods:', error);
+        });
+      }
+      
       return updatedUser;
     });
   };
@@ -207,18 +162,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const updateEmail = async (newEmail: string): Promise<{ success: boolean; error?: string }> => {
     if (!currentUser) return { success: false, error: "Not authenticated." };
-    if (MOCK_USERS.some(u => u.email?.toLowerCase() === newEmail.toLowerCase() && u.id !== currentUser.id)) {
-      return { success: false, error: "Email already in use." };
-    }
+    // In a real app, this would check the database and update the user
+    // For now, we'll just update the local state
     updateCurrentUserData({ email: newEmail });
     return { success: true };
   };
 
   const updatePhoneNumber = async (newPhoneNumber: string): Promise<{ success: boolean; error?: string }> => {
     if (!currentUser) return { success: false, error: "Not authenticated." };
-    if (MOCK_USERS.some(u => u.phoneNumber === newPhoneNumber && u.id !== currentUser.id)) {
-      return { success: false, error: "Phone number already in use." };
-    }
+    // In a real app, this would check the database and update the user
+    // For now, we'll just update the local state
     updateCurrentUserData({ phoneNumber: newPhoneNumber });
     return { success: true };
   };

@@ -1,6 +1,7 @@
-
 "use client";
-import { useEffect, useState } from 'react';
+export const dynamic = 'force-dynamic';
+
+import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
 import { AddressForm } from '@/components/address-form';
@@ -39,8 +40,7 @@ const passwordUpdateSchema = z.object({
 });
 type PasswordUpdateFormData = z.infer<typeof passwordUpdateSchema>;
 
-
-export default function AccountSettingsPage() {
+function AccountSettingsContent() {
   const { currentUser, isAuthenticated, loading: authLoading, updateCurrentUserData, updateEmail, updatePhoneNumber, updatePassword } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -51,17 +51,16 @@ export default function AccountSettingsPage() {
   const [formSubmitting, setFormSubmitting] = useState(false);
   const [credentialFormSubmitting, setCredentialFormSubmitting] = useState<'email' | 'phone' | 'password' | null>(null);
 
-
   const fromSellPage = searchParams.get('from') === 'sell';
 
   const emailForm = useForm<EmailUpdateFormData>({
     resolver: zodResolver(emailUpdateSchema),
-    defaultValues: { newEmail: currentUser?.email || "" },
+    defaultValues: { newEmail: "" },
   });
 
   const phoneForm = useForm<PhoneUpdateFormData>({
     resolver: zodResolver(phoneUpdateSchema),
-    defaultValues: { newPhoneNumber: currentUser?.phoneNumber || "" },
+    defaultValues: { newPhoneNumber: "" },
   });
 
   const passwordForm = useForm<PasswordUpdateFormData>({
@@ -73,12 +72,16 @@ export default function AccountSettingsPage() {
     if (!authLoading && !isAuthenticated) {
       router.push('/login?redirect=/account/settings');
     }
-     if (currentUser) {
+  }, [isAuthenticated, authLoading, router]);
+
+  // Separate effect to handle form reset when user data is available
+  useEffect(() => {
+    if (currentUser) {
       emailForm.reset({ newEmail: currentUser.email || "" });
       phoneForm.reset({ newPhoneNumber: currentUser.phoneNumber || "" });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated, authLoading, router, currentUser]);
+  }, [currentUser]);
 
   const handleAddressSubmit = async (data: ShippingAddress) => {
     if (!currentUser) return;
@@ -168,7 +171,6 @@ export default function AccountSettingsPage() {
     setCredentialFormSubmitting(null);
   };
 
-
   if (authLoading || (!authLoading && !isAuthenticated) || !currentUser) {
     return (
       <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
@@ -181,7 +183,6 @@ export default function AccountSettingsPage() {
   const noAddressSet = !currentAddress;
   const noWithdrawalMethodsSet = !currentUser.withdrawalMethods || currentUser.withdrawalMethods.length === 0;
   const profileIncompleteForSelling = fromSellPage && (noAddressSet || noWithdrawalMethodsSet);
-
 
   return (
     <div className="space-y-8 max-w-3xl mx-auto">
@@ -316,7 +317,7 @@ export default function AccountSettingsPage() {
             <div>
               <p><strong>{currentAddress.fullName}</strong></p>
               <p>{currentAddress.houseAddress}{currentAddress.roadNumber ? `, ${currentAddress.roadNumber}` : ''}</p>
-              <p>{currentAddress.thana}, {currentAddress.district}</p>
+              <p>{currentAddress.upazilla}, {currentAddress.district}</p>
               <p>{currentAddress.division}, {currentAddress.country}</p>
               {currentAddress.phoneNumber && <p>Phone: {currentAddress.phoneNumber}</p>}
             </div>
@@ -330,6 +331,7 @@ export default function AccountSettingsPage() {
               <Button variant="outline">{currentAddress ? "Edit Address" : "Add Address"}</Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-lg max-h-[80vh] overflow-y-auto">
+              <DialogTitle className="sr-only">Settings Dialog</DialogTitle>
               <DialogHeader>
                 <DialogTitle>{currentAddress ? "Edit Shipping Address" : "Add Shipping Address"}</DialogTitle>
                 <DialogDescription>
@@ -379,6 +381,7 @@ export default function AccountSettingsPage() {
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-lg max-h-[80vh] overflow-y-auto">
+              <DialogTitle className="sr-only">Settings Dialog</DialogTitle>
               <DialogHeader>
                 <DialogTitle>Add Withdrawal Method</DialogTitle>
                 <DialogDescription>
@@ -394,6 +397,20 @@ export default function AccountSettingsPage() {
         </CardFooter>
       </Card>
     </div>
+  );
+}
+
+function AccountSettingsPageInner() {
+  return (
+    <AccountSettingsContent />
+  );
+}
+
+export default function AccountSettingsPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <AccountSettingsPageInner />
+    </Suspense>
   );
 }
 

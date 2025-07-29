@@ -1,0 +1,225 @@
+import { NextResponse } from 'next/server';
+import { executeQuery, executeQuerySingle } from '@/lib/db';
+
+// GET /api/categories - Get all categories
+export async function GET(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const includeSubCategories = searchParams.get('includeSubCategories') === 'true';
+    const includeAttributes = searchParams.get('includeAttributes') === 'true';
+    const includeAttributeValues = searchParams.get('includeAttributeValues') === 'true';
+
+    const query = `
+      SELECT * FROM categories 
+      ORDER BY sort_order ASC, name ASC
+    `;
+    
+    const categories = await executeQuery(query);
+
+    // Convert snake_case fields to camelCase for frontend compatibility
+    const convertedCategories = categories.map((category: any) => ({
+      id: category.id,
+      name: category.name,
+      imageUrl: category.image_url,
+      imageHint: category.image_hint,
+      sortOrder: category.sort_order,
+      featuredImages: category.featured_images ? JSON.parse(category.featured_images) : [],
+      categorySlides: category.category_slides ? JSON.parse(category.category_slides) : []
+    }));
+
+    // Add sub-categories if requested
+    if (includeSubCategories) {
+      for (const category of convertedCategories) {
+        const subCategoriesQuery = `
+          SELECT * FROM sub_categories 
+          WHERE parent_category_id = ?
+          ORDER BY name ASC
+        `;
+        const subCategories = await executeQuery(subCategoriesQuery, [category.id]);
+        category.subCategories = subCategories.map((subCat: any) => ({
+          id: subCat.id,
+          name: subCat.name,
+          parentCategoryId: subCat.parent_category_id,
+          imageUrl: subCat.image_url,
+          imageHint: subCat.image_hint
+        }));
+      }
+    }
+
+    // Add attribute types if requested
+    if (includeAttributes) {
+      for (const category of convertedCategories) {
+        const attributeTypesQuery = `
+          SELECT *, is_button_featured as isButtonFeatured, is_featured_section as isFeaturedSection FROM category_attribute_types 
+          WHERE category_id = ?
+          ORDER BY name ASC
+        `;
+        const attributeTypes = await executeQuery(attributeTypesQuery, [category.id]);
+        // Convert to camelCase
+        category.attributeTypes = attributeTypes.map((attr: any) => ({
+          id: attr.id,
+          categoryId: attr.category_id,
+          name: attr.name,
+          isButtonFeatured: !!attr.isButtonFeatured,
+          isFeaturedSection: !!attr.isFeaturedSection
+        }));
+        
+        // Add attribute values if requested
+        if (includeAttributeValues) {
+          for (const attrType of category.attributeTypes) {
+            const attributeValuesQuery = `
+              SELECT * FROM category_attribute_values 
+              WHERE attribute_type_id = ?
+              ORDER BY value ASC
+            `;
+            const attributeValues = await executeQuery(attributeValuesQuery, [attrType.id]);
+            attrType.values = attributeValues.map((val: any) => ({
+              id: val.id,
+              attributeTypeId: val.attribute_type_id,
+              value: val.value,
+              imageUrl: val.image_url,
+              imageHint: val.image_hint
+            }));
+          }
+        }
+      }
+    }
+
+    // Add commission information for each category
+    for (const category of convertedCategories) {
+      const commissionQuery = `
+        SELECT percentage FROM commissions 
+        WHERE category_id = ?
+      `;
+      const commission = await executeQuerySingle(commissionQuery, [category.id]);
+      category.commissionPercentage = commission ? parseFloat(commission.percentage) : 5.0; // Default 5%
+    }
+
+    return NextResponse.json(convertedCategories);
+  } catch (error) {
+    console.error('Error fetching categories:', error);
+    return NextResponse.json({ error: 'Failed to fetch categories' }, { status: 500 });
+  }
+}
+
+// POST /api/categories - Create a new category
+export async function POST(request: Request) {
+  try {
+    const body = await request.json();
+    const {
+      id,
+      name,
+      imageUrl,
+      imageHint,
+      sortOrder = 0,
+      featuredImages = null,
+      categorySlides = null
+    } = body;
+
+    const query = `
+      INSERT INTO categories (id, name, image_url, image_hint, sort_order, featured_images, category_slides)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `;
+    
+    await executeQuery(query, [
+      id, 
+      name, 
+      imageUrl, 
+      imageHint, 
+      sortOrder,
+      featuredImages ? JSON.stringify(featuredImages) : null,
+      categorySlides ? JSON.stringify(categorySlides) : null
+    ]);
+
+    return NextResponse.json({ success: true, id });
+  } catch (error) {
+    console.error('Error creating category:', error);
+    return NextResponse.json({ error: 'Failed to create category' }, { status: 500 });
+  }
+}
+
+// PUT /api/categories - Update an existing category
+export async function PUT(request: Request) {
+  try {
+    const body = await request.json();
+    const {
+      id,
+      name,
+      imageUrl,
+      imageHint,
+      sortOrder = 0,
+      featuredImages = null,
+      categorySlides = null
+    } = body;
+
+    if (!id) {
+      return NextResponse.json({ error: 'Category ID is required' }, { status: 400 });
+    }
+
+    const query = `
+      UPDATE categories 
+      SET name = ?, image_url = ?, image_hint = ?, sort_order = ?, featured_images = ?, category_slides = ?
+      WHERE id = ?
+    `;
+    
+    await executeQuery(query, [
+      name, 
+      imageUrl, 
+      imageHint, 
+      sortOrder,
+      featuredImages ? JSON.stringify(featuredImages) : null,
+      categorySlides ? JSON.stringify(categorySlides) : null,
+      id
+    ]);
+
+    return NextResponse.json({ success: true, id });
+  } catch (error) {
+    console.error('Error updating category:', error);
+    return NextResponse.json({ error: 'Failed to update category' }, { status: 500 });
+  }
+}
+
+// DELETE /api/categories - Delete a category
+export async function DELETE(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+
+    if (!id) {
+      return NextResponse.json({ error: 'Category ID is required' }, { status: 400 });
+    }
+
+    // Check if category has sub-categories
+    const subCategoriesQuery = `
+      SELECT COUNT(*) as count FROM sub_categories WHERE parent_category_id = ?
+    `;
+    const subCategoriesResult = await executeQuerySingle(subCategoriesQuery, [id]);
+    
+    if (subCategoriesResult.count > 0) {
+      return NextResponse.json({ 
+        error: 'Cannot delete category that has sub-categories. Please delete sub-categories first.' 
+      }, { status: 400 });
+    }
+
+    // Check if category has products
+    const productsQuery = `
+      SELECT COUNT(*) as count FROM products WHERE category_id = ?
+    `;
+    const productsResult = await executeQuerySingle(productsQuery, [id]);
+    
+    if (productsResult.count > 0) {
+      return NextResponse.json({ 
+        error: 'Cannot delete category that has products. Please remove or reassign products first.' 
+      }, { status: 400 });
+    }
+
+    // Delete the category
+    const deleteQuery = `DELETE FROM categories WHERE id = ?`;
+    await executeQuery(deleteQuery, [id]);
+
+    return NextResponse.json({ success: true, id });
+  } catch (error) {
+    console.error('Error deleting category:', error);
+    return NextResponse.json({ error: 'Failed to delete category' }, { status: 500 });
+  }
+}

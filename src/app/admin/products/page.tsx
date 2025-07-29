@@ -1,12 +1,11 @@
-
 "use client";
 import { useEffect, useState } from 'react';
-import { MOCK_PRODUCTS } from '@/lib/mock-data';
 import type { Product } from '@/lib/types';
 import { ProductApprovalCard } from '@/components/admin/product-approval-card';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { CheckSquare, Loader2, SearchX } from 'lucide-react';
+import { apiClient } from '@/lib/api-client';
 
 export default function AdminProductsPage() {
   const [pendingProducts, setPendingProducts] = useState<Product[]>([]);
@@ -14,40 +13,62 @@ export default function AdminProductsPage() {
   const [processingProductId, setProcessingProductId] = useState<string | null>(null);
   const { toast } = useToast();
 
-  useEffect(() => {
-    // Simulate fetching products
+  const fetchPendingProducts = async () => {
     setIsLoading(true);
-    setTimeout(() => {
-      setPendingProducts(MOCK_PRODUCTS.filter(p => p.status === 'pending')
-                                    .sort((a,b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()));
+    try {
+      const products = await apiClient.getProducts({ status: 'pending', sortBy: 'date_asc' });
+      setPendingProducts(products);
+    } catch (error) {
+      console.error('Error fetching pending products:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch pending products. Please try again.",
+        variant: "destructive"
+      });
+      setPendingProducts([]);
+    } finally {
       setIsLoading(false);
-    }, 500);
+    }
+  };
+
+  useEffect(() => {
+    fetchPendingProducts();
   }, []);
 
   const handleApprove = async (productId: string) => {
     setProcessingProductId(productId);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 700));
-    const productIndex = MOCK_PRODUCTS.findIndex(p => p.id === productId);
-    if (productIndex !== -1) {
-      MOCK_PRODUCTS[productIndex].status = 'approved';
+    try {
+      await apiClient.updateProduct(productId, { status: 'approved' });
+      setPendingProducts(prev => prev.filter(p => p.id !== productId));
+      toast({ title: "Product Approved", description: `Product ID ${productId} has been approved.` });
+    } catch (error) {
+      console.error('Error approving product:', error);
+      toast({
+        title: "Error",
+        description: "Failed to approve product. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setProcessingProductId(null);
     }
-    setPendingProducts(prev => prev.filter(p => p.id !== productId));
-    toast({ title: "Product Approved", description: `Product ID ${productId} has been approved.` });
-    setProcessingProductId(null);
   };
 
   const handleReject = async (productId: string) => {
     setProcessingProductId(productId);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 700));
-    const productIndex = MOCK_PRODUCTS.findIndex(p => p.id === productId);
-     if (productIndex !== -1) {
-      MOCK_PRODUCTS[productIndex].status = 'rejected';
+    try {
+      await apiClient.updateProduct(productId, { status: 'rejected' });
+      setPendingProducts(prev => prev.filter(p => p.id !== productId));
+      toast({ title: "Product Rejected", description: `Product ID ${productId} has been rejected.`, variant: "destructive" });
+    } catch (error) {
+      console.error('Error rejecting product:', error);
+      toast({
+        title: "Error", 
+        description: "Failed to reject product. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setProcessingProductId(null);
     }
-    setPendingProducts(prev => prev.filter(p => p.id !== productId));
-    toast({ title: "Product Rejected", description: `Product ID ${productId} has been rejected.`, variant: "destructive" });
-    setProcessingProductId(null);
   };
   
   if (isLoading) {

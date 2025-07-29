@@ -1,11 +1,10 @@
-
 "use client";
 
 import React, { useState, useEffect } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetClose } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { MOCK_CATEGORIES, MOCK_SUBCATEGORIES } from '@/lib/mock-data';
+import { apiClient } from '@/lib/api-client';
 import type { Category as CategoryType, SubCategory as SubCategoryType } from '@/lib/types';
 import { X as CloseIcon, ArrowLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -19,25 +18,48 @@ export function MobileCategorySheet({ isOpen, onOpenChange }: MobileCategoryShee
   const router = useRouter();
   const [view, setView] = useState<'categories' | 'subcategories'>('categories');
   const [selectedParentCategory, setSelectedParentCategory] = useState<CategoryType | null>(null);
+  const [parentCategories, setParentCategories] = useState<CategoryType[]>([]);
+  const [subCategories, setSubCategories] = useState<SubCategoryType[]>([]);
   const [subcategoriesToShow, setSubcategoriesToShow] = useState<SubCategoryType[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (!isOpen) {
       const timer = setTimeout(() => {
         setView('categories');
         setSelectedParentCategory(null);
-      }, 300); // Delay reset to allow slide-out animation
+      }, 300);
       return () => clearTimeout(timer);
     }
   }, [isOpen]);
 
   useEffect(() => {
+    const fetchCategories = async () => {
+      setIsLoading(true);
+      try {
+        const categories = await apiClient.getCategories({ includeSubCategories: true });
+        const parentCats = categories.filter((cat: any) => !cat.parent_id);
+        const subCats = categories.filter((cat: any) => cat.parent_id);
+        setParentCategories(parentCats);
+        setSubCategories(subCats);
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+        setParentCategories([]);
+        setSubCategories([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchCategories();
+  }, []);
+
+  useEffect(() => {
     if (view === 'subcategories' && selectedParentCategory) {
-      setSubcategoriesToShow(MOCK_SUBCATEGORIES.filter(sc => sc.parentCategoryId === selectedParentCategory.id));
+      setSubcategoriesToShow(subCategories.filter(sc => sc.parentCategoryId === selectedParentCategory.id));
     } else {
       setSubcategoriesToShow([]);
     }
-  }, [view, selectedParentCategory]);
+  }, [view, selectedParentCategory, subCategories]);
 
   const handleParentCategorySelect = (category: CategoryType) => {
     setSelectedParentCategory(category);
@@ -81,15 +103,17 @@ export function MobileCategorySheet({ isOpen, onOpenChange }: MobileCategoryShee
       <SheetContent
         side="bottom"
         className="p-0 flex flex-col max-h-[60vh] h-auto rounded-t-xl outline-none"
-        onOpenAutoFocus={(e) => e.preventDefault()} // Prevent focus stealing
+        onOpenAutoFocus={(e) => e.preventDefault()}
       >
         {renderHeader()}
         <ScrollArea className="flex-grow">
           <div className="p-4">
             {view === 'categories' ? (
-              MOCK_CATEGORIES.length > 0 ? (
+              isLoading ? (
+                <p className="text-muted-foreground text-center py-8">Loading...</p>
+              ) : parentCategories.length > 0 ? (
                 <div className="grid grid-cols-2 gap-3 sm:gap-4">
-                  {MOCK_CATEGORIES.map((category) => (
+                  {parentCategories.map((category) => (
                     <Button
                       key={category.id}
                       variant="outline"
@@ -108,7 +132,7 @@ export function MobileCategorySheet({ isOpen, onOpenChange }: MobileCategoryShee
                 <Button
                   variant="secondary"
                   className="w-full justify-start py-3 text-left text-sm h-auto focus:ring-2 focus:ring-primary"
-                  onClick={() => handleNavigation(selectedParentCategory.id)} // View all for parent category
+                  onClick={() => handleNavigation(selectedParentCategory.id)}
                 >
                   All {selectedParentCategory.name}
                 </Button>

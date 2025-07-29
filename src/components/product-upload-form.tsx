@@ -1,4 +1,3 @@
-
 "use client";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -16,41 +15,40 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import {
-    MOCK_PRODUCTS,
-    MOCK_CATEGORIES,
-    MOCK_SUBCATEGORIES,
-    MOCK_CATEGORY_ATTRIBUTE_TYPES,
-    MOCK_CATEGORY_ATTRIBUTE_VALUES
-} from "@/lib/mock-data";
+import { apiClient } from "@/lib/api-client";
 import type { Product, Category, SubCategory, BusinessSettings, CategoryAttributeType, CategoryAttributeValue } from "@/lib/types";
 import { useAuth } from "@/contexts/auth-context";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
-import { Loader2, UploadCloud } from "lucide-react";
-import useLocalStorage from '@/hooks/use-local-storage';
-import {
-  BUSINESS_SETTINGS_STORAGE_KEY,
-  DEFAULT_BUSINESS_SETTINGS,
-  CATEGORY_ATTRIBUTES_TYPES_STORAGE_KEY,
-  CATEGORY_ATTRIBUTE_VALUES_STORAGE_KEY
-} from '@/lib/constants';
+import { Loader2, UploadCloud, Tags } from "lucide-react";
+import ImageUpload from "@/components/admin/image-upload";
+import { useSettings } from "@/contexts/settings-context";
+import { generateProductId } from '@/lib/utils';
 
 const VALUE_FOR_NO_SUBCATEGORY_SELECTED = "__NONE__";
 
 const productSchema = z.object({
   name: z.string().min(3, "Product name must be at least 3 characters.").max(100),
   description: z.string().min(10, "Description must be at least 10 characters.").max(1000),
-  price: z.coerce.number().min(0.01, "Price must be a positive number."),
   stock: z.coerce.number().min(0, "Stock quantity cannot be negative.").default(0),
   categoryId: z.string().min(1, "Please select a parent category."),
   subCategoryId: z.string().optional(),
+  imageUrls: z.array(z.string()).min(1, "At least one product image is required."),
   dynamicAttributes: z.record(z.string().optional()),
+  // New fields
+  purchaseDate: z.string().optional(),
+  weightKg: z.coerce.number().min(0, "Weight must be a positive number.").optional(),
+  purchasePrice: z.coerce.number().min(0, "Purchase price must be a positive number.").optional(),
+  expectedSellingPrice: z.coerce.number().min(0, "Expected selling price must be a positive number.").optional(),
+  quantityParameter: z.string().default('PC'),
 });
 
 type ProductFormData = z.infer<typeof productSchema>;
 
+interface AttributeTypeWithValues extends CategoryAttributeType {
+  values: CategoryAttributeValue[];
+}
 
 export function ProductUploadForm() {
   const { currentUser } = useAuth();
@@ -61,41 +59,120 @@ export function ProductUploadForm() {
   const [parentCategories, setParentCategories] = useState<Category[]>([]);
   const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
   const [availableSubCategories, setAvailableSubCategories] = useState<SubCategory[]>([]);
+  const [categoryCommissionPercentage, setCategoryCommissionPercentage] = useState<number>(5);
 
-  const [categoryAttributeTypes] = useLocalStorage<CategoryAttributeType[]>(
-    CATEGORY_ATTRIBUTES_TYPES_STORAGE_KEY,
-    MOCK_CATEGORY_ATTRIBUTE_TYPES
-  );
-  const [allAttributeValues] = useLocalStorage<CategoryAttributeValue[]>(
-    CATEGORY_ATTRIBUTE_VALUES_STORAGE_KEY,
-    MOCK_CATEGORY_ATTRIBUTE_VALUES
-  );
+  const [currentAttributeFields, setCurrentAttributeFields] = useState<AttributeTypeWithValues[]>([]);
+  const [isLoadingAttributes, setIsLoadingAttributes] = useState(false);
 
-  const [currentAttributeFields, setCurrentAttributeFields] = useState<CategoryAttributeType[]>([]);
-
-
-  const [settings] = useLocalStorage<BusinessSettings>(BUSINESS_SETTINGS_STORAGE_KEY, DEFAULT_BUSINESS_SETTINGS);
-  const activeCurrency = settings.availableCurrencies.find(c => c.code === settings.defaultCurrencyCode) || settings.availableCurrencies[0] || { symbol: '?' };
+  const { settings } = useSettings();
+  const activeCurrency = settings?.availableCurrencies?.find(c => c.code === settings?.defaultCurrencyCode) || 
+    settings?.availableCurrencies?.[0] || 
+    { code: 'BDT', symbol: '৳', name: 'Bangladeshi Taka' };
 
   const form = useForm<ProductFormData>({
     resolver: zodResolver(productSchema),
     defaultValues: {
       name: "",
       description: "",
-      price: 0,
       stock: 1,
       categoryId: "",
       subCategoryId: VALUE_FOR_NO_SUBCATEGORY_SELECTED,
+      imageUrls: [],
       dynamicAttributes: {},
+      purchaseDate: "",
+      weightKg: 0,
+      purchasePrice: 0,
+      expectedSellingPrice: 0,
+      quantityParameter: "PC",
     },
   });
 
   useEffect(() => {
-    setParentCategories([...MOCK_CATEGORIES]);
-    setSubCategories([...MOCK_SUBCATEGORIES]);
+    const fetchCategories = async () => {
+      try {
+        const categories = await apiClient.getCategories({ includeSubCategories: true });
+        const parentCats = categories.filter((cat: any) => !cat.parent_id);
+        const subCats = categories.filter((cat: any) => cat.parent_id);
+        
+        // Convert to component format and include commission data
+        const formattedParentCats = parentCats.map((cat: any) => ({
+          id: cat.id,
+          name: cat.name,
+          commissionPercentage: cat.commissionPercentage || 5,
+        }));
+        
+        const formattedSubCats = subCats.map((cat: any) => ({
+          id: cat.id,
+          name: cat.name,
+          parentCategoryId: cat.parent_id,
+        }));
+        
+        setParentCategories(formattedParentCats);
+        setSubCategories(formattedSubCats);
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+        setParentCategories([]);
+        setSubCategories([]);
+      }
+    };
+
+    fetchCategories();
   }, []);
 
   const watchedCategoryId = form.watch("categoryId");
+  const watchedSubCategoryId = form.watch("subCategoryId");
+  const watchedExpectedSellingPrice = form.watch("expectedSellingPrice");
+
+  // Fetch attributes when category or subcategory changes
+  useEffect(() => {
+    const fetchAttributes = async () => {
+      if (!watchedCategoryId) {
+        setCurrentAttributeFields([]);
+        return;
+      }
+
+      setIsLoadingAttributes(true);
+      try {
+        // Fetch categories with attributes and values
+        const categoriesWithAttributes = await apiClient.getCategories({ 
+          includeAttributes: true, 
+          includeAttributeValues: true 
+        });
+
+        // Find the selected category
+        const selectedCategory = categoriesWithAttributes.find((cat: any) => cat.id === watchedCategoryId);
+        
+        if (selectedCategory && selectedCategory.attributeTypes) {
+          // Filter attributes based on whether they have values
+          const attributesWithValues = selectedCategory.attributeTypes
+            .filter((attr: any) => attr.values && attr.values.length > 0)
+            .map((attr: any) => ({
+              id: attr.id,
+              categoryId: attr.categoryId,
+              name: attr.name,
+              isButtonFeatured: attr.isButtonFeatured,
+              values: attr.values || []
+            }));
+
+          setCurrentAttributeFields(attributesWithValues);
+        } else {
+          setCurrentAttributeFields([]);
+        }
+      } catch (error) {
+        console.error('Error fetching attributes:', error);
+        setCurrentAttributeFields([]);
+        toast({
+          title: "Error",
+          description: "Failed to load product attributes. Please try again.",
+          variant: "destructive"
+        });
+      } finally {
+        setIsLoadingAttributes(false);
+      }
+    };
+
+    fetchAttributes();
+  }, [watchedCategoryId, watchedSubCategoryId, toast]);
 
   useEffect(() => {
     if (watchedCategoryId) {
@@ -106,24 +183,24 @@ export function ProductUploadForm() {
         form.setValue("subCategoryId", VALUE_FOR_NO_SUBCATEGORY_SELECTED);
       }
 
-      const relevantAttrTypes = categoryAttributeTypes.filter(attrType => attrType.categoryId === watchedCategoryId);
-      setCurrentAttributeFields(relevantAttrTypes);
-
-      const newDynamicAttributes: Record<string, string | undefined> = {};
-      relevantAttrTypes.forEach(attrType => {
-        newDynamicAttributes[attrType.id] = undefined;
-      });
-      form.setValue("dynamicAttributes", newDynamicAttributes);
-
+      // Get commission percentage for selected category
+      const selectedCategory = parentCategories.find(cat => cat.id === watchedCategoryId);
+      if (selectedCategory && selectedCategory.commissionPercentage) {
+        setCategoryCommissionPercentage(selectedCategory.commissionPercentage);
+      } else {
+        setCategoryCommissionPercentage(5); // Default 5%
+      }
     } else {
       setAvailableSubCategories([]);
       form.setValue("subCategoryId", VALUE_FOR_NO_SUBCATEGORY_SELECTED);
-      setCurrentAttributeFields([]);
-      form.setValue("dynamicAttributes", {});
+      setCategoryCommissionPercentage(5);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [watchedCategoryId, subCategories, categoryAttributeTypes, form.setValue, form.getValues]);
+  }, [watchedCategoryId, subCategories, parentCategories, form]);
 
+  // Calculate commission and earnings
+  const expectedSellingPrice = Number(watchedExpectedSellingPrice) || 0;
+  const commissionAmount = expectedSellingPrice * (categoryCommissionPercentage / 100);
+  const userEarnings = expectedSellingPrice - commissionAmount;
 
   async function onSubmit(values: ProductFormData) {
     if (!currentUser) {
@@ -132,45 +209,61 @@ export function ProductUploadForm() {
     }
     setIsLoading(true);
 
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    try {
+      const selectedAttrs: Array<{ attributeTypeId: string; attributeValueId: string; }> = [];
+      if (values.dynamicAttributes) {
+          for (const typeId in values.dynamicAttributes) {
+              const valueId = values.dynamicAttributes[typeId];
+              if (valueId && valueId !== "" && valueId !== "none") {
+                  selectedAttrs.push({ attributeTypeId: typeId, attributeValueId: valueId });
+              }
+          }
+      }
 
-    const selectedAttrs: Array<{ attributeTypeId: string; attributeValueId: string; }> = [];
-    if (values.dynamicAttributes) {
-        for (const typeId in values.dynamicAttributes) {
-            const valueId = values.dynamicAttributes[typeId];
-            if (valueId && valueId !== "") {
-                selectedAttrs.push({ attributeTypeId: typeId, attributeValueId: valueId });
-            }
-        }
+      // Generate unique product ID
+      const productId = generateProductId(values.name);
+
+      const productData = {
+        name: values.name,
+        description: values.description,
+        price: values.expectedSellingPrice, // Use expected selling price as the main price
+        stock: values.stock,
+        imageUrl: values.imageUrls[0] || `https://placehold.co/600x400.png`,
+        imageHint: `${values.name.substring(0,15)} product`,
+        categoryId: values.categoryId,
+        subCategoryId: values.subCategoryId === VALUE_FOR_NO_SUBCATEGORY_SELECTED ? null : values.subCategoryId,
+        selectedAttributes: selectedAttrs,
+        sellerId: currentUser.id,
+        sellerName: currentUser.name,
+        status: 'pending',
+        purchaseDate: values.purchaseDate,
+        weightKg: values.weightKg,
+        purchasePrice: values.purchasePrice,
+        expectedSellingPrice: values.expectedSellingPrice,
+        quantityParameter: values.quantityParameter,
+        commissionPercentage: categoryCommissionPercentage,
+      };
+
+      const result = await apiClient.createProduct(productData);
+
+      toast({
+        title: "Product Submitted!",
+        description: `${values.name} has been submitted for approval.`,
+      });
+      
+      form.reset();
+      setAvailableSubCategories([]);
+      setCurrentAttributeFields([]);
+    } catch (error) {
+      console.error('Product creation error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to submit product. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
     }
-
-    const newProduct: Product = {
-      id: `prod-${Date.now()}`,
-      name: values.name,
-      description: values.description,
-      price: values.price,
-      stock: values.stock,
-      imageUrl: `https://placehold.co/600x400.png`,
-      imageHint: `${values.name.substring(0,15)} product`,
-      categoryId: values.categoryId,
-      subCategoryId: values.subCategoryId === VALUE_FOR_NO_SUBCATEGORY_SELECTED ? undefined : values.subCategoryId,
-      selectedAttributes: selectedAttrs,
-      sellerId: currentUser.id,
-      sellerName: currentUser.name,
-      status: 'pending',
-      createdAt: new Date(),
-    };
-
-    MOCK_PRODUCTS.push(newProduct);
-
-    toast({
-      title: "Product Submitted!",
-      description: `${newProduct.name} has been submitted for approval.`,
-    });
-    setIsLoading(false);
-    form.reset();
-    setAvailableSubCategories([]);
-    setCurrentAttributeFields([]);
   }
 
   return (
@@ -204,19 +297,6 @@ export function ProductUploadForm() {
         />
         <div className="grid grid-cols-2 gap-6">
         <FormField
-          control={form.control}
-          name="price"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Price ({activeCurrency.code})</FormLabel>
-              <FormControl>
-                <Input type="number" step="0.01" placeholder="29.99" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
             control={form.control}
             name="stock"
             render={({ field }) => (
@@ -229,8 +309,109 @@ export function ProductUploadForm() {
                 </FormItem>
             )}
             />
+        <FormField
+          control={form.control}
+          name="weightKg"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Weight (KG)</FormLabel>
+              <FormControl>
+                <Input type="number" step="0.001" placeholder="0.5" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
         </div>
 
+        <div className="grid grid-cols-2 gap-6">
+        <FormField
+          control={form.control}
+          name="purchaseDate"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Purchase Date</FormLabel>
+              <FormControl>
+                <Input type="date" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="quantityParameter"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Quantity Parameter</FormLabel>
+              <Select onValueChange={field.onChange} value={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select quantity parameter" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="PC">PC (Piece)</SelectItem>
+                  <SelectItem value="KG">KG (Kilogram)</SelectItem>
+                  <SelectItem value="Pound">Pound</SelectItem>
+                  <SelectItem value="Ounce">Ounce</SelectItem>
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        </div>
+
+        <div className="grid grid-cols-2 gap-6">
+        <FormField
+          control={form.control}
+          name="purchasePrice"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Purchase Price ({activeCurrency.code})</FormLabel>
+              <FormControl>
+                <Input type="number" step="0.01" placeholder="25.00" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="expectedSellingPrice"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Expected Selling Price ({activeCurrency.code})</FormLabel>
+              <FormControl>
+                <Input type="number" step="0.01" placeholder="35.00" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        </div>
+
+        {/* Commission Calculation Display */}
+        {expectedSellingPrice > 0 && watchedCategoryId && (
+          <div className="p-4 border rounded-lg bg-muted/50">
+            <h3 className="font-semibold mb-2">Commission Calculation</h3>
+            <div className="space-y-1 text-sm">
+              <div className="flex justify-between">
+                <span>Expected Selling Price:</span>
+                <span>{activeCurrency.symbol}{expectedSellingPrice.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Platform Commission ({categoryCommissionPercentage}%):</span>
+                <span>{activeCurrency.symbol}{commissionAmount.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between font-semibold text-green-600">
+                <span>You will receive:</span>
+                <span>{activeCurrency.symbol}{userEarnings.toFixed(2)}</span>
+              </div>
+            </div>
+          </div>
+        )}
 
         <FormField
           control={form.control}
@@ -283,61 +464,84 @@ export function ProductUploadForm() {
           )}
         />
 
-        {currentAttributeFields.map(attrType => {
-          const relevantValues = allAttributeValues
-            .filter(val => val.attributeTypeId === attrType.id && val.id && val.id.trim() !== "");
-          return (
-            <FormField
-              key={attrType.id}
-              control={form.control}
-              name={`dynamicAttributes.${attrType.id}`}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{attrType.name}</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    value={field.value || ""}
-                    disabled={relevantValues.length === 0}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder={`Select ${attrType.name}`} />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {relevantValues.map(val => (
-                        <SelectItem key={val.id} value={val.id}>{val.value}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          );
-        })}
-
-        <FormItem>
-            <FormLabel>Product Image</FormLabel>
-            <div className="flex items-center justify-center w-full">
-                <label htmlFor="dropzone-file" className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed rounded-lg cursor-pointer bg-muted hover:bg-muted/80">
-                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                        <UploadCloud className="w-10 h-10 mb-3 text-muted-foreground" />
-                        <p className="mb-2 text-sm text-muted-foreground"><span className="font-semibold">Click to upload</span> or drag and drop</p>
-                        <p className="text-xs text-muted-foreground">SVG, PNG, JPG or GIF (MAX. 800x400px)</p>
-                        <p className="text-xs text-blue-500 mt-1">(Image upload is mocked for this demo)</p>
-                    </div>
-                    <Input id="dropzone-file" type="file" className="hidden" disabled />
-                </label>
+        {/* Dynamic Attribute Fields */}
+        {watchedCategoryId && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <Tags className="h-5 w-5 text-primary" />
+              <h3 className="text-lg font-semibold">Product Attributes</h3>
             </div>
-            <FormDescription>
-                Upload an image of your product. For this demo, a placeholder will be used.
-            </FormDescription>
-        </FormItem>
+            
+            {isLoadingAttributes ? (
+              <div className="flex items-center justify-center py-4">
+                <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                <span className="text-sm text-muted-foreground">Loading attributes...</span>
+              </div>
+            ) : currentAttributeFields.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {currentAttributeFields.map((attribute) => (
+                  <FormField
+                    key={attribute.id}
+                    control={form.control}
+                    name={`dynamicAttributes.${attribute.id}`}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{attribute.name}</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value || "none"}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder={`Select ${attribute.name.toLowerCase()}`} />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="none">-- Select {attribute.name} --</SelectItem>
+                            {attribute.values.map((value) => (
+                              <SelectItem key={value.id} value={value.id}>
+                                {value.value}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-4 text-muted-foreground">
+                <Tags className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                <p>No attributes available for this category.</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        <FormField
+          control={form.control}
+          name="imageUrls"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Product Images</FormLabel>
+              <FormControl>
+                <ImageUpload
+                  value={field.value || []}
+                  onChange={(urls) => field.onChange(urls)}
+                  maxFiles={5}
+                  maxSize={5}
+                />
+              </FormControl>
+              <FormDescription>
+                Upload up to 5 high-quality images of your product. The first image will be used as the main display image.
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
         <Button type="submit" className="w-full" size="lg" disabled={isLoading}>
           {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          Submit Product for Approval
+          {isLoading ? "Submitting..." : "Submit Product for Approval"}
         </Button>
       </form>
     </Form>

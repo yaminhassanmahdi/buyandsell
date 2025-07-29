@@ -1,5 +1,5 @@
-
 "use client";
+
 import { AuthForm } from "@/components/auth-form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";

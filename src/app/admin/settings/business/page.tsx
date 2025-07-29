@@ -1,4 +1,3 @@
-
 "use client";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, useFieldArray } from "react-hook-form";
@@ -19,10 +18,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose, DialogFooter } from "@/components/ui/dialog";
 import { Briefcase, Palette, Image as ImageIcon, Loader2, Save, PlusCircle, Trash2, Landmark } from "lucide-react";
+import ImageUpload from "@/components/admin/image-upload";
 import { useToast } from "@/hooks/use-toast";
-import useLocalStorage from "@/hooks/use-local-storage";
+import { apiClient } from "@/lib/api-client";
 import type { BusinessSettings, Currency } from "@/lib/types";
-import { DEFAULT_BUSINESS_SETTINGS, BUSINESS_SETTINGS_STORAGE_KEY, DEFAULT_CURRENCIES } from "@/lib/constants";
+import { DEFAULT_BUSINESS_SETTINGS, DEFAULT_CURRENCIES } from "@/lib/constants";
 import { useEffect, useState } from "react";
 
 const currencySchema = z.object({
@@ -33,10 +33,12 @@ const currencySchema = z.object({
 
 const businessSettingsSchema = z.object({
   appName: z.string().min(2, "App name is required."),
-  logoUrl: z.string().url({ message: "Please enter a valid URL for the logo." }).or(z.literal("")).optional(),
+  logoUrl: z.string().optional(),
+  logoUrlHorizontal: z.string().optional(),
+  logoUrlVertical: z.string().optional(),
   primaryColor: z.string().regex(/^(\d{1,3}\s\d{1,3}%\s\d{1,3}%|#[0-9a-fA-F]{6})$/, "Enter a valid HSL (e.g., 217 91% 60%) or HEX color (e.g., #3B82F6).").optional(),
   secondaryColor: z.string().regex(/^(\d{1,3}\s\d{1,3}%\s\d{1,3}%|#[0-9a-fA-F]{6})$/, "Enter a valid HSL (e.g., 216 34% 90%) or HEX color (e.g., #E0E7FF).").optional(),
-  faviconUrl: z.string().url({ message: "Please enter a valid URL for the favicon." }).or(z.literal("")).optional(),
+  faviconUrl: z.string().optional(),
   availableCurrencies: z.array(currencySchema).min(1, "At least one currency is required."),
   defaultCurrencyCode: z.string().min(1, "Default currency is required."),
 });
@@ -45,21 +47,13 @@ type BusinessSettingsFormData = z.infer<typeof businessSettingsSchema>;
 
 export default function AdminBusinessSettingsPage() {
   const { toast } = useToast();
-  const [settings, setSettings] = useLocalStorage<BusinessSettings>(
-    BUSINESS_SETTINGS_STORAGE_KEY,
-    DEFAULT_BUSINESS_SETTINGS
-  );
+  const [settings, setSettings] = useState<BusinessSettings>(DEFAULT_BUSINESS_SETTINGS);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   
   const form = useForm<BusinessSettingsFormData>({
     resolver: zodResolver(businessSettingsSchema),
-    // Ensure defaultValues always has availableCurrencies as an array
-    defaultValues: {
-      ...DEFAULT_BUSINESS_SETTINGS, // Start with defaults
-      ...settings, // Override with localStorage if present
-      availableCurrencies: settings?.availableCurrencies && Array.isArray(settings.availableCurrencies) 
-                           ? settings.availableCurrencies 
-                           : DEFAULT_BUSINESS_SETTINGS.availableCurrencies,
-    },
+    defaultValues: DEFAULT_BUSINESS_SETTINGS,
   });
 
   const { fields: currencyFields, append: appendCurrency, remove: removeCurrency } = useFieldArray({
@@ -70,40 +64,70 @@ export default function AdminBusinessSettingsPage() {
   const [isCurrencyDialogOpen, setIsCurrencyDialogOpen] = useState(false);
   const [newCurrency, setNewCurrency] = useState<Currency>({ code: '', symbol: '', name: '' });
 
+  // Load settings from API
   useEffect(() => {
-    // When settings from localStorage change, reset the form with potentially merged values
-    form.reset({
-      ...DEFAULT_BUSINESS_SETTINGS,
-      ...settings,
-      availableCurrencies: settings?.availableCurrencies && Array.isArray(settings.availableCurrencies)
-                           ? settings.availableCurrencies
-                           : DEFAULT_BUSINESS_SETTINGS.availableCurrencies,
-    });
-    if (settings.appName) {
-        document.title = `${settings.appName} - Admin Business Settings`;
-    }
-  }, [settings, form]);
+    const loadSettings = async () => {
+      try {
+        setIsLoading(true);
+        const apiSettings = await apiClient.getSettings('business');
+        const mergedSettings = {
+          ...DEFAULT_BUSINESS_SETTINGS,
+          ...apiSettings,
+          availableCurrencies: apiSettings?.availableCurrencies && Array.isArray(apiSettings.availableCurrencies) 
+                               ? apiSettings.availableCurrencies 
+                               : DEFAULT_BUSINESS_SETTINGS.availableCurrencies,
+        };
+        setSettings(mergedSettings);
+        form.reset(mergedSettings);
+        if (mergedSettings.appName) {
+          document.title = `${mergedSettings.appName} - Admin Business Settings`;
+        }
+      } catch (error) {
+        console.error('Error loading settings:', error);
+        // Use defaults if API fails
+        setSettings(DEFAULT_BUSINESS_SETTINGS);
+        form.reset(DEFAULT_BUSINESS_SETTINGS);
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-  const onSubmit = (data: BusinessSettingsFormData) => {
+    loadSettings();
+  }, [form]);
+
+  const onSubmit = async (data: BusinessSettingsFormData) => {
     // Ensure defaultCurrencyCode is valid among availableCurrencies
     if (!data.availableCurrencies.some(c => c.code === data.defaultCurrencyCode)) {
       toast({ title: "Error", description: "Default currency must be one of the available currencies.", variant: "destructive" });
       return;
     }
 
-    setSettings(data);
+    try {
+      setIsSaving(true);
+      await apiClient.updateSettings(data, 'business');
+      setSettings(data);
 
-    if (data.primaryColor && data.primaryColor.includes(' ')) { 
+      if (data.primaryColor && data.primaryColor.includes(' ')) { 
         document.documentElement.style.setProperty('--primary', data.primaryColor);
-    }
-    if (data.secondaryColor && data.secondaryColor.includes(' ')) {
+      }
+      if (data.secondaryColor && data.secondaryColor.includes(' ')) {
         document.documentElement.style.setProperty('--secondary', data.secondaryColor);
-    }
+      }
 
-    toast({
-      title: "Settings Updated",
-      description: "Business settings have been successfully saved.",
-    });
+      toast({
+        title: "Settings Updated",
+        description: "Business settings have been successfully saved to the database.",
+      });
+    } catch (error) {
+      console.error('Error saving settings:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save settings. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleAddNewCurrency = () => {
@@ -123,6 +147,21 @@ export default function AdminBusinessSettingsPage() {
   };
 
   const watchedCurrencies = form.watch("availableCurrencies") || [];
+
+  if (isLoading) {
+    return (
+      <div className="space-y-8 py-4">
+        <h1 className="text-3xl font-bold flex items-center gap-3">
+          <Briefcase className="h-8 w-8 text-primary"/>
+          Business Settings
+        </h1>
+        <div className="flex items-center justify-center py-8">
+          <Loader2 className="h-8 w-8 animate-spin" />
+          <span className="ml-2">Loading settings...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 py-4">
@@ -157,9 +196,54 @@ export default function AdminBusinessSettingsPage() {
                 name="logoUrl"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Logo URL</FormLabel>
-                    <FormControl><Input placeholder="https://example.com/logo.png" {...field} /></FormControl>
-                     <FormDescription>Full URL to your site logo. Leave blank for default.</FormDescription>
+                    <FormLabel>Site Logo</FormLabel>
+                    <FormControl>
+                      <ImageUpload
+                        value={field.value ? [field.value] : []}
+                        onChange={(urls) => field.onChange(urls[0] || '')}
+                        maxFiles={1}
+                        maxSize={2}
+                      />
+                    </FormControl>
+                    <FormDescription>Upload your site logo (recommended: 200x50px or similar aspect ratio).</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="logoUrlHorizontal"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Horizontal Logo (for headers, desktop)</FormLabel>
+                    <FormControl>
+                      <ImageUpload
+                        value={field.value ? [field.value] : []}
+                        onChange={(urls) => field.onChange(urls[0] || "")}
+                        maxFiles={1}
+                        maxSize={2}
+                      />
+                    </FormControl>
+                    <FormDescription>Upload horizontal logo for desktop headers (recommended: 200x50px).</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="logoUrlVertical"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Vertical Logo (for mobile, sidebar)</FormLabel>
+                    <FormControl>
+                      <ImageUpload
+                        value={field.value ? [field.value] : []}
+                        onChange={(urls) => field.onChange(urls[0] || "")}
+                        maxFiles={1}
+                        maxSize={2}
+                      />
+                    </FormControl>
+                    <FormDescription>Upload vertical logo for mobile and sidebars (recommended: 50x200px).</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -193,9 +277,17 @@ export default function AdminBusinessSettingsPage() {
                 name="faviconUrl"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Favicon URL</FormLabel>
-                    <FormControl><Input placeholder="https://example.com/favicon.ico" {...field} /></FormControl>
-                    <FormDescription>Full URL to your site favicon. Leave blank for default.</FormDescription>
+                    <FormLabel>Site Favicon</FormLabel>
+                    <FormControl>
+                      <ImageUpload
+                        value={field.value ? [field.value] : []}
+                        onChange={(urls) => field.onChange(urls[0] || '')}
+                        maxFiles={1}
+                        maxSize={1}
+                        accept="image/x-icon,image/png,image/jpeg,image/gif"
+                      />
+                    </FormControl>
+                    <FormDescription>Upload your site favicon (recommended: 32x32px ICO or PNG file).</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -210,7 +302,9 @@ export default function AdminBusinessSettingsPage() {
                         <Button type="button" size="sm" variant="outline"><PlusCircle className="mr-2 h-4 w-4" /> Add Currency</Button>
                       </DialogTrigger>
                       <DialogContent>
-                        <DialogHeader><DialogTitle>Add New Currency</DialogTitle></DialogHeader>
+                        <DialogHeader>
+                          <DialogTitle>Add New Currency</DialogTitle>
+                        </DialogHeader>
                         <div className="space-y-4 py-4">
                           <div><Label htmlFor="new-code">Code (3 letters, e.g., USD)</Label><Input id="new-code" value={newCurrency.code} onChange={(e) => setNewCurrency(p => ({...p, code: e.target.value.toUpperCase()}))} maxLength={3} /></div>
                           <div><Label htmlFor="new-symbol">Symbol (e.g., $)</Label><Input id="new-symbol" value={newCurrency.symbol} onChange={(e) => setNewCurrency(p => ({...p, symbol: e.target.value}))} /></div>
@@ -266,8 +360,8 @@ export default function AdminBusinessSettingsPage() {
                 )}
               />
 
-              <Button type="submit" disabled={form.formState.isSubmitting}>
-                {form.formState.isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+              <Button type="submit" disabled={isSaving}>
+                {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                 Save Settings
               </Button>
             </form>

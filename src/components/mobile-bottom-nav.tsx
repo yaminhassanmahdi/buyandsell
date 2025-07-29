@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from 'next/link';
@@ -8,13 +7,13 @@ import { cn } from '@/lib/utils';
 import { useCart } from '@/contexts/cart-context';
 import { useAuth } from '@/contexts/auth-context';
 import { Button } from '@/components/ui/button';
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import { MobileCategorySheet } from './mobile-category-sheet';
 import useLocalStorage from '@/hooks/use-local-storage';
 import type { BusinessSettings, Currency } from '@/lib/types';
 import { BUSINESS_SETTINGS_STORAGE_KEY, DEFAULT_BUSINESS_SETTINGS } from '@/lib/constants';
 
-export function MobileBottomNav() {
+function MobileBottomNavInner() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { itemCount, getCartTotal } = useCart();
@@ -125,5 +124,13 @@ export function MobileBottomNav() {
       </div>
       <MobileCategorySheet isOpen={isCategorySheetOpen} onOpenChange={setIsCategorySheetOpen} />
     </>
+  );
+}
+
+export function MobileBottomNav() {
+  return (
+    <Suspense fallback={null}>
+      <MobileBottomNavInner />
+    </Suspense>
   );
 }

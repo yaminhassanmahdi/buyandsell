@@ -1,4 +1,3 @@
-
 "use client";
 import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
@@ -18,6 +17,7 @@ import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import useLocalStorage from '@/hooks/use-local-storage';
 import { COMMISSION_SETTINGS_STORAGE_KEY, DEFAULT_COMMISSION_SETTINGS, BUSINESS_SETTINGS_STORAGE_KEY, DEFAULT_BUSINESS_SETTINGS } from '@/lib/constants';
+import { Suspense } from "react";
 
 const getWithdrawalMethodSummary = (method: WithdrawalMethod | undefined): string => {
     if (!method) return "Unknown Method";
@@ -26,7 +26,7 @@ const getWithdrawalMethodSummary = (method: WithdrawalMethod | undefined): strin
     return "Unknown Method";
 };
 
-export default function MyEarningsPage() {
+function MyEarningsPageInner() {
   const { currentUser, isAuthenticated, loading: authLoading } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
@@ -44,7 +44,9 @@ export default function MyEarningsPage() {
     DEFAULT_COMMISSION_SETTINGS
   );
   const [settings] = useLocalStorage<BusinessSettings>(BUSINESS_SETTINGS_STORAGE_KEY, DEFAULT_BUSINESS_SETTINGS);
-  const activeCurrency = settings.availableCurrencies.find(c => c.code === settings.defaultCurrencyCode) || settings.availableCurrencies[0] || { symbol: '?' };
+  const activeCurrency = settings?.availableCurrencies?.find(c => c.code === settings?.defaultCurrencyCode) || 
+    settings?.availableCurrencies?.[0] || 
+    { code: 'BDT', symbol: '৳', name: 'Bangladeshi Taka' };
   const currencySymbol = activeCurrency.symbol;
 
 
@@ -191,10 +193,8 @@ export default function MyEarningsPage() {
                 </Button>
               </DialogTrigger>
               <DialogContent className="sm:max-w-md">
-                <DialogHeader>
-                  <DialogTitle>Request Withdrawal</DialogTitle>
-                  <DialogDescription>Select method and enter amount. Max: {currencySymbol}{pendingEarnings.toFixed(2)}</DialogDescription>
-                </DialogHeader>
+                <DialogTitle className="sr-only">Withdrawal Dialog</DialogTitle>
+                <DialogDescription>Select method and enter amount. Max: {currencySymbol}{pendingEarnings.toFixed(2)}</DialogDescription>
                 <div className="grid gap-4 py-4">
                   <div className="space-y-2">
                     <Label htmlFor="withdrawal-method">Withdrawal Method</Label>
@@ -300,3 +300,13 @@ export default function MyEarningsPage() {
     </div>
   );
 }
+
+export default function MyEarningsPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <MyEarningsPageInner />
+    </Suspense>
+  );
+}
+
+export const dynamic = 'force-dynamic';

@@ -1,4 +1,3 @@
-
 "use client";
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
@@ -11,9 +10,9 @@ import { useToast } from '@/hooks/use-toast';
 import type { Category, FeaturedImage } from '@/lib/types';
 import { FolderTree, PlusCircle, Trash2, Edit3, Loader2, Image as ImageIcon, ArrowUpDown } from 'lucide-react';
 import Image from 'next/image';
-import useLocalStorage from '@/hooks/use-local-storage';
-import { CATEGORIES_STORAGE_KEY, INITIAL_CATEGORIES } from '@/lib/constants';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import ImageUpload from '@/components/admin/image-upload';
+import { apiClient } from '@/lib/api-client';
 
 const generateId = () => `cat-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
 const generateFeaturedImageId = (index: number) => `feat-img-${index + 1}`;
@@ -21,19 +20,34 @@ const generateFeaturedImageId = (index: number) => `feat-img-${index + 1}`;
 const MAX_FEATURED_IMAGES = 4;
 
 export default function AdminManageCategoriesPage() {
-  const [categories, setCategories] = useLocalStorage<Category[]>(
-    CATEGORIES_STORAGE_KEY,
-    INITIAL_CATEGORIES
-  );
-  const [isLoading, setIsLoading] = useState(false); // General loading, not initial data fetch
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [currentCategory, setCurrentCategory] = useState<Partial<Category>>({});
   const [isEditing, setIsEditing] = useState(false);
   const [formSubmitting, setFormSubmitting] = useState(false);
   const { toast } = useToast();
 
+  // Fetch categories from API
+  const fetchCategories = async () => {
+    try {
+      setIsLoading(true);
+      const categoriesData = await apiClient.getCategories();
+      setCategories(categoriesData);
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load categories.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    // No specific loading effect for categories as useLocalStorage handles initial state
+    fetchCategories();
   }, []);
 
   const openDialog = (category?: Category) => {
@@ -42,7 +56,7 @@ export default function AdminManageCategoriesPage() {
       const currentFeatured = Array.isArray(category.featuredImages) ? category.featuredImages : [];
       const featuredImages = Array.from({ length: MAX_FEATURED_IMAGES }).map((_, i) => ({
         id: generateFeaturedImageId(i),
-        imageUrl: currentFeatured[i]?.imageUrl || `https://placehold.co/300x300.png`,
+        imageUrl: currentFeatured[i]?.imageUrl || '',
         imageHint: currentFeatured[i]?.imageHint || '',
         linkUrl: currentFeatured[i]?.linkUrl || '',
         title: currentFeatured[i]?.title || '',
@@ -52,14 +66,14 @@ export default function AdminManageCategoriesPage() {
     } else {
       const featuredImages = Array.from({ length: MAX_FEATURED_IMAGES }).map((_, i) => ({
         id: generateFeaturedImageId(i),
-        imageUrl: 'https://placehold.co/300x300.png',
+        imageUrl: '',
         imageHint: '',
         linkUrl: '',
         title: '',
       }));
       setCurrentCategory({
         name: '',
-        imageUrl: 'https://placehold.co/80x80.png',
+        imageUrl: '',
         imageHint: '',
         sortOrder: (categories.length + 1) * 10,
         featuredImages,
@@ -75,6 +89,14 @@ export default function AdminManageCategoriesPage() {
     setCurrentCategory(prev => ({ ...prev, [name]: type === 'number' ? parseInt(value, 10) || 0 : value }));
   };
 
+  const handleCategoryImageChange = (urls: string[]) => {
+    setCurrentCategory(prev => ({ 
+      ...prev, 
+      imageUrl: urls[0] || '',
+      imageHint: prev.imageHint || prev.name?.toLowerCase() || ''
+    }));
+  };
+
   const handleFeaturedImageChange = (index: number, field: keyof FeaturedImage, value: string) => {
     setCurrentCategory(prev => {
       if (!prev || !Array.isArray(prev.featuredImages)) return prev;
@@ -87,60 +109,92 @@ export default function AdminManageCategoriesPage() {
     });
   };
 
+  const handleFeaturedImageUpload = (index: number, urls: string[]) => {
+    setCurrentCategory(prev => {
+      if (!prev || !Array.isArray(prev.featuredImages)) return prev;
+      const updatedFeaturedImages = [...prev.featuredImages];
+      if (updatedFeaturedImages[index]) {
+        updatedFeaturedImages[index].imageUrl = urls[0] || '';
+      }
+      return { ...prev, featuredImages: updatedFeaturedImages };
+    });
+  };
+
   const handleSaveCategory = async () => {
     if (!currentCategory.name?.trim()) {
       toast({ title: "Error", description: "Category name cannot be empty.", variant: "destructive" });
       return;
     }
     setFormSubmitting(true);
-    await new Promise(resolve => setTimeout(resolve, 500));
 
-    // Filter out featured images that don't have a real imageUrl (are still placeholders) unless a title or link is set
-    const finalFeaturedImages = currentCategory.featuredImages?.filter(
-      img => (img.imageUrl && img.imageUrl !== 'https://placehold.co/300x300.png') || img.linkUrl || img.title
-    ).map(img => ({ // Ensure all fields are present even if empty, id is from mapping
-        id: img.id || generateFeaturedImageId(0), // Should have ID from initialization
-        imageUrl: img.imageUrl || 'https://placehold.co/300x300.png',
-        imageHint: img.imageHint || '',
-        linkUrl: img.linkUrl || '',
-        title: img.title || ''
-    })) || [];
+    try {
+      // Filter out featured images that don't have a real imageUrl unless a title or link is set
+      const finalFeaturedImages = currentCategory.featuredImages?.filter(
+        img => img.imageUrl || img.linkUrl || img.title
+      ).map(img => ({
+          id: img.id || generateFeaturedImageId(0),
+          imageUrl: img.imageUrl || '',
+          imageHint: img.imageHint || '',
+          linkUrl: img.linkUrl || '',
+          title: img.title || ''
+      })) || [];
 
+      const categoryDataToSave: Category = {
+        id: currentCategory.id || generateId(),
+        name: currentCategory.name.trim(),
+        imageUrl: currentCategory.imageUrl?.trim() || '',
+        imageHint: currentCategory.imageHint?.trim() || currentCategory.name.toLowerCase(),
+        sortOrder: currentCategory.sortOrder === undefined ? (categories.length + 1) * 10 : currentCategory.sortOrder,
+        featuredImages: finalFeaturedImages,
+        categorySlides: currentCategory.categorySlides || [],
+      };
 
-    const categoryDataToSave: Category = {
-      id: currentCategory.id || generateId(),
-      name: currentCategory.name.trim(),
-      imageUrl: currentCategory.imageUrl?.trim() || 'https://placehold.co/80x80.png',
-      imageHint: currentCategory.imageHint?.trim() || currentCategory.name.toLowerCase(),
-      sortOrder: currentCategory.sortOrder === undefined ? (categories.length + 1) * 10 : currentCategory.sortOrder,
-      featuredImages: finalFeaturedImages,
-      categorySlides: currentCategory.categorySlides || [], // Persist existing or empty
-    };
+      if (isEditing && currentCategory.id) {
+        // Update existing category
+        await apiClient.updateCategory(currentCategory.id, categoryDataToSave);
+        toast({ title: "Category Updated", description: `Category "${categoryDataToSave.name}" has been updated.` });
+      } else {
+        // Create new category
+        await apiClient.createCategory(categoryDataToSave);
+        toast({ title: "Category Added", description: `Category "${categoryDataToSave.name}" has been added.` });
+      }
 
-    if (isEditing && currentCategory.id) {
-      setCategories(prev => prev.map(cat => cat.id === categoryDataToSave.id ? categoryDataToSave : cat)
-                                .sort((a,b) => (a.sortOrder || 999) - (b.sortOrder || 999) || a.name.localeCompare(b.name)));
-      toast({ title: "Category Updated", description: `Category "${categoryDataToSave.name}" has been updated.` });
-    } else {
-      setCategories(prev => [...prev, categoryDataToSave]
-                                .sort((a,b) => (a.sortOrder || 999) - (b.sortOrder || 999) || a.name.localeCompare(b.name)));
-      toast({ title: "Category Added", description: `Category "${categoryDataToSave.name}" has been added.` });
+      // Refresh categories list
+      await fetchCategories();
+      setIsDialogOpen(false);
+      setCurrentCategory({});
+    } catch (error) {
+      console.error('Error saving category:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save category. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setFormSubmitting(false);
     }
-    setIsDialogOpen(false);
-    setCurrentCategory({});
-    setFormSubmitting(false);
   };
 
-  const handleDeleteCategory = (categoryId: string) => {
+  const handleDeleteCategory = async (categoryId: string) => {
     if (window.confirm("Are you sure you want to delete this category? This may affect sub-categories and products.")) {
-      setCategories(prev => prev.filter(cat => cat.id !== categoryId));
-      toast({ title: "Category Deleted", description: "The category has been deleted." });
+      try {
+        await apiClient.deleteCategory(categoryId);
+        toast({ title: "Category Deleted", description: "The category has been deleted." });
+        await fetchCategories(); // Refresh the list
+      } catch (error) {
+        console.error('Error deleting category:', error);
+        toast({
+          title: "Error",
+          description: "Failed to delete category. Please try again.",
+          variant: "destructive",
+        });
+      }
     }
   };
   
   const sortedCategories = [...categories].sort((a,b) => (a.sortOrder || 999) - (b.sortOrder || 999) || a.name.localeCompare(b.name));
 
-  if (isLoading) { // Though not strictly used for initial load from localStorage here
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -181,81 +235,156 @@ export default function AdminManageCategoriesPage() {
                       <p className="text-xs text-muted-foreground">ID: {category.id}</p>
                     </div>
                   </div>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={() => openDialog(category)} className="hover:text-primary">
-                        <Edit3 className="h-4 w-4"/>
+                  <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" onClick={() => openDialog(category)}>
+                      <Edit3 className="h-4 w-4" />
                     </Button>
-                    <Button variant="destructive" size="sm" onClick={() => handleDeleteCategory(category.id)}>
-                        <Trash2 className="h-4 w-4"/>
+                    <Button variant="outline" size="sm" onClick={() => handleDeleteCategory(category.id)}>
+                      <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-muted-foreground">No parent categories found. Add a new category to get started.</p>
+            <div className="text-center py-8 text-muted-foreground">
+              <FolderTree className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p>No categories found. Create your first category to get started.</p>
+            </div>
           )}
         </CardContent>
       </Card>
 
+      {/* Add/Edit Category Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-2xl max-h-[90vh]">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{isEditing ? "Edit" : "Add New"} Parent Category</DialogTitle>
-            <DialogDescription>Enter the details for the parent category.</DialogDescription>
+            <DialogTitle>{isEditing ? 'Edit Category' : 'Add New Category'}</DialogTitle>
+            <DialogDescription>
+              {isEditing ? 'Update the category information below.' : 'Fill in the details to create a new category.'}
+            </DialogDescription>
           </DialogHeader>
-          <ScrollArea className="max-h-[70vh] p-1"> {/* Added ScrollArea here */}
-            <div className="grid gap-4 py-4 pr-4"> {/* Added pr-4 for scrollbar space */}
-              <div className="space-y-2">
-                <Label htmlFor="category-name">Name*</Label>
-                <Input id="category-name" name="name" value={currentCategory.name || ''} onChange={handleInputChange} placeholder="e.g., Electronics"/>
+          
+          <div className="space-y-6">
+            {/* Basic Information */}
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="name">Category Name *</Label>
+                <Input
+                  id="name"
+                  name="name"
+                  value={currentCategory.name || ''}
+                  onChange={handleInputChange}
+                  placeholder="e.g., Electronics"
+                  required
+                />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="category-image-url">Image URL (for category icon)</Label>
-                <Input id="category-image-url" name="imageUrl" value={currentCategory.imageUrl || ''} onChange={handleInputChange} placeholder="https://placehold.co/80x80.png"/>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="category-image-hint">Image Hint (for AI)</Label>
-                <Input id="category-image-hint" name="imageHint" value={currentCategory.imageHint || ''} onChange={handleInputChange} placeholder="e.g., electronics gadget"/>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="category-sort-order">Sort Order</Label>
-                <Input id="category-sort-order" name="sortOrder" type="number" value={currentCategory.sortOrder === undefined ? '' : currentCategory.sortOrder} onChange={handleInputChange} placeholder="e.g., 10 (lower is first)"/>
-              </div>
-
-              <h3 className="text-lg font-semibold mt-6 mb-2 border-t pt-4">Featured Images (Grid of 4 on Category Page)</h3>
-              {currentCategory.featuredImages?.map((img, index) => (
-                <Card key={img.id || index} className="p-4 space-y-3">
-                   <Label className="text-sm font-medium">Featured Image {index + 1}</Label>
-                  <div className="space-y-1">
-                    <Label htmlFor={`feat-img-url-${index}`} className="text-xs">Image URL</Label>
-                    <Input id={`feat-img-url-${index}`} value={img.imageUrl} onChange={(e) => handleFeaturedImageChange(index, 'imageUrl', e.target.value)} placeholder="https://placehold.co/300x300.png"/>
-                  </div>
-                  <div className="space-y-1">
-                    <Label htmlFor={`feat-img-hint-${index}`} className="text-xs">Image Hint</Label>
-                    <Input id={`feat-img-hint-${index}`} value={img.imageHint} onChange={(e) => handleFeaturedImageChange(index, 'imageHint', e.target.value)} placeholder="e.g., style fashion"/>
-                  </div>
-                  <div className="space-y-1">
-                    <Label htmlFor={`feat-img-link-${index}`} className="text-xs">Link URL (Optional)</Label>
-                    <Input id={`feat-img-link-${index}`} value={img.linkUrl || ''} onChange={(e) => handleFeaturedImageChange(index, 'linkUrl', e.target.value)} placeholder="/browse?some_filter=value"/>
-                  </div>
-                  <div className="space-y-1">
-                    <Label htmlFor={`feat-img-title-${index}`} className="text-xs">Title (Optional)</Label>
-                    <Input id={`feat-img-title-${index}`} value={img.title || ''} onChange={(e) => handleFeaturedImageChange(index, 'title', e.target.value)} placeholder="e.g., Summer Collection"/>
-                  </div>
-                </Card>
-              ))}
               
-              <div className="mt-4 border-t pt-4">
-                <Label className="text-muted-foreground">Category Specific Slides: Management for these will be added in a future update.</Label>
+              <div>
+                <Label htmlFor="imageHint">Image Hint</Label>
+                <Input
+                  id="imageHint"
+                  name="imageHint"
+                  value={currentCategory.imageHint || ''}
+                  onChange={handleInputChange}
+                  placeholder="e.g., electronics gadgets"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="sortOrder">Sort Order</Label>
+                <Input
+                  id="sortOrder"
+                  name="sortOrder"
+                  type="number"
+                  value={currentCategory.sortOrder || ''}
+                  onChange={handleInputChange}
+                  placeholder="e.g., 1"
+                />
               </div>
             </div>
-          </ScrollArea>
-          <DialogFooter className="mt-4">
-            <DialogClose asChild><Button type="button" variant="outline" disabled={formSubmitting}>Cancel</Button></DialogClose>
-            <Button onClick={handleSaveCategory} disabled={formSubmitting || !currentCategory.name?.trim()}>
-              {formSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {isEditing ? "Save Changes" : "Add Category"}
+
+            {/* Category Image */}
+            <div>
+              <Label>Category Image</Label>
+              <ImageUpload
+                value={currentCategory.imageUrl ? [currentCategory.imageUrl] : []}
+                onChange={handleCategoryImageChange}
+                maxFiles={1}
+                className="mt-2"
+              />
+            </div>
+
+            {/* Featured Images */}
+            <div>
+              <Label>Featured Images (Optional)</Label>
+              <p className="text-sm text-muted-foreground mb-3">
+                Add up to 4 featured images that will be displayed on the category page.
+              </p>
+              <ScrollArea className="h-64">
+                <div className="space-y-4">
+                  {Array.from({ length: MAX_FEATURED_IMAGES }).map((_, index) => (
+                    <div key={index} className="border rounded-lg p-4 space-y-3">
+                      <div className="flex items-center gap-2">
+                        <ImageIcon className="h-4 w-4" />
+                        <span className="text-sm font-medium">Featured Image {index + 1}</span>
+                      </div>
+                      
+                      <ImageUpload
+                        onChange={(urls) => handleFeaturedImageUpload(index, urls)}
+                        value={currentCategory.featuredImages?.[index]?.imageUrl ? [currentCategory.featuredImages[index].imageUrl] : []}
+                        maxFiles={1}
+                        className="mb-3"
+                      />
+                      
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <Label htmlFor={`title-${index}`}>Title</Label>
+                          <Input
+                            id={`title-${index}`}
+                            value={currentCategory.featuredImages?.[index]?.title || ''}
+                            onChange={(e) => handleFeaturedImageChange(index, 'title', e.target.value)}
+                            placeholder="e.g., Latest Smartphones"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor={`link-${index}`}>Link URL</Label>
+                          <Input
+                            id={`link-${index}`}
+                            value={currentCategory.featuredImages?.[index]?.linkUrl || ''}
+                            onChange={(e) => handleFeaturedImageChange(index, 'linkUrl', e.target.value)}
+                            placeholder="e.g., /category/smartphones"
+                          />
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <Label htmlFor={`hint-${index}`}>Image Hint</Label>
+                        <Input
+                          id={`hint-${index}`}
+                          value={currentCategory.featuredImages?.[index]?.imageHint || ''}
+                          placeholder="e.g., smartphone showcase"
+                          onChange={(e) => handleFeaturedImageChange(index, 'imageHint', e.target.value)}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline">Cancel</Button>
+            </DialogClose>
+            <Button onClick={handleSaveCategory} disabled={formSubmitting}>
+              {formSubmitting ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <FolderTree className="mr-2 h-4 w-4" />
+              )}
+              {isEditing ? 'Update Category' : 'Create Category'}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -1,119 +1,167 @@
-
 "use client";
 import { useEffect, useState } from 'react';
-import { MOCK_WITHDRAWAL_REQUESTS, MOCK_USERS } from '@/lib/mock-data';
-import type { WithdrawalRequest, WithdrawalRequestStatus, BusinessSettings, Currency, User, WithdrawalMethod } from '@/lib/types';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogClose, DialogFooter } from '@/components/ui/dialog';
-import { Textarea } from '@/components/ui/textarea';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { useToast } from '@/hooks/use-toast';
-import { Loader2, CheckCircle, XCircle, Edit, CreditCard, FileText, Info, Banknote, Smartphone } from 'lucide-react';
-import { format } from 'date-fns';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Loader2, DollarSign, Clock, CheckCircle, XCircle, MessageSquare, User, Calendar, CreditCard } from 'lucide-react';
+import { apiClient } from '@/lib/api-client';
+import type { BusinessSettings } from '@/lib/types';
 import useLocalStorage from '@/hooks/use-local-storage';
 import { BUSINESS_SETTINGS_STORAGE_KEY, DEFAULT_BUSINESS_SETTINGS } from '@/lib/constants';
+import { format } from 'date-fns';
+import { useToast } from '@/hooks/use-toast';
+
+interface WithdrawalRequest {
+  id: string;
+  userId: string;
+  userName: string;
+  userEmail: string;
+  amount: number;
+  withdrawalMethodType: string;
+  withdrawalMethodDetails: string;
+  status: 'pending' | 'approved' | 'rejected';
+  requestedAt: string;
+  processedAt?: string;
+  adminNote?: string;
+}
 
 export default function AdminWithdrawalRequestsPage() {
-  const [requests, setRequests] = useState<WithdrawalRequest[]>([]);
+  const [withdrawalRequests, setWithdrawalRequests] = useState<WithdrawalRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedRequest, setSelectedRequest] = useState<WithdrawalRequest | null>(null);
+  const [isProcessModalOpen, setIsProcessModalOpen] = useState(false);
+  const [processingStatus, setProcessingStatus] = useState<'approved' | 'rejected' | 'pending'>('pending');
+  const [adminNote, setAdminNote] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+
   const { toast } = useToast();
 
-  const [isProcessingModalOpen, setIsProcessingModalOpen] = useState(false);
-  const [currentRequest, setCurrentRequest] = useState<WithdrawalRequest | null>(null);
-  const [selectedWithdrawalMethodDetails, setSelectedWithdrawalMethodDetails] = useState<WithdrawalMethod | null>(null);
-  const [adminNote, setAdminNote] = useState('');
-  const [actionType, setActionType] = useState<'approve' | 'reject' | null>(null);
-  const [formSubmitting, setFormSubmitting] = useState(false);
-
-  const [settings] = useLocalStorage<BusinessSettings>(
-    BUSINESS_SETTINGS_STORAGE_KEY,
-    DEFAULT_BUSINESS_SETTINGS
-  );
-
-  const safeAvailableCurrencies: Currency[] = settings?.availableCurrencies && Array.isArray(settings.availableCurrencies) && settings.availableCurrencies.length > 0
-    ? settings.availableCurrencies
-    : DEFAULT_BUSINESS_SETTINGS.availableCurrencies;
-
-  const safeDefaultCurrencyCode: string = settings?.defaultCurrencyCode
-    ? settings.defaultCurrencyCode
-    : DEFAULT_BUSINESS_SETTINGS.defaultCurrencyCode;
-
-  const activeCurrency: Currency =
-    safeAvailableCurrencies.find(c => c.code === safeDefaultCurrencyCode) ||
-    safeAvailableCurrencies[0] ||
+  const [settings] = useLocalStorage<BusinessSettings>(BUSINESS_SETTINGS_STORAGE_KEY, DEFAULT_BUSINESS_SETTINGS);
+  const activeCurrency = settings?.availableCurrencies?.find(c => c.code === settings?.defaultCurrencyCode) || 
+    settings?.availableCurrencies?.[0] || 
     { code: 'BDT', symbol: '৳', name: 'Bangladeshi Taka' };
-
   const currencySymbol = activeCurrency.symbol;
 
-
   useEffect(() => {
-    setIsLoading(true);
-    setTimeout(() => {
-      const sortedRequests = [...MOCK_WITHDRAWAL_REQUESTS].sort((a, b) => {
-        if (a.status === 'pending' && b.status !== 'pending') return -1;
-        if (a.status !== 'pending' && b.status === 'pending') return 1;
-        return new Date(b.requestedAt).getTime() - new Date(a.requestedAt).getTime();
-      });
-      setRequests(sortedRequests);
-      setIsLoading(false);
-    }, 500);
+    fetchWithdrawalRequests();
   }, []);
 
-  const openProcessingModal = (request: WithdrawalRequest, type: 'approve' | 'reject') => {
-    setCurrentRequest(request);
-    setActionType(type);
-    setAdminNote(request.adminNote || '');
-
-    // Find and set full withdrawal method details
-    const user = MOCK_USERS.find(u => u.id === request.userId);
-    if (user && user.withdrawalMethods) {
-      const method = user.withdrawalMethods.find(m => m.id === request.withdrawalMethodId);
-      setSelectedWithdrawalMethodDetails(method || null);
-    } else {
-      setSelectedWithdrawalMethodDetails(null);
-    }
-
-    setIsProcessingModalOpen(true);
-  };
-
-  const handleProcessRequest = async () => {
-    if (!currentRequest || !actionType) return;
-
-    setFormSubmitting(true);
-    await new Promise(resolve => setTimeout(resolve, 700));
-
-    const requestIndex = MOCK_WITHDRAWAL_REQUESTS.findIndex(r => r.id === currentRequest.id);
-    if (requestIndex !== -1) {
-      MOCK_WITHDRAWAL_REQUESTS[requestIndex].status = actionType === 'approve' ? 'approved' : 'rejected';
-      MOCK_WITHDRAWAL_REQUESTS[requestIndex].adminNote = adminNote.trim() || undefined;
-      MOCK_WITHDRAWAL_REQUESTS[requestIndex].processedAt = new Date();
-      
-      setRequests(prev => prev.map(r => r.id === currentRequest.id ? MOCK_WITHDRAWAL_REQUESTS[requestIndex] : r)
-                              .sort((a, b) => { 
-                                if (a.status === 'pending' && b.status !== 'pending') return -1;
-                                if (a.status !== 'pending' && b.status === 'pending') return 1;
-                                return new Date(b.requestedAt).getTime() - new Date(a.requestedAt).getTime();
-                              }));
-
-      toast({ 
-        title: `Request ${actionType === 'approve' ? 'Approved' : 'Rejected'}`, 
-        description: `Withdrawal request ID ${currentRequest.id} has been processed.` 
+  const fetchWithdrawalRequests = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/withdrawal-requests');
+      if (!response.ok) {
+        throw new Error('Failed to fetch withdrawal requests');
+      }
+      const data = await response.json();
+      setWithdrawalRequests(data);
+    } catch (error) {
+      console.error('Error fetching withdrawal requests:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch withdrawal requests",
+        variant: "destructive"
       });
-    } else {
-      toast({ title: "Error", description: "Request not found.", variant: "destructive" });
+    } finally {
+      setIsLoading(false);
     }
-
-    setFormSubmitting(false);
-    setIsProcessingModalOpen(false);
-    setCurrentRequest(null);
-    setSelectedWithdrawalMethodDetails(null);
-    setAdminNote('');
-    setActionType(null);
   };
 
+  const handleProcessRequest = (request: WithdrawalRequest) => {
+    setSelectedRequest(request);
+    setProcessingStatus(request.status);
+    setAdminNote(request.adminNote || '');
+    setIsProcessModalOpen(true);
+  };
+
+  const handleSaveProcessing = async () => {
+    if (!selectedRequest) return;
+
+    setIsProcessing(true);
+    try {
+      const response = await fetch('/api/withdrawal-requests', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          requestId: selectedRequest.id,
+          status: processingStatus,
+          adminNote: adminNote.trim() || undefined
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update withdrawal request');
+      }
+
+      // Update the local state
+      setWithdrawalRequests(prev => prev.map(req => 
+        req.id === selectedRequest.id 
+          ? { 
+              ...req, 
+              status: processingStatus, 
+              adminNote: adminNote.trim() || undefined,
+              processedAt: new Date().toISOString()
+            }
+          : req
+      ));
+
+      toast({
+        title: "Request Updated",
+        description: `Withdrawal request has been ${processingStatus}`,
+      });
+
+      setIsProcessModalOpen(false);
+      setSelectedRequest(null);
+      setAdminNote('');
+    } catch (error) {
+      console.error('Error processing withdrawal request:', error);
+      toast({
+        title: "Error",
+        description: "Failed to process withdrawal request",
+        variant: "destructive"
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'approved': return 'bg-green-100 text-green-800';
+      case 'pending': return 'bg-yellow-100 text-yellow-800';
+      case 'rejected': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'approved': return <CheckCircle className="h-4 w-4" />;
+      case 'pending': return <Clock className="h-4 w-4" />;
+      case 'rejected': return <XCircle className="h-4 w-4" />;
+      default: return <Clock className="h-4 w-4" />;
+    }
+  };
+
+  const filteredRequests = withdrawalRequests.filter(request => {
+    if (statusFilter === 'all') return true;
+    return request.status === statusFilter;
+  });
+
+  const totalPending = withdrawalRequests.filter(req => req.status === 'pending').length;
+  const totalApproved = withdrawalRequests.filter(req => req.status === 'approved').length;
+  const totalAmount = withdrawalRequests
+    .filter(req => req.status === 'approved')
+    .reduce((sum, req) => sum + req.amount, 0);
 
   if (isLoading) {
     return (
@@ -124,163 +172,208 @@ export default function AdminWithdrawalRequestsPage() {
   }
 
   return (
-    <div className="space-y-8 py-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold flex items-center gap-3">
-          <CreditCard className="h-8 w-8 text-primary" />
-          Manage Withdrawal Requests
-        </h1>
+    <div className="space-y-8">
+      <div className="flex items-center gap-3">
+        <DollarSign className="h-8 w-8 text-primary"/>
+        <h1 className="text-3xl font-bold">Withdrawal Requests</h1>
       </div>
 
-      {requests.length === 0 ? (
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card>
-          <CardHeader>
-            <CardTitle>No Pending Requests</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Pending Requests</CardTitle>
+            <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <p className="text-muted-foreground">There are currently no withdrawal requests to process.</p>
+            <div className="text-2xl font-bold text-yellow-600">{totalPending}</div>
+            <p className="text-xs text-muted-foreground">
+              Awaiting admin review
+            </p>
           </CardContent>
         </Card>
-      ) : (
-        <Card className="shadow-sm">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Req. ID</TableHead>
-                <TableHead>User</TableHead>
-                <TableHead>Amount</TableHead>
-                <TableHead>Method (Summary)</TableHead>
-                <TableHead>Requested At</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {requests.map(req => (
-                <TableRow key={req.id}>
-                  <TableCell className="font-medium">{req.id}</TableCell>
-                  <TableCell>{req.userName} <span className="text-xs text-muted-foreground">({req.userId})</span></TableCell>
-                  <TableCell>{currencySymbol}{req.amount.toFixed(2)}</TableCell>
-                  <TableCell className="text-xs">{req.withdrawalMethodDetails}</TableCell>
-                  <TableCell>{format(new Date(req.requestedAt), 'dd MMM yyyy, hh:mm a')}</TableCell>
-                  <TableCell>
-                    <Badge 
-                        variant={
-                            req.status === 'approved' ? 'default' :
-                            req.status === 'pending' ? 'secondary' :
-                            'destructive'
-                        } 
-                        className="capitalize"
-                    >
-                        {req.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {req.status === 'pending' ? (
-                      <div className="flex gap-2 justify-end">
-                        <Button variant="outline" size="sm" onClick={() => openProcessingModal(req, 'approve')} className="text-green-600 border-green-600 hover:bg-green-50 hover:text-green-700">
-                          <CheckCircle className="mr-2 h-4 w-4" /> Approve
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={() => openProcessingModal(req, 'reject')} className="text-red-600 border-red-600 hover:bg-red-50 hover:text-red-700">
-                          <XCircle className="mr-2 h-4 w-4" /> Reject
-                        </Button>
-                      </div>
-                    ) : (
-                      <Button variant="ghost" size="sm" onClick={() => openProcessingModal(req, req.status === 'approved' ? 'approve' : 'reject')}>
-                        <FileText className="mr-2 h-4 w-4" /> View Details
-                      </Button>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </Card>
-      )}
 
-      {currentRequest && (
-        <Dialog open={isProcessingModalOpen} onOpenChange={setIsProcessingModalOpen}>
-          <DialogContent className="sm:max-w-lg">
-            <DialogHeader>
-              <DialogTitle>
-                {actionType === 'approve' ? 'Approve' : actionType === 'reject' ? 'Reject' : 'View'} Withdrawal Request: {currentRequest.id}
-              </DialogTitle>
-              <DialogDescription>
-                User: {currentRequest.userName} (ID: {currentRequest.userId})<br/>
-                Amount: {currencySymbol}{currentRequest.amount.toFixed(2)}
-              </DialogDescription>
-            </DialogHeader>
-            
-            <div className="py-4 space-y-4">
-              <div>
-                <Label className="font-semibold text-base">Payment Details:</Label>
-                {selectedWithdrawalMethodDetails ? (
-                  <Card className="mt-2 p-3 bg-muted/50">
-                    <CardContent className="text-sm space-y-1 p-0">
-                       <div className="flex items-center gap-2 mb-1">
-                          {selectedWithdrawalMethodDetails.type === 'bkash' ? <Smartphone className="h-5 w-5 text-pink-500" /> : <Banknote className="h-5 w-5 text-blue-500" />}
-                          <span className="font-medium capitalize">{selectedWithdrawalMethodDetails.type}</span>
-                          {selectedWithdrawalMethodDetails.isDefault && <Badge variant="outline" size="sm" className="text-xs">Default</Badge>}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Approved Requests</CardTitle>
+            <CheckCircle className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">{totalApproved}</div>
+            <p className="text-xs text-muted-foreground">
+              Successfully processed
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Paid Out</CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-blue-600">
+              {currencySymbol}{totalAmount.toFixed(2)}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              To sellers
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Filter Controls */}
+      <div className="flex items-center gap-4">
+        <Label htmlFor="status-filter">Filter by Status:</Label>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-48">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Requests</SelectItem>
+            <SelectItem value="pending">Pending</SelectItem>
+            <SelectItem value="approved">Approved</SelectItem>
+            <SelectItem value="rejected">Rejected</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Withdrawal Requests List */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Withdrawal Requests</CardTitle>
+          <CardDescription>Manage seller withdrawal requests</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {filteredRequests.length === 0 ? (
+            <p className="text-center text-muted-foreground py-8">No withdrawal requests found</p>
+          ) : (
+            <div className="space-y-4">
+              {filteredRequests.map((request) => (
+                <div key={request.id} className="border rounded-lg p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2">
+                        {getStatusIcon(request.status)}
+                        <Badge className={getStatusColor(request.status)}>
+                          {request.status}
+                        </Badge>
+                      </div>
+                      <span className="font-bold text-lg">{currencySymbol}{request.amount.toFixed(2)}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-muted-foreground">ID: {request.id}</span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleProcessRequest(request)}
+                      >
+                        {request.status === 'pending' ? 'Process' : 'Update'}
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 text-sm">
+                        <User className="h-4 w-4 text-muted-foreground" />
+                        <span className="font-medium">{request.userName}</span>
+                        <span className="text-muted-foreground">({request.userEmail})</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <CreditCard className="h-4 w-4" />
+                        <span>{request.withdrawalMethodType}: {request.withdrawalMethodDetails}</span>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Calendar className="h-4 w-4" />
+                        <span>Requested: {format(new Date(request.requestedAt), 'PPp')}</span>
+                      </div>
+                      {request.processedAt && (
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Calendar className="h-4 w-4" />
+                          <span>Processed: {format(new Date(request.processedAt), 'PPp')}</span>
                         </div>
-                      {selectedWithdrawalMethodDetails.type === 'bkash' && (
-                        <p><strong>bKash Number:</strong> {selectedWithdrawalMethodDetails.details.accountNumber}</p>
                       )}
-                      {selectedWithdrawalMethodDetails.type === 'bank' && (
-                        <>
-                          <p><strong>Bank Name:</strong> {selectedWithdrawalMethodDetails.details.bankName}</p>
-                          <p><strong>Account Holder:</strong> {selectedWithdrawalMethodDetails.details.accountHolderName}</p>
-                          <p><strong>Account Number:</strong> {selectedWithdrawalMethodDetails.details.accountNumber}</p>
-                          {selectedWithdrawalMethodDetails.details.routingNumber && (
-                            <p><strong>Routing Number:</strong> {selectedWithdrawalMethodDetails.details.routingNumber}</p>
-                          )}
-                          {selectedWithdrawalMethodDetails.details.branchName && (
-                            <p><strong>Branch Name:</strong> {selectedWithdrawalMethodDetails.details.branchName}</p>
-                          )}
-                        </>
-                      )}
-                       <p className="text-xs text-muted-foreground mt-1">Method Added: {format(new Date(selectedWithdrawalMethodDetails.createdAt), 'PP')}</p>
-                    </CardContent>
-                  </Card>
-                ) : (
-                  <p className="text-sm text-destructive mt-2">Could not load payment details for this request.</p>
-                )}
+                    </div>
+                  </div>
+
+                  {request.adminNote && (
+                    <Alert>
+                      <MessageSquare className="h-4 w-4" />
+                      <AlertDescription>
+                        <strong>Admin Note:</strong> {request.adminNote}
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Process Request Modal */}
+      <Dialog open={isProcessModalOpen} onOpenChange={setIsProcessModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Process Withdrawal Request</DialogTitle>
+            <DialogDescription>
+              Update the status and add notes for request ID: {selectedRequest?.id}
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedRequest && (
+            <div className="space-y-4">
+              <div className="p-4 bg-muted rounded-lg">
+                <div className="space-y-2">
+                  <p><strong>Amount:</strong> {currencySymbol}{selectedRequest.amount.toFixed(2)}</p>
+                  <p><strong>Seller:</strong> {selectedRequest.userName}</p>
+                  <p><strong>Method:</strong> {selectedRequest.withdrawalMethodType}</p>
+                  <p><strong>Details:</strong> {selectedRequest.withdrawalMethodDetails}</p>
+                </div>
               </div>
 
-              <div>
-                <Label htmlFor="admin-note" className="font-semibold text-base">Admin Note (Optional):</Label>
-                <Textarea 
-                    id="admin-note"
-                    value={adminNote}
-                    onChange={(e) => setAdminNote(e.target.value)}
-                    placeholder={currentRequest.status === 'pending' ? "Add a note for the user..." : "Note for this transaction..."}
-                    rows={3}
-                    disabled={currentRequest.status !== 'pending' || formSubmitting}
-                    className="mt-1"
+              <div className="space-y-2">
+                <Label htmlFor="status">Status</Label>
+                <Select value={processingStatus} onValueChange={(value) => setProcessingStatus(value as any)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="approved">Approved</SelectItem>
+                    <SelectItem value="rejected">Rejected</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="admin-note">Admin Note (Optional)</Label>
+                <Textarea
+                  id="admin-note"
+                  placeholder="Add a note about this decision..."
+                  value={adminNote}
+                  onChange={(e) => setAdminNote(e.target.value)}
+                  rows={3}
                 />
               </div>
             </div>
+          )}
 
-            <DialogFooter className="sm:justify-between">
-              <DialogClose asChild>
-                <Button type="button" variant="outline" disabled={formSubmitting}>Close</Button>
-              </DialogClose>
-              {currentRequest.status === 'pending' && actionType && (
-                <Button 
-                    onClick={handleProcessRequest} 
-                    disabled={formSubmitting}
-                    variant={actionType === 'approve' ? 'default' : 'destructive'}
-                >
-                  {formSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {actionType === 'approve' ? 'Confirm Approve' : 'Confirm Reject'}
-                </Button>
-              )}
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsProcessModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveProcessing} disabled={isProcessing}>
+              {isProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Update Request
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
-
-
-    

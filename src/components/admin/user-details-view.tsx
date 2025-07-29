@@ -1,4 +1,3 @@
-
 "use client";
 import type { User, ShippingAddress, WithdrawalMethod } from "@/lib/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,7 +10,7 @@ interface UserDetailsViewProps {
 
 const formatAddress = (address: ShippingAddress | null | undefined): string => {
   if (!address) return "No address on file.";
-  return `${address.fullName}\n${address.houseAddress}${address.roadNumber ? `, ${address.roadNumber}` : ''}\n${address.thana}, ${address.district}, ${address.division}\n${address.country}${address.phoneNumber ? `\nPhone: ${address.phoneNumber}` : ''}`;
+  return `${address.fullName}\n${address.houseAddress}${address.roadNumber ? `, ${address.roadNumber}` : ''}\n${address.upazilla}, ${address.district}, ${address.division}\n${address.country}${address.phoneNumber ? `\nPhone: ${address.phoneNumber}` : ''}`;
 };
 
 const formatWithdrawalMethod = (method: WithdrawalMethod): string => {

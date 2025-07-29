@@ -1,4 +1,3 @@
-
 export type FeaturedImage = {
   id: string; // e.g., 'feat-img-1'
   imageUrl: string;
@@ -15,6 +14,7 @@ export type Category = {
   sortOrder?: number;
   featuredImages?: FeaturedImage[];
   categorySlides?: HeroBannerSlide[]; // Reusing HeroBannerSlide type
+  attributeTypes?: CategoryAttributeType[];
 };
 
 export type SubCategory = {
@@ -29,6 +29,9 @@ export type CategoryAttributeType = {
   id: string;
   categoryId: string; // Links to parent Category.id
   name: string; // e.g., "Author", "Color", "Material"
+  isButtonFeatured?: boolean;
+  isFeaturedSection?: boolean; // Whether to show this in featured section with value images
+  values?: CategoryAttributeValue[]; // The attribute values for this type
 };
 
 export type CategoryAttributeValue = {
@@ -57,6 +60,12 @@ export type Product = {
   status: 'pending' | 'approved' | 'rejected' | 'sold';
   createdAt: Date;
   stock: number;
+  purchaseDate?: string | Date;
+  weightKg?: number;
+  purchasePrice?: number;
+  expectedSellingPrice?: number;
+  quantityParameter?: string;
+  commissionPercentage?: number;
 };
 
 export type CartItem = {
@@ -80,21 +89,25 @@ export type District = {
   divisionId: string;
 };
 
-export type Thana = { // Also used as Upazilla
-  id: string;
+export type Upazilla = {
   name: string;
-  districtId: string;
+  district: string;
+  division: string;
 };
 
 export type ShippingAddress = {
+  id?: string | number;
+  userId?: string;
+  isDefault?: boolean;
   fullName: string;
-  phoneNumber?: string; // Optional at address level, main phone is on User
+  phoneNumber?: string;
   country: string;
   division: string;
   district: string;
-  thana: string; // Upazilla name
+  upazilla?: string; // Upazilla name
   houseAddress: string;
   roadNumber?: string;
+  createdAt?: string;
 };
 
 export type SortByType =
@@ -179,6 +192,8 @@ export type Currency = {
 
 export type BusinessSettings = {
   logoUrl?: string;
+  logoUrlHorizontal?: string;
+  logoUrlVertical?: string;
   primaryColor?: string; 
   secondaryColor?: string; 
   faviconUrl?: string;
@@ -211,7 +226,6 @@ export type CustomPage = {
   updatedAt: Date;
 };
 
-
 export type WithdrawalRequestStatus = 'pending' | 'approved' | 'rejected';
 
 export type WithdrawalRequest = {
@@ -228,9 +242,12 @@ export type WithdrawalRequest = {
   adminNote?: string;
 };
 
-
 export type DeliveryChargeSettings = {
   intraThana: number;    
   intraDistrict: number; 
-  interDistrict: number; 
+  interDistrict: number;
+  // Weight-based extra charges per KG (above 1KG)
+  intraThanaExtraKg?: number;
+  intraDistrictExtraKg?: number;
+  interDistrictExtraKg?: number;
 };

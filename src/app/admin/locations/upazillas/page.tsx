@@ -1,11 +1,10 @@
-
 "use client";
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from '@/components/ui/label';
 import { DEFAULT_DIVISIONS, DEFAULT_DISTRICTS, DEFAULT_UPAZILLAS } from '@/lib/constants';
-import type { Division, District, Thana as Upazilla } from '@/lib/types';
+import type { Division, District, Upazilla } from '@/lib/types';
 import { Home as HomeIcon } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
@@ -41,7 +40,7 @@ export default function AdminUpazillasPage() {
   
   const getDivisionName = (divisionId: string | null) => {
     if (!divisionId) return '';
-    return divisions.find(d => d.id === divisionId)?.name || 'Unknown Division';
+    return divisions?.find(d => d.id === divisionId)?.name || 'Unknown Division';
   };
   const getDistrictName = (districtId: string | undefined | null) => {
     if (!districtId) return 'N/A';

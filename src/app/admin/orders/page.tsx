@@ -1,7 +1,5 @@
-
 "use client";
 import { useEffect, useState } from 'react';
-import { MOCK_ORDERS } from '@/lib/mock-data';
 import type { Order, OrderStatus } from '@/lib/types';
 import { OrderManagementCard } from '@/components/admin/order-management-card';
 import { useToast } from '@/hooks/use-toast';
@@ -9,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { ShoppingCart, Loader2, SearchX, Filter } from 'lucide-react';
+import { apiClient } from '@/lib/api-client';
 
 export default function AdminOrdersPage() {
   const [allOrders, setAllOrders] = useState<Order[]>([]);
@@ -21,14 +20,28 @@ export default function AdminOrdersPage() {
   const [statusFilter, setStatusFilter] = useState<OrderStatus | 'all'>('all');
 
   useEffect(() => {
-    setIsLoading(true);
-    setTimeout(() => {
-      // MOCK_ORDERS is mutable, so ensure we sort a copy if needed or rely on current state.
-      const sortedOrders = [...MOCK_ORDERS].sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-      setAllOrders(sortedOrders);
-      setFilteredOrders(sortedOrders);
-      setIsLoading(false);
-    }, 500);
+    const fetchOrders = async () => {
+      setIsLoading(true);
+      try {
+        const orders = await apiClient.getOrders({ limit: 100 });
+        const sortedOrders = orders.sort((a: Order, b: Order) => 
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+        setAllOrders(sortedOrders);
+        setFilteredOrders(sortedOrders);
+      } catch (error) {
+        console.error('Error fetching orders:', error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch orders. Please try again.",
+          variant: "destructive"
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchOrders();
   }, []);
 
   useEffect(() => {
@@ -37,7 +50,7 @@ export default function AdminOrdersPage() {
       tempOrders = tempOrders.filter(order => 
         order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
         order.userId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        order.shippingAddress.fullName.toLowerCase().includes(searchTerm.toLowerCase())
+        order.shippingAddress?.fullName?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
     if (statusFilter !== 'all') {
@@ -49,17 +62,26 @@ export default function AdminOrdersPage() {
 
   const handleUpdateStatus = async (orderId: string, newStatus: OrderStatus) => {
     setProcessingOrderId(orderId);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 700));
-    
-    setAllOrders(prevOrders => 
+    try {
+      await apiClient.updateOrder(orderId, { status: newStatus });
+      
+      setAllOrders(prevOrders => 
         prevOrders.map(order => 
-            order.id === orderId ? { ...order, status: newStatus, updatedAt: new Date() } : order
+          order.id === orderId ? { ...order, status: newStatus, updatedAt: new Date() } : order
         )
-    );
+      );
 
-    toast({ title: "Order Status Updated", description: `Order #${orderId} status changed to ${newStatus}.` });
-    setProcessingOrderId(null);
+      toast({ title: "Order Status Updated", description: `Order #${orderId} status changed to ${newStatus}.` });
+    } catch (error) {
+      console.error('Error updating order status:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update order status. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setProcessingOrderId(null);
+    }
   };
 
   if (isLoading) {

@@ -1,5 +1,5 @@
-
 "use client";
+
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
@@ -7,15 +7,17 @@ import { useCart } from '@/contexts/cart-context';
 import { AddressForm } from '@/components/address-form';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import type { ShippingAddress, Order, DeliveryChargeSettings, Product as ProductType, User as UserType, CartItem, ShippingMethod, BusinessSettings } from '@/lib/types';
+import type { ShippingAddress, Order, Product as ProductType, User as UserType, CartItem, ShippingMethod, BusinessSettings } from '@/lib/types';
 import { MOCK_ORDERS, MOCK_PRODUCTS, MOCK_USERS } from '@/lib/mock-data';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
 import { Loader2, ShieldCheck, Edit3, Home, Truck, Ship } from 'lucide-react';
 import useLocalStorage from '@/hooks/use-local-storage';
-import { DELIVERY_CHARGES_STORAGE_KEY, DEFAULT_DELIVERY_CHARGES, SHIPPING_METHODS_STORAGE_KEY, DEFAULT_SHIPPING_METHODS, BUSINESS_SETTINGS_STORAGE_KEY, DEFAULT_BUSINESS_SETTINGS } from '@/lib/constants';
+import { SHIPPING_METHODS_STORAGE_KEY, DEFAULT_SHIPPING_METHODS, BUSINESS_SETTINGS_STORAGE_KEY, DEFAULT_BUSINESS_SETTINGS } from '@/lib/constants';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from '@/components/ui/label';
+import { apiClient } from '@/lib/api-client';
+import { calculateLocationBasedDeliveryCharge, type DeliveryChargeSettings } from '@/lib/utils';
 
 export default function CheckoutPage() {
   const { currentUser, isAuthenticated, loading: authLoading, updateCurrentUserData } = useAuth();
@@ -30,10 +32,9 @@ export default function CheckoutPage() {
   const [totalDeliveryCharge, setTotalDeliveryCharge] = useState<number | null>(null);
   const [isCalculatingDelivery, setIsCalculatingDelivery] = useState(true);
 
-  const [deliverySettings] = useLocalStorage<DeliveryChargeSettings>(
-    DELIVERY_CHARGES_STORAGE_KEY,
-    DEFAULT_DELIVERY_CHARGES
-  );
+  const [deliverySettings, setDeliverySettings] = useState<DeliveryChargeSettings | null>(null);
+  const [allProducts, setAllProducts] = useState<any[]>([]);
+  const [allUsers, setAllUsers] = useState<any[]>([]);
 
   const [availableShippingMethods] = useLocalStorage<ShippingMethod[]>(
     SHIPPING_METHODS_STORAGE_KEY,
@@ -41,9 +42,38 @@ export default function CheckoutPage() {
   );
   const [selectedShippingMethodId, setSelectedShippingMethodId] = useState<string>('');
   const [settings] = useLocalStorage<BusinessSettings>(BUSINESS_SETTINGS_STORAGE_KEY, DEFAULT_BUSINESS_SETTINGS);
-  const activeCurrency = settings.availableCurrencies.find(c => c.code === settings.defaultCurrencyCode) || settings.availableCurrencies[0] || { symbol: '?' };
+  const activeCurrency = settings?.availableCurrencies?.find(c => c.code === settings?.defaultCurrencyCode) || 
+    settings?.availableCurrencies?.[0] || 
+    { code: 'BDT', symbol: '৳', name: 'Bangladeshi Taka' };
   const currencySymbol = activeCurrency.symbol;
 
+  // Fetch delivery charges, products, and users data
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [deliveryChargesData, productsData, usersData] = await Promise.all([
+          apiClient.getDeliveryCharges(),
+          apiClient.getProducts({ limit: 100 }),
+          apiClient.getUsers({ includeAddresses: true })
+        ]);
+        // Convert delivery charge values to numbers
+        setDeliverySettings({
+          intra_upazilla_charge: Number(deliveryChargesData.intra_upazilla_charge),
+          intra_district_charge: Number(deliveryChargesData.intra_district_charge),
+          inter_district_charge: Number(deliveryChargesData.inter_district_charge),
+          intra_upazilla_extra_kg_charge: Number(deliveryChargesData.intra_upazilla_extra_kg_charge),
+          intra_district_extra_kg_charge: Number(deliveryChargesData.intra_district_extra_kg_charge),
+          inter_district_extra_kg_charge: Number(deliveryChargesData.inter_district_extra_kg_charge),
+        });
+        setAllProducts(productsData as any[]);
+        setAllUsers(usersData as any[]);
+      } catch (error) {
+        console.error('Error fetching checkout data:', error);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -75,10 +105,9 @@ export default function CheckoutPage() {
     }
   }, [availableShippingMethods, selectedShippingMethodId]);
 
-
   useEffect(() => {
     const calculateTotalDeliveryCharge = () => {
-        if (!orderShippingAddress || cartItems.length === 0 || !deliverySettings || !currentUser) {
+        if (!orderShippingAddress || cartItems.length === 0 || !deliverySettings || !currentUser || allProducts.length === 0 || allUsers.length === 0) {
             setTotalDeliveryCharge(0);
             setIsCalculatingDelivery(false);
             return;
@@ -89,10 +118,10 @@ export default function CheckoutPage() {
         const groupedBySeller: Record<string, { seller?: UserType, items: CartItem[] }> = {};
 
         for (const cartItem of cartItems) {
-            const productDetails = MOCK_PRODUCTS.find(p => p.id === cartItem.id);
+            const productDetails = allProducts?.find(p => p.id === cartItem.id);
             if (productDetails?.sellerId) {
                 if (!groupedBySeller[productDetails.sellerId]) {
-                const seller = MOCK_USERS.find(u => u.id === productDetails.sellerId);
+                const seller = allUsers?.find(u => u.id === productDetails.sellerId);
                 groupedBySeller[productDetails.sellerId] = { seller, items: [] };
                 }
                 groupedBySeller[productDetails.sellerId].items.push(cartItem);
@@ -105,37 +134,53 @@ export default function CheckoutPage() {
         }
 
         let calculatedTotal = 0;
-        let allChargesCalculated = true;
 
         for (const sellerId in groupedBySeller) {
             const group = groupedBySeller[sellerId];
             const sellerAddress = group.seller?.defaultShippingAddress;
-            let chargePerSeller: number | null = null;
-
-            if (!sellerAddress) {
-                chargePerSeller = deliverySettings.interDistrict;
-            } else {
-                if (buyerAddress.thana === sellerAddress.thana && buyerAddress.district === sellerAddress.district) {
-                    chargePerSeller = deliverySettings.intraThana;
-                } else if (buyerAddress.district === sellerAddress.district) {
-                    chargePerSeller = deliverySettings.intraDistrict;
-                } else {
-                    chargePerSeller = deliverySettings.interDistrict;
-                }
-            }
-
-            if (chargePerSeller !== null) {
-                calculatedTotal += chargePerSeller;
-            } else {
-                allChargesCalculated = false;
-            }
+            
+            // Enhanced debug logging
+            console.log('=== Checkout Delivery Charge Debug ===');
+            console.log('Buyer Address:', {
+              fullName: buyerAddress.fullName,
+              division: buyerAddress.division,
+              district: buyerAddress.district,
+              upazilla: buyerAddress.upazilla,
+              houseAddress: buyerAddress.houseAddress
+            });
+            console.log('Seller Address:', sellerAddress ? {
+              fullName: sellerAddress.fullName,
+              division: sellerAddress.division,
+              district: sellerAddress.district,
+              upazilla: sellerAddress.upazilla,
+              houseAddress: sellerAddress.houseAddress
+            } : 'No seller address');
+            console.log('Delivery Settings:', deliverySettings);
+            console.log('Seller Info:', group.seller ? {
+              id: group.seller.id,
+              name: group.seller.name,
+              hasDefaultAddress: !!group.seller.defaultShippingAddress
+            } : 'No seller info');
+            
+            // Calculate total weight for this seller's items
+            const totalWeight = group.items.reduce((weight, item) => {
+              const productDetails = allProducts.find(p => p.id === item.id);
+              const itemWeight = productDetails?.weightKg || 1; // Default to 1KG if no weight specified
+              return weight + (itemWeight * item.quantity);
+            }, 0);
+            
+            // Use the utility function to calculate delivery charge
+            const chargePerSeller = Number(calculateLocationBasedDeliveryCharge(buyerAddress, sellerAddress || null, deliverySettings, totalWeight));
+            console.log('Calculated Charge:', chargePerSeller);
+            console.log('=====================================');
+            
+            calculatedTotal += chargePerSeller;
         }
-        setTotalDeliveryCharge(allChargesCalculated ? calculatedTotal : null);
+        setTotalDeliveryCharge(calculatedTotal);
         setIsCalculatingDelivery(false);
     };
     calculateTotalDeliveryCharge();
-  }, [cartItems, orderShippingAddress, deliverySettings, currentUser]);
-
+  }, [cartItems, orderShippingAddress, deliverySettings, currentUser, allProducts, allUsers]);
 
   const initialAddressFormData = (): Partial<ShippingAddress> => {
     if (currentUser?.defaultShippingAddress) {
@@ -164,37 +209,57 @@ export default function CheckoutPage() {
     }
     setIsPlacingOrder(true);
 
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    try {
+      await new Promise(resolve => setTimeout(resolve, 1500));
 
-    const itemsSubtotal = getCartTotal();
-    const finalTotalAmount = itemsSubtotal + totalDeliveryCharge;
-    const selectedMethod = availableShippingMethods.find(m => m.id === selectedShippingMethodId);
+      const itemsSubtotal = getCartTotal();
+      const finalTotalAmount = itemsSubtotal + totalDeliveryCharge;
+      const selectedMethod = availableShippingMethods?.find(m => m.id === selectedShippingMethodId);
 
-    const newOrder: Order = {
-      id: `order${MOCK_ORDERS.length + 1}-${Date.now()}`,
-      userId: currentUser.id,
-      items: cartItems.map(item => ({ ...item })),
-      totalAmount: finalTotalAmount,
-      deliveryChargeAmount: totalDeliveryCharge,
-      shippingAddress: orderShippingAddress,
-      status: 'pending',
-      paymentStatus: 'unpaid',
-      selectedShippingMethodId: selectedShippingMethodId,
-      shippingMethodName: selectedMethod?.name,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      platformCommission: 0, // Initialize commission
-    };
-    MOCK_ORDERS.push(newOrder);
+      // Prepare order items with product details
+      const orderItems = cartItems.map(item => {
+        const productDetails = allProducts.find(p => p.id === item.id);
+        return {
+          productId: item.id,
+          quantity: item.quantity,
+          price: item.price,
+          name: item.name,
+          imageUrl: item.imageUrl
+        };
+      });
 
-    clearCart();
-    toast({
-      title: "Order Placed Successfully!",
-      description: `Your order #${newOrder.id} has been placed.`,
-      variant: "default",
-      duration: 4000,
-    });
-    router.push(`/order-confirmation/${newOrder.id}`);
+      // Create order using API
+      const orderData = {
+        userId: currentUser.id,
+        shippingAddress: orderShippingAddress,
+        paymentMethod: 'cod', // Cash on delivery
+        totalAmount: finalTotalAmount,
+        deliveryChargeAmount: totalDeliveryCharge,
+        platformCommission: 0, // Initialize commission
+        notes: `Shipping method: ${selectedMethod?.name || 'Standard'}`,
+        items: orderItems
+      };
+
+      const result = await apiClient.createCheckoutOrder(orderData);
+
+      clearCart();
+      toast({
+        title: "Order Placed Successfully!",
+        description: `Your order #${result.orderId} has been placed.`,
+        variant: "default",
+        duration: 4000,
+      });
+      router.push(`/order-confirmation/${result.orderId}`);
+    } catch (error) {
+      console.error('Error placing order:', error);
+      toast({
+        title: "Order Failed",
+        description: "There was an error placing your order. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsPlacingOrder(false);
+    }
   };
 
   if (authLoading || (!authLoading && !isAuthenticated && !isPlacingOrder) || (itemCount === 0 && !isPlacingOrder && !authLoading)) {
@@ -237,7 +302,7 @@ export default function CheckoutPage() {
                     <p className="font-semibold flex items-center gap-2"><Home className="h-5 w-5 text-primary" /> {orderShippingAddress.fullName}</p>
                     <address className="text-sm text-muted-foreground not-italic pl-7 space-y-0.5">
                         <p>{orderShippingAddress.houseAddress}{orderShippingAddress.roadNumber ? `, ${orderShippingAddress.roadNumber}` : ''}</p>
-                        <p>{orderShippingAddress.thana}, {orderShippingAddress.district}</p>
+                        <p>{orderShippingAddress.upazilla}, {orderShippingAddress.district}</p>
                         <p>{orderShippingAddress.division}, {orderShippingAddress.country}</p>
                         {orderShippingAddress.phoneNumber && <p>Phone: {orderShippingAddress.phoneNumber}</p>}
                     </address>

@@ -1,4 +1,3 @@
-
 "use client";
 import type { Order, OrderStatus, User } from '@/lib/types';
 import { Button } from '@/components/ui/button';
@@ -27,9 +26,9 @@ export function OrderManagementCard({ order, onUpdateStatus, isProcessing }: Ord
     // Find the first product to determine the seller
     if (order.items.length > 0) {
       const firstItemId = order.items[0].id;
-      const product = MOCK_PRODUCTS.find(p => p.id === firstItemId);
+      const product = MOCK_PRODUCTS?.find(p => p.id === firstItemId);
       if (product && product.sellerId) {
-        const foundSeller = MOCK_USERS.find(u => u.id === product.sellerId);
+        const foundSeller = MOCK_USERS?.find(u => u.id === product.sellerId);
         setSeller(foundSeller || null);
       }
     }
@@ -45,11 +44,11 @@ export function OrderManagementCard({ order, onUpdateStatus, isProcessing }: Ord
   };
   
   const { shippingAddress: buyerAddress } = order;
-  const displayBuyerAddress = `${buyerAddress.houseAddress}${buyerAddress.roadNumber ? `, ${buyerAddress.roadNumber}` : ''}, ${buyerAddress.thana}, ${buyerAddress.district}, ${buyerAddress.division}, Bangladesh`;
+  const displayBuyerAddress = `${buyerAddress.houseAddress}${buyerAddress.roadNumber ? `, ${buyerAddress.roadNumber}` : ''}, ${buyerAddress.upazilla}, ${buyerAddress.district}, ${buyerAddress.division}, Bangladesh`;
 
   const sellerAddress = seller?.defaultShippingAddress;
   const displaySellerAddress = sellerAddress
-    ? `${sellerAddress.houseAddress}${sellerAddress.roadNumber ? `, ${sellerAddress.roadNumber}` : ''}, ${sellerAddress.thana}, ${sellerAddress.district}, ${sellerAddress.division}, Bangladesh`
+    ? `${sellerAddress.houseAddress}${sellerAddress.roadNumber ? `, ${sellerAddress.roadNumber}` : ''}, ${sellerAddress.upazilla}, ${sellerAddress.district}, ${sellerAddress.division}, Bangladesh`
     : "N/A";
 
   return (
@@ -58,7 +57,7 @@ export function OrderManagementCard({ order, onUpdateStatus, isProcessing }: Ord
         <div>
           <CardTitle className="text-xl">Order #{order.id}</CardTitle>
           <div className="flex items-center text-sm text-muted-foreground mt-1">
-             <Calendar className="mr-1.5 h-4 w-4" /> Placed: {format(new Date(order.createdAt), 'PPpp')}
+             <Calendar className="mr-1.5 h-4 w-4" /> Placed: {order.createdAt ? format(new Date(order.createdAt), 'PPpp') : 'Date not available'}
           </div>
         </div>
         <OrderStatusBadge status={order.status} />

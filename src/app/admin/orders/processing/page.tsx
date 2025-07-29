@@ -1,12 +1,11 @@
-
 "use client";
 import { useEffect, useState } from 'react';
-import { MOCK_ORDERS } from '@/lib/mock-data';
 import type { Order, OrderStatus } from '@/lib/types';
 import { OrderManagementCard } from '@/components/admin/order-management-card';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Package as PackageIcon, Loader2, SearchX } from 'lucide-react'; // Using PackageIcon for processing
+import { Package as PackageIcon, Loader2, SearchX } from 'lucide-react';
+import { apiClient } from '@/lib/api-client';
 
 export default function AdminProcessingOrdersPage() {
   const [processingOrders, setProcessingOrders] = useState<Order[]>([]);
@@ -15,35 +14,49 @@ export default function AdminProcessingOrdersPage() {
   const { toast } = useToast();
 
   useEffect(() => {
-    setIsLoading(true);
-    setTimeout(() => {
-      const filtered = MOCK_ORDERS.filter(order => order.status === 'processing')
-                                 .sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-      setProcessingOrders(filtered);
-      setIsLoading(false);
-    }, 300);
-  }, []);
+    const fetchProcessingOrders = async () => {
+      setIsLoading(true);
+      try {
+        const orders = await apiClient.getOrders({ status: 'processing' });
+        setProcessingOrders(orders.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+      } catch (error) {
+        console.error('Error fetching processing orders:', error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch processing orders.",
+          variant: "destructive"
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchProcessingOrders();
+  }, [toast]);
 
   const handleUpdateStatus = async (orderId: string, newStatus: OrderStatus) => {
     setProcessingOrderId(orderId);
-    await new Promise(resolve => setTimeout(resolve, 700));
-    
-    // Update in MOCK_ORDERS directly (simulating DB update)
-    const orderIndex = MOCK_ORDERS.findIndex(o => o.id === orderId);
-    if (orderIndex !== -1) {
-      MOCK_ORDERS[orderIndex].status = newStatus;
-      MOCK_ORDERS[orderIndex].updatedAt = new Date();
-    }
-
-    // Update local state
-    setProcessingOrders(prevOrders => 
+    try {
+      await apiClient.updateOrder(orderId, { status: newStatus });
+      
+      // Update local state
+      setProcessingOrders(prevOrders => 
         prevOrders.map(order => 
-            order.id === orderId ? { ...order, status: newStatus, updatedAt: new Date() } : order
-        ).filter(order => newStatus === 'processing' ? true : order.id !== orderId) // Keep if still processing, otherwise remove
-    );
+          order.id === orderId ? { ...order, status: newStatus, updatedAt: new Date() } : order
+        ).filter(order => newStatus === 'processing' ? true : order.id !== orderId)
+      );
 
-    toast({ title: "Order Status Updated", description: `Order #${orderId} status changed to ${newStatus}.` });
-    setProcessingOrderId(null);
+      toast({ title: "Order Status Updated", description: `Order #${orderId} status changed to ${newStatus}.` });
+    } catch (error) {
+      console.error('Error updating order status:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update order status.",
+        variant: "destructive"
+      });
+    } finally {
+      setProcessingOrderId(null);
+    }
   };
 
   if (isLoading) {

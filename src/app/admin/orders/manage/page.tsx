@@ -1,8 +1,6 @@
-
 "use client";
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { MOCK_ORDERS, MOCK_PRODUCTS, MOCK_USERS } from '@/lib/mock-data';
 import type { Order, OrderStatus, User, PaymentStatus, BusinessSettings } from '@/lib/types'; 
 import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -18,6 +16,17 @@ import { format } from 'date-fns';
 import { ORDER_STATUSES, PAYMENT_STATUSES, BUSINESS_SETTINGS_STORAGE_KEY, DEFAULT_BUSINESS_SETTINGS } from '@/lib/constants'; 
 import { Badge } from '@/components/ui/badge'; 
 import useLocalStorage from '@/hooks/use-local-storage';
+import { apiClient } from '@/lib/api-client';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+
+interface EditOrderData {
+  status: OrderStatus;
+  paymentStatus: PaymentStatus;
+  shippingMethodName?: string;
+  adminNote?: string;
+}
 
 export default function AdminManageOrdersPage() {
   const [allOrders, setAllOrders] = useState<Order[]>([]);
@@ -30,19 +39,44 @@ export default function AdminManageOrdersPage() {
   const [statusFilter, setStatusFilter] = useState<OrderStatus | 'all'>('all');
   const [paymentStatusFilter, setPaymentStatusFilter] = useState<PaymentStatus | 'all'>('all'); 
 
+  // Edit order dialog state
+  const [editingOrder, setEditingOrder] = useState<Order | null>(null);
+  const [editFormData, setEditFormData] = useState<EditOrderData>({
+    status: 'pending',
+    paymentStatus: 'unpaid',
+    shippingMethodName: '',
+    adminNote: ''
+  });
+
   const [settings] = useLocalStorage<BusinessSettings>(BUSINESS_SETTINGS_STORAGE_KEY, DEFAULT_BUSINESS_SETTINGS);
-  const activeCurrency = settings.availableCurrencies.find(c => c.code === settings.defaultCurrencyCode) || settings.availableCurrencies[0] || { symbol: '?' };
+  const activeCurrency = settings?.availableCurrencies?.find(c => c.code === settings?.defaultCurrencyCode) || 
+    settings?.availableCurrencies?.[0] || 
+    { code: 'BDT', symbol: '৳', name: 'Bangladeshi Taka' };
   const currencySymbol = activeCurrency.symbol;
 
-
-  useEffect(() => {
+  const fetchOrders = async () => {
     setIsLoading(true);
-    setTimeout(() => {
-      const sortedOrders = [...MOCK_ORDERS].sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    try {
+      const orders = await apiClient.getOrders();
+      const sortedOrders = orders.sort((a: Order, b: Order) => 
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
       setAllOrders(sortedOrders);
       setFilteredOrders(sortedOrders);
+    } catch (error) {
+      console.error('Error fetching orders:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch orders. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
       setIsLoading(false);
-    }, 500);
+    }
+  };
+
+  useEffect(() => {
+    fetchOrders();
   }, []);
 
   useEffect(() => {
@@ -65,50 +99,111 @@ export default function AdminManageOrdersPage() {
 
   const handleUpdateOrderStatus = async (orderId: string, newStatus: OrderStatus) => {
     setProcessingOrderId(orderId);
-    await new Promise(resolve => setTimeout(resolve, 700));
-
-    const orderIndex = MOCK_ORDERS.findIndex(o => o.id === orderId);
-    if (orderIndex !== -1) {
-      MOCK_ORDERS[orderIndex].status = newStatus;
-      MOCK_ORDERS[orderIndex].updatedAt = new Date();
-    }
-
-    setAllOrders(prevOrders =>
+    try {
+      await apiClient.updateOrder(orderId, { status: newStatus });
+      setAllOrders(prevOrders =>
         prevOrders.map(order =>
-            order.id === orderId ? { ...order, status: newStatus, updatedAt: new Date() } : order
+          order.id === orderId ? { ...order, status: newStatus, updatedAt: new Date() } : order
         )
-    );
-    toast({ title: "Order Status Updated", description: `Order #${orderId} status changed to ${newStatus}.` });
-    setProcessingOrderId(null);
+      );
+      toast({ title: "Order Status Updated", description: `Order #${orderId} status changed to ${newStatus}.` });
+    } catch (error) {
+      console.error('Error updating order status:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update order status. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setProcessingOrderId(null);
+    }
   };
   
   const handleUpdatePaymentStatus = async (orderId: string, newPaymentStatus: PaymentStatus) => {
     setProcessingOrderId(orderId);
-    await new Promise(resolve => setTimeout(resolve, 700));
+    try {
+      await apiClient.updateOrder(orderId, { paymentStatus: newPaymentStatus });
+      setAllOrders(prevOrders =>
+        prevOrders.map(order =>
+          order.id === orderId ? { ...order, paymentStatus: newPaymentStatus, updatedAt: new Date() } : order
+        )
+      );
+      toast({ title: "Payment Status Updated", description: `Order #${orderId} payment status changed to ${newPaymentStatus}.` });
+    } catch (error) {
+      console.error('Error updating payment status:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update payment status. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setProcessingOrderId(null);
+    }
+  };
 
-    const orderIndex = MOCK_ORDERS.findIndex(o => o.id === orderId);
-    if (orderIndex !== -1) {
-      MOCK_ORDERS[orderIndex].paymentStatus = newPaymentStatus;
-      MOCK_ORDERS[orderIndex].updatedAt = new Date(); 
+  const handleEditOrder = (order: Order) => {
+    setEditingOrder(order);
+    setEditFormData({
+      status: order.status,
+      paymentStatus: order.paymentStatus,
+      shippingMethodName: order.shippingMethodName || '',
+      adminNote: ''
+    });
+  };
+
+  const handleSaveOrderEdit = async () => {
+    if (!editingOrder) return;
+    
+    setProcessingOrderId(editingOrder.id);
+    try {
+      await apiClient.updateOrder(editingOrder.id, editFormData);
+      setAllOrders(prevOrders =>
+        prevOrders.map(order =>
+          order.id === editingOrder.id ? { 
+            ...order, 
+            ...editFormData,
+            updatedAt: new Date() 
+          } : order
+        )
+      );
+      toast({ 
+        title: "Order Updated", 
+        description: `Order #${editingOrder.id} has been updated successfully.` 
+      });
+      setEditingOrder(null);
+    } catch (error) {
+      console.error('Error updating order:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update order. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setProcessingOrderId(null);
+    }
+  };
+
+  const handleDeleteOrder = async (orderId: string) => {
+    if (!window.confirm('Are you sure you want to delete this order? This cannot be undone.')) {
+      return;
     }
 
-    setAllOrders(prevOrders =>
-        prevOrders.map(order =>
-            order.id === orderId ? { ...order, paymentStatus: newPaymentStatus, updatedAt: new Date() } : order
-        )
-    );
-    toast({ title: "Payment Status Updated", description: `Order #${orderId} payment status changed to ${newPaymentStatus}.` });
-    setProcessingOrderId(null);
-  };
-
-
-  const handleEditOrder = (orderId: string) => {
-    toast({ title: "Edit Action", description: `Edit order #${orderId} (Not implemented).` });
-  };
-
-  const handleDeleteOrder = (orderId: string) => {
-    setAllOrders(prevOrders => prevOrders.filter(o => o.id !== orderId));
-    toast({ title: "Order Deleted", description: `Order #${orderId} has been removed (mock).`, variant: "destructive" });
+    try {
+      await apiClient.deleteOrder(orderId);
+      setAllOrders(prevOrders => prevOrders.filter(o => o.id !== orderId));
+      toast({ 
+        title: "Order Deleted", 
+        description: `Order #${orderId} has been deleted successfully.`, 
+        variant: "destructive" 
+      });
+    } catch (error) {
+      console.error('Error deleting order:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete order. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   if (isLoading) {
@@ -191,7 +286,6 @@ export default function AdminManageOrdersPage() {
             </TableHeader>
             <TableBody>
               {filteredOrders.map(order => {
-                const buyer = MOCK_USERS.find(u => u.id === order.userId);
                 return (
                   <TableRow key={order.id}>
                     <TableCell className="font-medium">
@@ -199,9 +293,9 @@ export default function AdminManageOrdersPage() {
                         {order.id}
                       </Link>
                     </TableCell>
-                    <TableCell>{format(new Date(order.createdAt), 'dd MMM yyyy')}</TableCell>
-                    <TableCell>{buyer?.name || order.shippingAddress.fullName}</TableCell>
-                    <TableCell>{currencySymbol}{order.totalAmount.toFixed(2)}</TableCell>
+                    <TableCell>{order.createdAt ? format(new Date(order.createdAt), 'dd MMM yyyy') : 'Date not available'}</TableCell>
+                    <TableCell>{order.shippingAddress.fullName}</TableCell>
+                    <TableCell>{currencySymbol}{(parseFloat(order.totalAmount) || 0).toFixed(2)}</TableCell>
                     <TableCell>
                       <Select
                         value={order.status}
@@ -248,11 +342,11 @@ export default function AdminManageOrdersPage() {
                               <Eye className="mr-2 h-4 w-4" /> View Details
                             </Link>
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleEditOrder(order.id)}>
-                            <Edit className="mr-2 h-4 w-4" /> Edit Order (Mock)
+                          <DropdownMenuItem onClick={() => handleEditOrder(order)}>
+                            <Edit className="mr-2 h-4 w-4" /> Edit Order
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => handleDeleteOrder(order.id)} className="text-destructive focus:text-destructive focus:bg-destructive/10">
-                            <Trash2 className="mr-2 h-4 w-4" /> Delete Order (Mock)
+                            <Trash2 className="mr-2 h-4 w-4" /> Delete Order
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -264,6 +358,97 @@ export default function AdminManageOrdersPage() {
           </Table>
         </Card>
       )}
+
+      {/* Edit Order Dialog */}
+      <Dialog open={!!editingOrder} onOpenChange={() => setEditingOrder(null)}>
+        <DialogContent className="sm:max-w-[525px]">
+          <DialogTitle className="sr-only">Order Dialog</DialogTitle>
+          <DialogHeader>
+            <DialogTitle>Edit Order #{editingOrder?.id}</DialogTitle>
+            <DialogDescription>
+              Update order details and status. Changes will be saved immediately.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="order-status" className="text-right">
+                Order Status
+              </Label>
+              <Select 
+                value={editFormData.status}
+                onValueChange={(value: OrderStatus) => setEditFormData(prev => ({ ...prev, status: value }))}
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Select order status" />
+                </SelectTrigger>
+                <SelectContent>
+                  {ORDER_STATUSES.map(status => (
+                    <SelectItem key={status.value} value={status.value}>{status.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="payment-status" className="text-right">
+                Payment Status
+              </Label>
+              <Select 
+                value={editFormData.paymentStatus}
+                onValueChange={(value: PaymentStatus) => setEditFormData(prev => ({ ...prev, paymentStatus: value }))}
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Select payment status" />
+                </SelectTrigger>
+                <SelectContent>
+                  {PAYMENT_STATUSES.map(status => (
+                    <SelectItem key={status.value} value={status.value}>{status.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="shipping-method" className="text-right">
+                Shipping Method
+              </Label>
+              <Input
+                id="shipping-method"
+                value={editFormData.shippingMethodName || ''}
+                onChange={(e) => setEditFormData(prev => ({ ...prev, shippingMethodName: e.target.value }))}
+                className="col-span-3"
+                placeholder="Enter shipping method..."
+              />
+            </div>
+            <div className="grid grid-cols-4 items-start gap-4">
+              <Label htmlFor="admin-note" className="text-right pt-2">
+                Admin Note
+              </Label>
+              <Textarea
+                id="admin-note"
+                value={editFormData.adminNote || ''}
+                onChange={(e) => setEditFormData(prev => ({ ...prev, adminNote: e.target.value }))}
+                className="col-span-3"
+                placeholder="Add any admin notes..."
+                rows={3}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingOrder(null)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveOrderEdit} disabled={processingOrderId === editingOrder?.id}>
+              {processingOrderId === editingOrder?.id ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                'Save Changes'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

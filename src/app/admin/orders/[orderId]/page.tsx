@@ -1,9 +1,7 @@
-
 "use client";
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState, useMemo } from 'react';
-import { MOCK_ORDERS, MOCK_PRODUCTS, MOCK_USERS } from '@/lib/mock-data';
-import type { Order, Product as ProductType, User as UserType, ShippingAddress, CartItem, OrderStatus, PaymentStatus, WithdrawalMethod, CommissionSetting, BusinessSettings } from '@/lib/types';
+import type { Order, Product as ProductType, User as UserType, ShippingAddress, CartItem, OrderStatus, PaymentStatus, WithdrawalMethod, BusinessSettings } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -12,7 +10,7 @@ import { OrderStatusBadge } from '@/components/order-status-badge';
 import Image from 'next/image';
 import { format } from 'date-fns';
 import { ArrowLeft, UserCircle, MapPin, CalendarDays, ShoppingBag, Briefcase, Home, Loader2, CreditCard, Smartphone, Banknote, Save, Truck, AlertTriangle, Percent, Ship } from 'lucide-react';
-import { ORDER_STATUSES, PAYMENT_STATUSES, COMMISSION_SETTINGS_STORAGE_KEY, DEFAULT_COMMISSION_SETTINGS, BUSINESS_SETTINGS_STORAGE_KEY, DEFAULT_BUSINESS_SETTINGS } from '@/lib/constants';
+import { ORDER_STATUSES, PAYMENT_STATUSES, BUSINESS_SETTINGS_STORAGE_KEY, DEFAULT_BUSINESS_SETTINGS } from '@/lib/constants';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import useLocalStorage from '@/hooks/use-local-storage';
@@ -26,11 +24,13 @@ interface EnrichedOrderItem extends CartItem {
 
 interface EnrichedOrder extends Omit<Order, 'items'> {
   items: EnrichedOrderItem[];
+  user_email?: string;
+  userEmail?: string;
 }
 
 const formatFullAddress = (address: ShippingAddress | null | undefined): string => {
   if (!address) return "No address on file.";
-  return `${address.houseAddress}${address.roadNumber ? `, ${address.roadNumber}` : ''}, ${address.thana}, ${address.district}, ${address.division}, ${address.country}${address.phoneNumber ? ` (Phone: ${address.phoneNumber})` : ''}`;
+  return `${address.houseAddress}${address.roadNumber ? `, ${address.roadNumber}` : ''}, ${address.upazilla}, ${address.district}, ${address.division}, ${address.country}${address.phoneNumber ? ` (Phone: ${address.phoneNumber})` : ''}`;
 };
 
 export default function AdminOrderDetailPage() {
@@ -44,31 +44,40 @@ export default function AdminOrderDetailPage() {
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [selectedOrderStatus, setSelectedOrderStatus] = useState<OrderStatus | undefined>(undefined);
   const [selectedPaymentStatus, setSelectedPaymentStatus] = useState<PaymentStatus | undefined>(undefined);
-  const [commissionSettings] = useLocalStorage<CommissionSetting[]>(COMMISSION_SETTINGS_STORAGE_KEY, DEFAULT_COMMISSION_SETTINGS);
   
   const [settings] = useLocalStorage<BusinessSettings>(BUSINESS_SETTINGS_STORAGE_KEY, DEFAULT_BUSINESS_SETTINGS);
-  const activeCurrency = settings.availableCurrencies.find(c => c.code === settings.defaultCurrencyCode) || settings.availableCurrencies[0] || { symbol: '?' };
+  const activeCurrency = settings?.availableCurrencies?.find(c => c.code === settings?.defaultCurrencyCode) || 
+    settings?.availableCurrencies?.[0] || 
+    { code: 'BDT', symbol: '৳', name: 'Bangladeshi Taka' };
   const currencySymbol = activeCurrency.symbol;
 
   useEffect(() => {
     if (orderId) {
       setIsLoading(true);
-      setTimeout(() => {
-        const foundOrder = MOCK_ORDERS.find(o => o.id === orderId);
-        if (foundOrder) {
-          const enrichedItems = foundOrder.items.map(item => {
-            const productDetails = MOCK_PRODUCTS.find(p => p.id === item.id);
-            const sellerDetails = productDetails ? MOCK_USERS.find(u => u.id === productDetails.sellerId) : undefined;
-            return { ...item, productDetails, sellerDetails };
-          });
-          setOrder({ ...foundOrder, items: enrichedItems });
-          setSelectedOrderStatus(foundOrder.status);
-          setSelectedPaymentStatus(foundOrder.paymentStatus);
-        } else {
+      const fetchOrder = async () => {
+        try {
+          const response = await fetch(`/api/orders/${orderId}`);
+          if (response.ok) {
+            const foundOrder = await response.json();
+            if (foundOrder) {
+              const enrichedItems = foundOrder.items.map((item: any) => {
+                return { ...item };
+              });
+              setOrder({ ...foundOrder, items: enrichedItems });
+              setSelectedOrderStatus(foundOrder.status);
+              setSelectedPaymentStatus(foundOrder.paymentStatus);
+            } else {
+              setOrder(null);
+            }
+          }
+        } catch (error) {
+          console.error("Error fetching order:", error);
           setOrder(null);
+        } finally {
+          setIsLoading(false);
         }
-        setIsLoading(false);
-      }, 500);
+      };
+      fetchOrder();
     }
   }, [orderId]);
 
@@ -83,51 +92,30 @@ export default function AdminOrderDetailPage() {
     return Array.from(sellerMap.values());
   }, [order]);
 
-  const calculateAndStorePlatformCommission = (currentOrder: Order): number => {
-    if (!currentOrder || currentOrder.status !== 'delivered' || currentOrder.paymentStatus !== 'paid') {
-      return currentOrder.platformCommission || 0; 
-    }
-    let totalCommission = 0;
-    currentOrder.items.forEach(item => {
-      const product = MOCK_PRODUCTS.find(p => p.id === item.id);
-      if (product) {
-        const categoryCommissionSetting = commissionSettings.find(cs => cs.categoryId === product.categoryId);
-        const commissionPercentage = categoryCommissionSetting ? parseFloat(String(categoryCommissionSetting.percentage)) : 0;
-        totalCommission += (item.price * item.quantity) * (commissionPercentage / 100);
-      }
-    });
-    return parseFloat(totalCommission.toFixed(2));
-  };
-
   const handleStatusUpdate = async () => {
     if (!order || !selectedOrderStatus || !selectedPaymentStatus || (selectedOrderStatus === order.status && selectedPaymentStatus === order.paymentStatus)) return;
-
     setIsUpdatingStatus(true);
-    await new Promise(resolve => setTimeout(resolve, 700));
-
-    const orderIndex = MOCK_ORDERS.findIndex(o => o.id === orderId);
-    if (orderIndex !== -1) {
-      MOCK_ORDERS[orderIndex].status = selectedOrderStatus!;
-      MOCK_ORDERS[orderIndex].paymentStatus = selectedPaymentStatus!;
-      MOCK_ORDERS[orderIndex].updatedAt = new Date();
-      
-      MOCK_ORDERS[orderIndex].platformCommission = calculateAndStorePlatformCommission(MOCK_ORDERS[orderIndex]);
-      
-       setOrder(prevOrder => prevOrder ? { 
-        ...prevOrder, 
-        status: selectedOrderStatus!, 
-        paymentStatus: selectedPaymentStatus!, 
-        updatedAt: new Date(),
-        platformCommission: MOCK_ORDERS[orderIndex].platformCommission 
+    try {
+      await fetch(`/api/orders/${order.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          status: selectedOrderStatus,
+          payment_status: selectedPaymentStatus
+        })
+      });
+      setOrder(prevOrder => prevOrder ? {
+        ...prevOrder,
+        status: selectedOrderStatus,
+        paymentStatus: selectedPaymentStatus,
+        updatedAt: new Date()
       } : null);
-
       toast({ title: "Order Updated", description: `Order #${orderId} details have been updated.` });
-    } else {
-       toast({ title: "Error", description: "Order not found for update.", variant: "destructive" });
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to update order.", variant: "destructive" });
     }
     setIsUpdatingStatus(false);
   };
-
 
   if (isLoading) {
     return (
@@ -149,9 +137,7 @@ export default function AdminOrderDetailPage() {
     );
   }
 
-  const buyer = MOCK_USERS.find(u => u.id === order.userId);
   const itemsSubtotal = order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-
   const isSaveDisabled = isUpdatingStatus || (selectedOrderStatus === order.status && selectedPaymentStatus === order.paymentStatus);
 
   return (
@@ -225,7 +211,6 @@ export default function AdminOrderDetailPage() {
         </CardContent>
       </Card>
 
-
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
           <Card>
@@ -239,11 +224,11 @@ export default function AdminOrderDetailPage() {
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Date Placed:</span>
-                <span className="font-medium">{format(new Date(order.createdAt), 'PPpp')}</span>
+                <span className="font-medium">{order.createdAt ? format(new Date(order.createdAt), 'PPpp') : 'Time Not Available'}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Last Updated:</span>
-                <span className="font-medium">{format(new Date(order.updatedAt), 'PPpp')}</span>
+                <span className="font-medium">{order.updatedAt ? format(new Date(order.updatedAt), 'PPpp') : 'Time Not Available'}</span>
               </div>
               {order.shippingMethodName && (
                 <div className="flex justify-between">
@@ -281,7 +266,7 @@ export default function AdminOrderDetailPage() {
             </CardHeader>
             <CardContent className="space-y-1">
               <p><strong>Name:</strong> {order.shippingAddress.fullName}</p>
-              {buyer && <p><strong>Email:</strong> {buyer.email}</p>}
+              {(order.user_email || order.userEmail) && <p><strong>Email:</strong> {order.user_email || order.userEmail}</p>}
               <p><strong>User ID:</strong> {order.userId}</p>
               <div className="pt-2">
                 <p className="font-medium flex items-center gap-1"><MapPin className="h-4 w-4 text-muted-foreground"/> Shipping Address:</p>
@@ -319,15 +304,15 @@ export default function AdminOrderDetailPage() {
                                     {method.isDefault && <Badge variant="default" className="text-xs">Default</Badge>}
                                 </div>
                                 {method.type === 'bkash' && (
-                                    <p>Account Number: {method.details.accountNumber}</p>
+                                    <p>Account Number: {(method.details as any).accountNumber}</p>
                                 )}
                                 {method.type === 'bank' && (
                                     <>
-                                    <p>Bank: {method.details.bankName}</p>
-                                    <p>Holder: {method.details.accountHolderName}</p>
-                                    <p>Account No: {method.details.accountNumber}</p>
-                                    {method.details.routingNumber && <p>Routing: {method.details.routingNumber}</p>}
-                                    {method.details.branchName && <p>Branch: {method.details.branchName}</p>}
+                                    <p>Bank: {(method.details as any).bankName}</p>
+                                    <p>Holder: {(method.details as any).accountHolderName}</p>
+                                    <p>Account No: {(method.details as any).accountNumber}</p>
+                                    {(method.details as any).routingNumber && <p>Routing: {(method.details as any).routingNumber}</p>}
+                                    {(method.details as any).branchName && <p>Branch: {(method.details as any).branchName}</p>}
                                     </>
                                 )}
                                 <p className="text-xs text-muted-foreground mt-1">Added: {format(new Date(method.createdAt), 'PP')}</p>
@@ -347,7 +332,6 @@ export default function AdminOrderDetailPage() {
             </CardContent>
         </Card>
       ))}
-
 
       <Card>
         <CardHeader>

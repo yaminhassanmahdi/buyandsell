@@ -1,5 +1,5 @@
-
 "use client";
+
 import { useCart } from '@/contexts/cart-context';
 import { CartItem as CartItemComponent } from '@/components/cart-item'; 
 import { Button } from '@/components/ui/button';
@@ -9,11 +9,13 @@ import { ShoppingCart, ArrowRight, Truck, Info, Package } from 'lucide-react';
 import React, { useEffect, useState, useMemo } from 'react';
 import { useAuth } from '@/contexts/auth-context';
 import useLocalStorage from '@/hooks/use-local-storage';
-import type { DeliveryChargeSettings, ShippingAddress, Product as ProductType, User as UserType, CartItem, BusinessSettings } from '@/lib/types';
-import { DELIVERY_CHARGES_STORAGE_KEY, DEFAULT_DELIVERY_CHARGES, BUSINESS_SETTINGS_STORAGE_KEY, DEFAULT_BUSINESS_SETTINGS } from '@/lib/constants';
-import { MOCK_PRODUCTS, MOCK_USERS } from '@/lib/mock-data';
+import type { ShippingAddress, Product as ProductType, User as UserType, CartItem, BusinessSettings } from '@/lib/types';
+import { BUSINESS_SETTINGS_STORAGE_KEY, DEFAULT_BUSINESS_SETTINGS } from '@/lib/constants';
+import { apiClient } from '@/lib/api-client';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
+import { calculateDeliveryCharge, calculateLocationBasedDeliveryCharge, type DeliveryChargeSettings } from '@/lib/utils';
+import { useSettings } from '@/contexts/settings-context';
 
 interface SellerCartGroup {
   sellerId: string;
@@ -27,19 +29,44 @@ interface SellerCartGroup {
 export default function CartPage() {
   const { cartItems, getCartTotal, clearCart, itemCount } = useCart();
   const { currentUser, isAuthenticated, loading: authLoading } = useAuth();
-  const [deliverySettings] = useLocalStorage<DeliveryChargeSettings>(
-    DELIVERY_CHARGES_STORAGE_KEY,
-    DEFAULT_DELIVERY_CHARGES
-  );
-  const [settings] = useLocalStorage<BusinessSettings>(BUSINESS_SETTINGS_STORAGE_KEY, DEFAULT_BUSINESS_SETTINGS);
-  const activeCurrency = settings.availableCurrencies.find(c => c.code === settings.defaultCurrencyCode) || settings.availableCurrencies[0] || { symbol: '?' };
-  const currencySymbol = activeCurrency.symbol;
+  const { settings } = useSettings();
+  const activeCurrency = settings?.availableCurrencies?.find(c => c.code === settings?.defaultCurrencyCode) || 
+    settings?.availableCurrencies?.[0] || 
+    { symbol: '৳' };
+  const currencySymbol = activeCurrency?.symbol || '৳';
 
   const [sellerCartGroups, setSellerCartGroups] = useState<SellerCartGroup[]>([]);
   const [totalDeliveryCharge, setTotalDeliveryCharge] = useState<number | null>(null);
   const [overallDeliveryMessage, setOverallDeliveryMessage] = useState<React.ReactNode | null>("Calculating shipping..."); 
   const [isCalculating, setIsCalculating] = useState(true);
+  const [allProducts, setAllProducts] = useState<any[]>([]);
+  const [allUsers, setAllUsers] = useState<any[]>([]);
+  const [deliverySettings, setDeliverySettings] = useState<DeliveryChargeSettings | null>(null);
 
+  // Fetch products, users, and delivery charges data
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [productsData, usersData, deliveryChargesData] = await Promise.all([
+          apiClient.getProducts({ limit: 100 }),
+          apiClient.getUsers({ includeAddresses: true }),
+          apiClient.getDeliveryCharges()
+        ]);
+        setAllProducts(productsData as any[]);
+        setAllUsers(usersData as any[]);
+        // Convert delivery charge values to numbers
+        setDeliverySettings({
+          intra_thana_charge: Number(deliveryChargesData.intra_thana_charge),
+          intra_district_charge: Number(deliveryChargesData.intra_district_charge),
+          inter_district_charge: Number(deliveryChargesData.inter_district_charge),
+        });
+      } catch (error) {
+        console.error('Error fetching cart data:', error);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   useEffect(() => {
     const calculateDelivery = async () => {
@@ -84,14 +111,23 @@ export default function CartPage() {
         return;
       }
 
+      // Wait for all required data to be loaded
+      if (allProducts.length === 0 || allUsers.length === 0 || !deliverySettings) {
+        setOverallDeliveryMessage("Loading product information...");
+        setSellerCartGroups([]);
+        setTotalDeliveryCharge(null);
+        setIsCalculating(false);
+        return;
+      }
+
       const buyerAddress = currentUser.defaultShippingAddress;
       const groupedBySeller: Record<string, { seller?: UserType, items: CartItem[] }> = {};
 
       for (const cartItem of cartItems) {
-        const productDetails = MOCK_PRODUCTS.find(p => p.id === cartItem.id);
+        const productDetails = allProducts.find(p => p.id === cartItem.id);
         if (productDetails?.sellerId) {
           if (!groupedBySeller[productDetails.sellerId]) {
-            const seller = MOCK_USERS.find(u => u.id === productDetails.sellerId);
+            const seller = allUsers.find(u => u.id === productDetails.sellerId);
             groupedBySeller[productDetails.sellerId] = { seller, items: [] };
           }
           groupedBySeller[productDetails.sellerId].items.push(cartItem);
@@ -111,27 +147,25 @@ export default function CartPage() {
       for (const sellerId in groupedBySeller) {
         const group = groupedBySeller[sellerId];
         const sellerAddress = group.seller?.defaultShippingAddress;
-        let charge: number | null = null;
-        let message: React.ReactNode | null = null; 
+        
+        // Debug logging
+        console.log('=== Cart Delivery Charge Debug ===');
+        console.log('Buyer Address:', buyerAddress);
+        console.log('Seller Address:', sellerAddress);
+        console.log('Delivery Settings:', deliverySettings);
+        
+        // Use the utility function to calculate delivery charge
+        const charge = Number(calculateLocationBasedDeliveryCharge(buyerAddress, sellerAddress || null, deliverySettings));
+        console.log('Calculated Charge:', charge);
+        console.log('==================================');
+        
+        let message: React.ReactNode | null = null;
 
         if (!sellerAddress) {
-          charge = deliverySettings.interDistrict; 
           message = "Seller address unavailable, using default charge.";
-        } else {
-          if (buyerAddress.thana === sellerAddress.thana && buyerAddress.district === sellerAddress.district) {
-            charge = deliverySettings.intraThana;
-          } else if (buyerAddress.district === sellerAddress.district) {
-            charge = deliverySettings.intraDistrict;
-          } else {
-            charge = deliverySettings.interDistrict;
-          }
         }
         
-        if (charge !== null) {
-            calculatedTotalDelivery += charge;
-        } else {
-            allChargesCalculated = false; 
-        }
+        calculatedTotalDelivery += charge;
 
         newSellerCartGroups.push({
           sellerId,
@@ -144,13 +178,13 @@ export default function CartPage() {
       }
       
       setSellerCartGroups(newSellerCartGroups);
-      setTotalDeliveryCharge(allChargesCalculated ? calculatedTotalDelivery : null);
+      setTotalDeliveryCharge(calculatedTotalDelivery);
       setOverallDeliveryMessage(null); 
       setIsCalculating(false);
     };
 
     calculateDelivery();
-  }, [cartItems, currentUser, isAuthenticated, authLoading, deliverySettings, itemCount]);
+  }, [cartItems, currentUser, isAuthenticated, authLoading, deliverySettings, itemCount, allProducts, allUsers]);
 
   const subTotal = getCartTotal();
   const grandTotal = totalDeliveryCharge !== null ? subTotal + totalDeliveryCharge : subTotal;

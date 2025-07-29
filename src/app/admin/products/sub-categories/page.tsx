@@ -1,4 +1,3 @@
-
 "use client";
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
@@ -12,6 +11,7 @@ import type { Category, SubCategory } from '@/lib/types';
 import { FolderTree, PlusCircle, Trash2, Edit3, Loader2, Image as ImageIcon } from 'lucide-react';
 import Image from 'next/image';
 import useLocalStorage from '@/hooks/use-local-storage';
+import ImageUpload from '@/components/admin/image-upload';
 import {
   CATEGORIES_STORAGE_KEY,
   INITIAL_CATEGORIES,
@@ -57,7 +57,7 @@ export default function AdminManageSubCategoriesPage() {
       setCurrentSubCategory({
         parentCategoryId: selectedParentCategoryId || '',
         name: '',
-        imageUrl: 'https://placehold.co/80x80.png',
+        imageUrl: '',
         imageHint: ''
       });
       setIsEditing(false);
@@ -68,6 +68,14 @@ export default function AdminManageSubCategoriesPage() {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setCurrentSubCategory(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleImageChange = (urls: string[]) => {
+    setCurrentSubCategory(prev => ({ 
+      ...prev, 
+      imageUrl: urls[0] || '',
+      imageHint: prev.imageHint || prev.name?.toLowerCase() || ''
+    }));
   };
 
   const handleSaveSubCategory = async () => {
@@ -90,7 +98,7 @@ export default function AdminManageSubCategoriesPage() {
         id: generateId(),
         name: currentSubCategory.name.trim(),
         parentCategoryId: currentSubCategory.parentCategoryId,
-        imageUrl: currentSubCategory.imageUrl?.trim() || 'https://placehold.co/80x80.png',
+        imageUrl: currentSubCategory.imageUrl?.trim() || '',
         imageHint: currentSubCategory.imageHint?.trim() || currentSubCategory.name.toLowerCase(),
       };
       setSubCategories(prev => [...prev, newSubCategory]);
@@ -108,7 +116,7 @@ export default function AdminManageSubCategoriesPage() {
     }
   };
 
-  const selectedParentCategoryName = parentCategories.find(c => c.id === selectedParentCategoryId)?.name || "";
+  const selectedParentCategoryName = parentCategories?.find(c => c.id === selectedParentCategoryId)?.name || "";
 
   return (
     <div className="space-y-8 py-4">
@@ -195,16 +203,18 @@ export default function AdminManageSubCategoriesPage() {
                 placeholder="e.g., Smartphones"
               />
             </div>
+            
             <div className="space-y-2">
-              <Label htmlFor="subcategory-image-url">Image URL</Label>
-              <Input
-                id="subcategory-image-url"
-                name="imageUrl"
-                value={currentSubCategory.imageUrl || ''}
-                onChange={handleInputChange}
-                placeholder="https://placehold.co/80x80.png"
+              <Label>Sub-Category Image</Label>
+              <ImageUpload
+                value={currentSubCategory.imageUrl ? [currentSubCategory.imageUrl] : []}
+                onChange={handleImageChange}
+                maxFiles={1}
+                maxSize={2}
+                showPreview={true}
               />
             </div>
+            
             <div className="space-y-2">
               <Label htmlFor="subcategory-image-hint">Image Hint (for AI)</Label>
               <Input

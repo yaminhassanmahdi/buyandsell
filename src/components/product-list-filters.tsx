@@ -1,6 +1,5 @@
-
 "use client";
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import type { Category, SubCategory, CategoryAttributeType, CategoryAttributeValue, BusinessSettings } from '@/lib/types';
 import { Button } from '@/components/ui/button';
@@ -18,21 +17,25 @@ interface ProductListFiltersProps {
   subCategoriesForCurrentCategory: SubCategory[];
   attributeTypesForCurrentCategory: CategoryAttributeType[];
   allAttributeValues: CategoryAttributeValue[];
+  allCategories?: Category[];
   onApplyFilters?: () => void; // Optional: callback for when filters are applied, e.g., to close mobile sheet
 }
 
-export function ProductListFilters({
+function ProductListFiltersInner({
   currentCategory,
   subCategoriesForCurrentCategory,
   attributeTypesForCurrentCategory,
   allAttributeValues,
+  allCategories = [],
   onApplyFilters,
 }: ProductListFiltersProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
   const [settings] = useLocalStorage<BusinessSettings>(BUSINESS_SETTINGS_STORAGE_KEY, DEFAULT_BUSINESS_SETTINGS);
-  const activeCurrency = settings.availableCurrencies.find(c => c.code === settings.defaultCurrencyCode) || settings.availableCurrencies[0] || { symbol: '?' };
+  const activeCurrency = settings?.availableCurrencies?.find(c => c.code === settings?.defaultCurrencyCode) || 
+    settings?.availableCurrencies?.[0] || 
+    { code: 'BDT', symbol: '৳', name: 'Bangladeshi Taka' };
   const currencySymbol = activeCurrency.symbol;
 
   const [selectedSubCategoryIds, setSelectedSubCategoryIds] = useState<string[]>([]);
@@ -55,7 +58,6 @@ export function ProductListFilters({
     setMaxPrice(currentParams.get('maxPrice') || '');
     setInitialLoad(false);
   }, [searchParams, attributeTypesForCurrentCategory, currentCategory?.id]);
-
 
   const handleSubCategoryChange = (subCategoryId: string, checked: boolean) => {
     setSelectedSubCategoryIds(prev =>
@@ -131,13 +133,39 @@ export function ProductListFilters({
   };
 
   if (!currentCategory && !initialLoad) {
-    return <div className="p-4 text-sm text-muted-foreground">Select a main category to see more filters.</div>;
+    // Only show categories as links/buttons
+    if (!allCategories || typeof allCategories === 'undefined' || allCategories.length === 0) {
+      return <div className="p-4 text-sm text-muted-foreground">Loading categories...</div>;
+    }
+    return (
+      <div className="p-4 text-sm text-muted-foreground">
+        <div className="mb-2 font-semibold">Select a main category:</div>
+        <div className="space-y-2">
+          {allCategories.map(cat => (
+            <Button
+              key={cat.id}
+              variant="outline"
+              className="w-full justify-start text-base font-medium"
+              onClick={() => {
+                const newParams = new URLSearchParams(searchParams.toString());
+                newParams.set('categoryId', cat.id);
+                router.push(`/browse?${newParams.toString()}`);
+                if (onApplyFilters) onApplyFilters();
+              }}
+            >
+              {cat.name}
+            </Button>
+          ))}
+        </div>
+      </div>
+    );
   }
   if (initialLoad && !currentCategory) {
     return <div className="p-4 text-sm text-muted-foreground">Loading filters...</div>;
   }
   
-  const defaultOpenAccordions = ['subcategories', 'price', ...(attributeTypesForCurrentCategory || []).map(at => at.id)];
+  // Only open subcategories by default
+  const defaultOpenAccordions = subCategoriesForCurrentCategory.length > 0 ? ['subcategories'] : [];
 
   return (
     <div className="w-full space-y-6">
@@ -226,5 +254,13 @@ export function ProductListFilters({
         <Button onClick={applyFilters} className="w-full">Apply Filters</Button>
       </div>
     </div>
+  );
+}
+
+export function ProductListFilters(props: ProductListFiltersProps) {
+  return (
+    <Suspense fallback={<div className="p-4 text-sm text-muted-foreground">Loading filters...</div>}>
+      <ProductListFiltersInner {...props} />
+    </Suspense>
   );
 }
